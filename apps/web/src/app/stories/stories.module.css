@@ -1,0 +1,18 @@
+.title {
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.title:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

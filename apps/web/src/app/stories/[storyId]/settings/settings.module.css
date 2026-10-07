@@ -1,0 +1,16 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.subheading {
+  margin-top: 8px;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 1rem;
+}
+
+.token {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}

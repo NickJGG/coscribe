@@ -1,0 +1,17 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 0;
+}
+
+.label {
+  font-weight: 600;
+}
+
+.choice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+}

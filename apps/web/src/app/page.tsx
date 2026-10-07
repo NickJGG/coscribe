@@ -13,8 +13,8 @@ export default async function Home() {
       </p>
       <div>
         {viewer?.profile ? (
-          <Link href={`/u/${viewer.profile.username}`} className="button button-primary">
-            Your profile
+          <Link href="/stories" className="button button-primary">
+            Your stories
           </Link>
         ) : viewer ? (
           <Link href="/onboarding" className="button button-primary">

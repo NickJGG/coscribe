@@ -1,0 +1,10 @@
+.fieldset {
+  display: contents;
+  border: 0;
+}
+
+.error {
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: 0.875rem;
+}

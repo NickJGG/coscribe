@@ -58,7 +58,8 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 ### Layout
 
 ```
-apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username]
+apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username],
+                            friends, stories, stories/[storyId](/settings), invite/[token]
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
 apps/sync/                  Hocuspocus server
@@ -73,3 +74,7 @@ supabase/config.toml        Local stack config
 2. The callback trades the code for a session. A user without a `profiles` row goes to `/onboarding`.
 3. Onboarding picks a unique username (`[a-z0-9_]{3,20}`, enforced by the DB) and an Author Color from a fixed palette.
 4. Profiles are public at `/u/<username>`.
+
+## Roles and permissions
+
+Role rules live in SQL: `story_role()` / `can_view_story()` helpers for RLS, and `security definer` RPCs for anything touching more than one row (create story, change roles, hand off Host, invites). `apps/web/src/lib/story-roles.ts` mirrors them only to decide which buttons to show.
