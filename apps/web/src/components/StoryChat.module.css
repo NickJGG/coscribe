@@ -6,6 +6,11 @@
   box-shadow: 0 2px 12px rgb(0 0 0 / 0.15);
 }
 
+/* Room at the bottom of the page so the fixed toggle never covers the last controls. */
+.clearance {
+  height: 72px;
+}
+
 .badge {
   min-width: 20px;
   padding: 0 6px;

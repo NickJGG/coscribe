@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
-import { chapterSchema, DOCUMENT_FIELD } from "@coscribe/editor"
+import { chapterSchema, DOCUMENT_FIELD, entrySchema } from "@coscribe/editor"
 import { chapterContent, contentHash, decodeChapter, replaceChapterContent } from "./chapter-content"
 
 const mia = { userId: "mia", at: 1 }
@@ -26,6 +26,16 @@ describe("chapter content", () => {
     const restored = decodeChapter(Y.encodeStateAsUpdate(doc))
     expect(restored.toJSON()).toEqual(chapterContent(doc).toJSON())
     expect(restored.firstChild!.child(1).marks[0]!.attrs).toEqual(jordan)
+  })
+
+  it("decodes Entry bodies with the Entry schema, lists included", () => {
+    const doc = new Y.Doc()
+    const body = {
+      type: "doc",
+      content: [{ type: "bulletList", content: [{ type: "listItem", content: [para(["A sword", mia])] }] }],
+    }
+    prosemirrorJSONToYXmlFragment(entrySchema, body, doc.getXmlFragment(DOCUMENT_FIELD))
+    expect(decodeChapter(Y.encodeStateAsUpdate(doc), "entry").toJSON()).toEqual(body)
   })
 
   it("hashes equal content equally, and tells authors apart", () => {

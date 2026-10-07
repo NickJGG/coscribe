@@ -10,6 +10,7 @@ import { Author } from "./author"
 import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
+export { countAuthorCharacters, type ContentJSON } from "./credits"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 
 /** Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text. */
@@ -20,6 +21,9 @@ export const chapterSchema = getSchema(chapterExtensions)
 
 /** A Chapter's formatting plus bulleted and numbered lists. */
 export const entryExtensions = [...chapterExtensions, BulletList, OrderedList, ListItem, ListKeymap]
+
+/** Server-side (apps/sync) view of an Entry body, for the Reader View. */
+export const entrySchema = getSchema(entryExtensions)
 
 /** The Yjs XmlFragment that holds the text (Tiptap Collaboration's default field). */
 export const DOCUMENT_FIELD = "default"

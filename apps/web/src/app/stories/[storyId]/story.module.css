@@ -9,6 +9,16 @@
   gap: 24px;
 }
 
+@media (max-width: 600px) {
+  .page {
+    padding-top: 24px;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+}
+
 .inlineForm select.input {
   width: auto;
 }

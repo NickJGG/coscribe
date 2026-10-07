@@ -8,6 +8,8 @@
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
+ *   - `GET /stories/<id>/content` returns every Chapter and Entry body as ProseMirror JSON, for the
+ *     Reader View and Credits.
  *   - `GET /snapshots/<id>` returns a Snapshot's content as ProseMirror JSON.
  *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
  */
@@ -18,13 +20,13 @@ import { Server, type Hocuspocus } from "@hocuspocus/server"
 import { ACCESS_REVOKED, parseDocumentName, type AccessMessage } from "@coscribe/editor"
 import { verifyUser } from "./auth"
 import { env } from "./env"
-import { documentAccess, fetchDocument, storeDocument, type DocumentRef } from "./documents"
+import { documentAccess, fetchDocument, storeDocument, storyContent, type DocumentRef } from "./documents"
 import { chapterStored, chapterUnloading, restoreSnapshot, snapshotPreview } from "./snapshots"
 
 type Context = { userId: string | null; storyId: string; document: DocumentRef }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots)/(${UUID})(?:/(refresh|restore))?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots)/(${UUID})(?:/(refresh|restore|content))?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -90,6 +92,9 @@ async function route(
   if (method === "POST" && resource === "stories" && action === "refresh") {
     await refreshStory(instance, id)
     response.writeHead(204).end()
+  } else if (method === "GET" && resource === "stories" && action === "content") {
+    const content = await storyContent(id, (name) => instance.documents.get(name))
+    response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(content))
   } else if (method === "GET" && resource === "snapshots" && !action) {
     const content = await snapshotPreview(id)
     if (!content) return response.writeHead(404).end()

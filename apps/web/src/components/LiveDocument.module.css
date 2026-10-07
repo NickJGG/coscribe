@@ -194,6 +194,8 @@
 
 .authorship {
   position: relative;
+  /* Caret labels and the author tooltip can stick out past a phone's edge; don't let them scroll the page. */
+  overflow-x: clip;
 }
 
 .authorship[data-show-authors] :global(span[data-author]) {

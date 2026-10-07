@@ -1,19 +1,21 @@
 import { createHash } from "node:crypto"
 import { updateYFragment, yXmlFragmentToProseMirrorRootNode } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
-import { chapterSchema, DOCUMENT_FIELD } from "@coscribe/editor"
+import { chapterSchema, DOCUMENT_FIELD, entrySchema, type DocumentKind } from "@coscribe/editor"
 
 export type ChapterContent = ReturnType<typeof yXmlFragmentToProseMirrorRootNode>
 
-export function chapterContent(doc: Y.Doc): ChapterContent {
-  return yXmlFragmentToProseMirrorRootNode(doc.getXmlFragment(DOCUMENT_FIELD), chapterSchema)
+const SCHEMA = { chapter: chapterSchema, entry: entrySchema } satisfies Record<DocumentKind, unknown>
+
+export function chapterContent(doc: Y.Doc, kind: DocumentKind = "chapter"): ChapterContent {
+  return yXmlFragmentToProseMirrorRootNode(doc.getXmlFragment(DOCUMENT_FIELD), SCHEMA[kind])
 }
 
-export function decodeChapter(state: Uint8Array): ChapterContent {
+export function decodeChapter(state: Uint8Array, kind: DocumentKind = "chapter"): ChapterContent {
   const doc = new Y.Doc()
   try {
     Y.applyUpdate(doc, state)
-    return chapterContent(doc)
+    return chapterContent(doc, kind)
   } finally {
     doc.destroy()
   }

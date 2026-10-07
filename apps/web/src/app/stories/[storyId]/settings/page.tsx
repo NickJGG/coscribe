@@ -5,7 +5,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
 import { canChangeRole, canLeave, canManageInvites, canRemove, ROLE_LABEL } from "@/lib/story-roles";
-import { deleteStory, leaveStory, removeMember, setMemberRole, transferHost, updateStory } from "@/lib/actions/stories";
+import {
+  deleteStory,
+  leaveStory,
+  removeMember,
+  setMemberRole,
+  setStoryFinished,
+  transferHost,
+  updateStory,
+} from "@/lib/actions/stories";
 import { createInviteLink, deleteInvite, inviteFriend } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
@@ -40,6 +48,36 @@ export default async function StorySettingsPage(props: PageProps<"/stories/[stor
               <button className="button button-primary">Save</button>
             </div>
           </ActionForm>
+        </section>
+      )}
+
+      {myRole === "host" && (
+        <section className="section">
+          <h2>Finished</h2>
+          {story.status === "finished" ? (
+            <>
+              <p className="muted">
+                This story is Finished: every Chapter and Entry is locked, and readers get the{" "}
+                <Link href={`/stories/${story.id}/read`}>Reader View</Link>. Reopen it to keep writing.
+              </p>
+              <ActionForm action={setStoryFinished.bind(null, story.id, false)}>
+                <button className="button">Reopen story</button>
+              </ActionForm>
+            </>
+          ) : (
+            <>
+              <p className="muted">
+                Done writing? Finishing locks every Chapter and Entry for everyone, live, and opens the Reader View
+                with Credits. You can reopen it any time.
+              </p>
+              <ActionForm
+                action={setStoryFinished.bind(null, story.id, true)}
+                confirm={`Mark "${story.title}" Finished? Editing locks for everyone until you reopen it.`}
+              >
+                <button className="button button-primary">Mark Finished</button>
+              </ActionForm>
+            </>
+          )}
         </section>
       )}
 

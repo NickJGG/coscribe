@@ -1,4 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
+import type { DocumentKind } from "@coscribe/editor";
 
 /** A server-to-server call to apps/sync, authorized with SYNC_SECRET. Callers check permissions first. */
 async function syncFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -40,4 +41,18 @@ export async function restoreSnapshotLive(snapshotId: string): Promise<boolean> 
   if (response.status === 404) return false;
   if (!response.ok) throw new Error(`snapshot restore failed: ${response.status}`);
   return true;
+}
+
+export type StoryContent = Record<DocumentKind, Record<string, JSONContent>>;
+
+/** Every Chapter and Entry body in a story, keyed by id. Null if the sync server can't be reached. */
+export async function fetchStoryContent(storyId: string): Promise<StoryContent | null> {
+  try {
+    const response = await syncFetch(`/stories/${storyId}/content`);
+    if (!response.ok) throw new Error(`story content failed: ${response.status}`);
+    return (await response.json()) as StoryContent;
+  } catch (error) {
+    console.error(`story content for ${storyId} failed`, error);
+    return null;
+  }
 }

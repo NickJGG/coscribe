@@ -23,6 +23,12 @@
   font-size: 0.9375rem;
 }
 
+@media (max-width: 480px) {
+  .nav {
+    gap: 6px 12px;
+  }
+}
+
 .nav a {
   text-underline-offset: 3px;
 }

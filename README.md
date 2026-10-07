@@ -65,7 +65,8 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 ```
 apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username],
                             friends, stories, stories/[storyId](/settings), invite/[token],
-                            stories/[storyId]/chapters/[chapterId], stories/[storyId]/bible/[entryId]
+                            stories/[storyId]/chapters/[chapterId], stories/[storyId]/bible/[entryId],
+                            stories/[storyId]/read(/[chapterId], /bible, /credits)
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
 apps/web/src/components/    Shared UI, including LiveDocument (the Tiptap editor) and StoryChat
@@ -108,3 +109,11 @@ Co-hosts and up open History on a Chapter. The web app checks permissions throug
 ## Story Chat
 
 `chat_messages` rows are readable and writable only by members (RLS via `story_role()`), and the table is in the `supabase_realtime` publication. The panel lives in `stories/[storyId]/layout.tsx`, so it stays subscribed while moving between a story's pages, and it's never rendered for Viewers. Realtime applies the same select policy per subscriber, so a removed Writer stops receiving messages.
+
+## Finished and the Reader View
+
+The Host marks a story Finished (or reopens it) in its settings, through the `set_story_finished()` RPC. The web app then calls `POST /stories/<id>/refresh`, and apps/sync switches every open Chapter and Entry to read-only live, since `onAuthenticate` and the refresh treat a Finished story like a locked Chapter.
+
+A Finished story gets a Reader View at `/stories/<id>/read`: a title page with contents, each Chapter, the Story Bible on one page, and Credits. Its text comes from `GET /stories/<id>/content` on apps/sync, which returns every Chapter and Entry body as ProseMirror JSON (open documents read live, the rest decoded from storage), rendered server-side. Credits count the characters carrying each Writer's `author` mark, Chapters and Story Bible separately, and include former Writers whose text survives.
+
+Profiles at `/u/<username>` list the Public stories that user hosts or writes in, Finished ones first.

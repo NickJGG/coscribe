@@ -110,3 +110,17 @@ export async function leaveStory(storyId: string): Promise<ActionResult> {
   await refreshSyncAccess(storyId);
   redirect("/stories");
 }
+
+/** Host only. Open editors switch to read-only (or back) live. */
+export async function setStoryFinished(storyId: string, finished: boolean): Promise<ActionResult> {
+  if (!isUuid(storyId)) return INVALID;
+  await requireProfile(`/stories/${storyId}/settings`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_finished", { p_story: storyId, p_finished: finished });
+  if (error) return errorText(error);
+
+  await refreshSyncAccess(storyId);
+  refresh();
+  return null;
+}

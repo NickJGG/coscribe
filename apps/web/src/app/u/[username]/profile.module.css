@@ -29,3 +29,25 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.storyTitle {
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.storyTitle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.finished {
+  box-shadow: inset 3px 0 0 var(--author);
+}
+
+.finishedPill {
+  border-color: var(--author);
+  color: var(--ink);
+}

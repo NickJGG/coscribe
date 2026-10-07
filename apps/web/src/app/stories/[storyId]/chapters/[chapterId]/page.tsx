@@ -50,6 +50,11 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
             Chapter {index + 1} of {chapters.length}
           </span>
           {chapter.locked && <span className="pill">Locked</span>}
+          {story.status === "finished" && (
+            <Link href={`/stories/${story.id}/read/${chapter.id}`} className="button button-small">
+              Reader View
+            </Link>
+          )}
           {canManageChapters(myRole) && story.status !== "finished" && (
             <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
               <button className="button button-small">{chapter.locked ? "Unlock" : "Lock"}</button>

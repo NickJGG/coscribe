@@ -82,6 +82,12 @@ a {
   gap: 24px;
 }
 
+@media (max-width: 600px) {
+  .page {
+    padding-top: 24px;
+  }
+}
+
 .muted {
   color: var(--ink-muted);
 }

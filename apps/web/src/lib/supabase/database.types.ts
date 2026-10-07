@@ -195,14 +195,14 @@ isOneToOne: false
                   ]
                 },"stories": {
                   Row: {
-                    "created_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
+                    "created_at": string,"finished_at": string | null,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "created_at"?: string,"finished_at"?: string | null,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "created_at"?: string,"finished_at"?: string | null,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Relationships: [
                     
@@ -294,6 +294,9 @@ isOneToOne: false
                            },
 "set_member_role":
 { Args: { "p_role": Database["public"]['Enums']["member_role"],"p_story": string,"p_user": string }; Returns: undefined
+                           },
+"set_story_finished":
+{ Args: { "p_finished": boolean,"p_story": string }; Returns: undefined
                            },
 "story_role":
 { Args: { "p_story": string }; Returns: Database["public"]['Enums']["member_role"]

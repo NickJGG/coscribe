@@ -149,6 +149,7 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
 
   return (
     <>
+      <div className={styles.clearance} aria-hidden />
       <button
         type="button"
         className={`button ${styles.toggle}`}

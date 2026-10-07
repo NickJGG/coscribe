@@ -62,7 +62,7 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
       <header className={styles.header}>
         <div className={styles.meta}>
           <span className="pill">{story.visibility === "public" ? "Public" : "Private"}</span>
-          {story.status === "finished" && <span className="pill">Finished</span>}
+          {finished && <span className="pill">Finished</span>}
           {myRole && (
             <span className="pill">
               You&rsquo;re {myRole === "host" ? "the" : "a"} {ROLE_LABEL[myRole]}
@@ -70,11 +70,23 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
           )}
         </div>
         <h1 className={styles.title}>{story.title}</h1>
-        {myRole && (
-          <div>
-            <Link href={`/stories/${story.id}/settings`} className="button button-small">
-              Settings
-            </Link>
+        {(finished || myRole) && (
+          <div className="row-actions">
+            {finished && (
+              <>
+                <Link href={`/stories/${story.id}/read`} className="button button-primary">
+                  Read the story
+                </Link>
+                <Link href={`/stories/${story.id}/read/credits`} className="button">
+                  Credits
+                </Link>
+              </>
+            )}
+            {myRole && (
+              <Link href={`/stories/${story.id}/settings`} className={finished ? "button" : "button button-small"}>
+                Settings
+              </Link>
+            )}
           </div>
         )}
       </header>
