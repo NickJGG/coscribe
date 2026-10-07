@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
+import { authorColorCss } from "@/lib/profile-rules";
 import { ROLE_LABEL } from "@/lib/story-roles";
 import { PersonLink } from "@/components/PersonLink";
 import { ReaderNav, Unavailable } from "../ReaderNav";
@@ -45,7 +46,7 @@ export default async function ReaderCreditsPage(props: PageProps<"/stories/[stor
               <li
                 key={c.id}
                 className={styles.credit}
-                style={{ "--author": c.person?.author_color } as React.CSSProperties}
+                style={{ "--author": c.person && authorColorCss(c.person.author_color) } as React.CSSProperties}
               >
                 <div className={styles.creditName}>
                   <span>

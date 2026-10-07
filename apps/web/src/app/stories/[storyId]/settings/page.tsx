@@ -4,18 +4,21 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
+import { colorName } from "@/lib/profile-rules";
 import { canChangeRole, canLeave, canManageInvites, canRemove, ROLE_LABEL } from "@/lib/story-roles";
 import {
   deleteStory,
   leaveStory,
   removeMember,
   setMemberRole,
+  setStoryColor,
   setStoryFinished,
   transferHost,
   updateStory,
 } from "@/lib/actions/stories";
 import { createInviteLink, deleteInvite, inviteFriend } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
+import { ColorSwatches } from "@/components/ColorSwatches";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PersonLink } from "@/components/PersonLink";
 import { StoryFields } from "@/components/StoryFields";
@@ -50,6 +53,13 @@ export default async function StorySettingsPage(props: PageProps<"/stories/[stor
           </ActionForm>
         </section>
       )}
+
+      <YourColor
+        storyId={story.id}
+        members={members.map((m) => m.profile)}
+        userId={me.userId}
+        profileColor={me.profile.author_color}
+      />
 
       {myRole === "host" && (
         <section className="section">
@@ -147,6 +157,41 @@ export default async function StorySettingsPage(props: PageProps<"/stories/[stor
         )}
       </section>
     </div>
+  );
+}
+
+function YourColor({
+  storyId,
+  members,
+  userId,
+  profileColor,
+}: {
+  storyId: string;
+  members: { id: string; username: string; author_color: string }[];
+  userId: string;
+  profileColor: string;
+}) {
+  const mine = members.find((m) => m.id === userId)?.author_color ?? profileColor;
+  const taken = new Map(members.filter((m) => m.id !== userId).map((m) => [m.author_color, m.username]));
+  const owner = taken.get(profileColor);
+
+  return (
+    <section className="section">
+      <h2>Your color in this Story</h2>
+      {mine !== profileColor && (
+        <p className="muted">
+          {owner
+            ? `You're ${colorName(mine)} in this Story because ${owner} is ${colorName(profileColor)}.`
+            : `You picked ${colorName(mine)} here. Your profile color is ${colorName(profileColor)}.`}
+        </p>
+      )}
+      <ActionForm action={setStoryColor.bind(null, storyId)} className={styles.form}>
+        <ColorSwatches key={mine} name="author_color" selected={mine} taken={taken} />
+        <div>
+          <button className="button">Save color</button>
+        </div>
+      </ActionForm>
+    </section>
   );
 }
 

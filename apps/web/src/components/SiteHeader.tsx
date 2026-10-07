@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { signOut } from "@/lib/actions/auth";
-import { AuthorBadge } from "./AuthorBadge";
+import { Avatar } from "./Avatar";
 import styles from "./SiteHeader.module.css";
 
 export async function SiteHeader() {
@@ -20,7 +20,8 @@ export async function SiteHeader() {
             <NavLink href="/stories" label="Stories" count={counts?.invites} />
             <NavLink href="/friends" label="Friends" count={counts?.requests} />
             <Link href={`/u/${viewer.profile.username}`} className={styles.me}>
-              <AuthorBadge username={viewer.profile.username} color={viewer.profile.author_color} />
+              <Avatar name={viewer.profile.username} color={viewer.profile.author_color} />
+              {viewer.profile.username}
             </Link>
             <Link href="/settings">Settings</Link>
           </>

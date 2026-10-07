@@ -30,7 +30,7 @@
 }
 
 .heading {
-  font-size: 1.25rem;
+  font-size: var(--step-1);
 }
 
 .body {

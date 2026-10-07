@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { updateYFragment, yXmlFragmentToProseMirrorRootNode } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
-import { chapterSchema, DOCUMENT_FIELD, entrySchema, type DocumentKind } from "@coscribe/editor"
+import { chapterSchema, countAuthorCharacters, DOCUMENT_FIELD, entrySchema, type DocumentKind } from "@coscribe/editor"
 
 export type ChapterContent = ReturnType<typeof yXmlFragmentToProseMirrorRootNode>
 
@@ -24,6 +24,17 @@ export function decodeChapter(state: Uint8Array, kind: DocumentKind = "chapter")
 /** Equal for equal text, formatting, and `author` marks, whatever edits led there. */
 export function contentHash(content: ChapterContent): string {
   return createHash("sha256").update(JSON.stringify(content.toJSON())).digest("hex")
+}
+
+export type ChapterStats = { words: number; authorChars: Record<string, number> }
+
+/** Word count, plus surviving characters per author (the tally Credits uses). */
+export function chapterStats(content: ChapterContent): ChapterStats {
+  const text = content.textBetween(0, content.content.size, "\n", "\n")
+  return {
+    words: text.match(/\S+/gu)?.length ?? 0,
+    authorChars: Object.fromEntries(countAuthorCharacters(content.toJSON())),
+  }
 }
 
 /** Rewrites the doc to `target` as a diff, so unchanged paragraphs (and carets in them) stay put. */

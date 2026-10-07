@@ -50,7 +50,7 @@
 }
 
 .heading {
-  font-size: 1.125rem;
+  font-size: var(--step-1);
 }
 
 .messages {
@@ -85,7 +85,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 0.8125rem;
+  font-size: var(--step--1);
 }
 
 .author {

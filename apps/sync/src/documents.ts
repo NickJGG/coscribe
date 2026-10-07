@@ -1,7 +1,7 @@
 import type * as Y from "yjs"
 import { documentName, type DocumentKind } from "@coscribe/editor"
 import { decideAccess, type Access, type AccessFacts } from "./access"
-import { chapterContent, decodeChapter } from "./chapter-content"
+import { chapterContent, chapterStats, decodeChapter } from "./chapter-content"
 import { sql } from "./db"
 
 const TABLE: Record<DocumentKind, string> = { chapter: "chapters", entry: "entries" }
@@ -43,9 +43,39 @@ export async function fetchDocument(doc: DocumentRef): Promise<Uint8Array | null
   return row?.ydoc ?? null
 }
 
-/** A no-op once the document is deleted. */
-export async function storeDocument(doc: DocumentRef, state: Uint8Array): Promise<void> {
-  await sql`update ${sql("public." + TABLE[doc.kind])} set ydoc = ${state} where id = ${doc.id}`
+/** A no-op once the document is deleted. Chapters also get their stats, read from the live `document`. */
+export async function storeDocument(doc: DocumentRef, state: Uint8Array, document: Y.Doc): Promise<void> {
+  if (doc.kind === "entry") {
+    await sql`update public.entries set ydoc = ${state} where id = ${doc.id}`
+    return
+  }
+  const { words, authorChars } = chapterStats(chapterContent(document))
+  await sql`
+    update public.chapters
+    set ydoc = ${state}, word_count = ${words}, author_chars = ${sql.json(authorChars)}, edited_at = now()
+    where id = ${doc.id}
+  `
+}
+
+/**
+ * Fills stats for Chapters stored before they existed. Their last edit is unknown, so edited_at takes the
+ * latest Snapshot (or creation) time. Skips any Chapter a live store reached first.
+ */
+export async function backfillChapterStats(): Promise<number> {
+  const rows = await sql<{ id: string; ydoc: Uint8Array }[]>`
+    select id, ydoc from public.chapters where edited_at is null and ydoc is not null
+  `
+  for (const { id, ydoc } of rows) {
+    const { words, authorChars } = chapterStats(decodeChapter(ydoc))
+    await sql`
+      update public.chapters c
+      set word_count = ${words},
+          author_chars = ${sql.json(authorChars)},
+          edited_at = greatest(c.created_at, (select max(taken_at) from public.chapter_snapshots where chapter_id = c.id))
+      where c.id = ${id} and c.edited_at is null
+    `
+  }
+  return rows.length
 }
 
 export type StoryContent = Record<DocumentKind, Record<string, Record<string, unknown>>>

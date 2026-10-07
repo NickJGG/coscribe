@@ -7,7 +7,11 @@ import type { StoryAuthor, Writer } from "@/components/LiveDocument";
 
 const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2 };
 
-/** A Story the viewer may see (null otherwise), its members Host-first, and the viewer's own role. */
+/**
+ * A Story the viewer may see (null otherwise), its members Host-first, and the viewer's own role. Each
+ * member's `profile.author_color` is their effective color in this Story; `story_color` is set only when
+ * that differs from their profile color.
+ */
 export const getStory = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return null;
   const supabase = await createClient();
@@ -22,12 +26,14 @@ export const getStory = cache(async (storyId: string) => {
   const [{ data: members }, viewer] = await Promise.all([
     supabase
       .from("story_members")
-      .select("role, joined_at, profile:profiles (id, username, author_color)")
+      .select("role, joined_at, story_color:author_color, profile:profiles (id, username, author_color)")
       .eq("story_id", storyId),
     getViewer(),
   ]);
 
-  const sorted = (members ?? []).sort(
+  const sorted = (members ?? [])
+    .map((m) => ({ ...m, profile: { ...m.profile, author_color: m.story_color ?? m.profile.author_color } }))
+    .sort(
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.profile.username.localeCompare(b.profile.username)
   );
   const myRole = sorted.find((m) => m.profile.id === viewer?.userId)?.role ?? null;
@@ -73,15 +79,14 @@ export const getEntry = cache(async (storyId: string, entryId: string) => {
 
 /** How the viewer shows up in a live document: a named caret for members, nothing for Viewers. */
 export function liveWriter({
-  myRole,
+  members,
   viewer,
 }: {
-  myRole: MemberRole | null;
+  members: { profile: { id: string; username: string; author_color: string } }[];
   viewer: Awaited<ReturnType<typeof getViewer>>;
 }): Writer | null {
-  return myRole && viewer?.profile
-    ? { userId: viewer.userId, name: viewer.profile.username, color: viewer.profile.author_color }
-    : null;
+  const me = members.find((m) => m.profile.id === viewer?.userId);
+  return me ? { userId: me.profile.id, name: me.profile.username, color: me.profile.author_color } : null;
 }
 
 /** Members' names and Author Colors, for tinting and labelling `author` marks. */

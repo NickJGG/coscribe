@@ -19,6 +19,8 @@ import {
 } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relative-time";
+import { authorColorCss } from "@/lib/profile-rules";
+import { Avatar } from "./Avatar";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
@@ -154,6 +156,7 @@ function LiveEditor({
       CollaborationCaret.configure({
         provider: session.provider,
         user: writer ?? { viewer: true },
+        render: renderCaret,
       }),
       Placeholder.configure({ placeholder }),
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
@@ -171,6 +174,22 @@ function LiveEditor({
       <EditorContent editor={editor} />
     </>
   );
+}
+
+/** Like CollaborationCaret's default, but colored through CSS so the label follows the theme. */
+function renderCaret(user: Record<string, unknown>): HTMLElement {
+  const caret = document.createElement("span");
+  caret.classList.add("collaboration-carets__caret");
+  if (typeof user.color === "string" && HEX_COLOR.test(user.color)) {
+    caret.style.setProperty("--author", authorColorCss(user.color));
+  }
+  if (typeof user.name === "string") {
+    const label = document.createElement("div");
+    label.classList.add("collaboration-carets__label");
+    label.textContent = user.name;
+    caret.append(label);
+  }
+  return caret;
 }
 
 function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
@@ -250,7 +269,7 @@ export function Authorship({ authors, show, children }: { authors: StoryAuthor[]
     () =>
       authors
         .filter((a) => HEX_COLOR.test(a.color))
-        .map((a) => `span[data-author="${a.id}"]{--author-tint:${a.color}}`)
+        .map((a) => `span[data-author="${a.id}"]{--author-tint:${authorColorCss(a.color)}}`)
         .join(""),
     [authors]
   );
@@ -319,7 +338,8 @@ function Online({ provider, noun }: { provider: HocuspocusProvider; noun: string
   return (
     <ul className={styles.online} aria-label={`In this ${noun}`}>
       {present.writers.map((w) => (
-        <li key={w.key} className={styles.person} style={{ "--author": w.color } as React.CSSProperties}>
+        <li key={w.key} className={styles.person}>
+          <Avatar name={w.name} color={w.color} size="sm" />
           {w.name}
         </li>
       ))}

@@ -22,7 +22,7 @@
 }
 
 .title {
-  font-size: 2rem;
+  font-size: var(--step-3);
   overflow-wrap: anywhere;
 }
 
@@ -47,6 +47,6 @@
   }
 
   .title {
-    font-size: 1.625rem;
+    font-size: var(--step-2);
   }
 }

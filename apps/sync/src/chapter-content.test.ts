@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
 import { chapterSchema, DOCUMENT_FIELD, entrySchema } from "@coscribe/editor"
-import { chapterContent, contentHash, decodeChapter, replaceChapterContent } from "./chapter-content"
+import { chapterContent, chapterStats, contentHash, decodeChapter, replaceChapterContent } from "./chapter-content"
 
 const mia = { userId: "mia", at: 1 }
 const jordan = { userId: "jordan", at: 2 }
@@ -59,5 +59,21 @@ describe("chapter content", () => {
     expect(chapterContent(live).toJSON()).toEqual(snapshot.toJSON())
     expect(chapterContent(client).toJSON()).toEqual(snapshot.toJSON())
     expect(live.getXmlFragment(DOCUMENT_FIELD).get(0)).toBe(keptParagraph)
+  })
+})
+
+describe("chapterStats", () => {
+  it("counts words across paragraphs and characters per author", () => {
+    const doc = chapterDoc(para(["Once upon ", mia], ["a time", jordan]), para(["The end.", mia]))
+    expect(chapterStats(chapterContent(doc))).toEqual({ words: 6, authorChars: { mia: 18, jordan: 6 } })
+  })
+
+  it("doesn't join words across a paragraph break", () => {
+    const doc = chapterDoc(para(["end", mia]), para(["start", mia]))
+    expect(chapterStats(chapterContent(doc)).words).toBe(2)
+  })
+
+  it("is empty for an empty Chapter", () => {
+    expect(chapterStats(chapterContent(new Y.Doc()))).toEqual({ words: 0, authorChars: {} })
   })
 })

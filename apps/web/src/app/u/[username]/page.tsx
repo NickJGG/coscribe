@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { ROLE_LABEL } from "@/lib/story-roles";
+import { authorColorCss } from "@/lib/profile-rules";
 import styles from "./profile.module.css";
 
 const getProfile = cache(async (username: string) => {
@@ -32,7 +33,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
   });
 
   return (
-    <div className="page" style={{ "--author": profile.author_color } as React.CSSProperties}>
+    <div className="page" style={{ "--author": authorColorCss(profile.author_color) } as React.CSSProperties}>
       <header className={styles.header}>
         <span className={styles.avatar} aria-hidden>
           {profile.username[0]!.toUpperCase()}

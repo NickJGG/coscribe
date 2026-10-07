@@ -30,38 +30,6 @@
   border-color: var(--danger);
 }
 
-.swatches {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, 40px);
-  gap: 10px;
-  margin-top: 6px;
-}
-
-.swatch {
-  position: relative;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--swatch);
-  cursor: pointer;
-}
-
-.swatch input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.swatch:has(input:checked) {
-  box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--swatch);
-}
-
-.swatch:has(input:focus-visible) {
-  outline: 2px solid var(--focus);
-  outline-offset: 5px;
-}
-
 .error {
   color: var(--danger);
 }

@@ -49,7 +49,7 @@ Another **User** with a mutually accepted friend connection.
 _Avoid_: Contact, follower
 
 **Author Color**:
-The color a **User** picks for their live cursor and their text tint.
+The color a **User** picks for their live cursor and their text tint, which a **Story** replaces with a free one when another **Writer** there already has it.
 _Avoid_: User color, cursor color
 
 ### Access
@@ -91,6 +91,28 @@ The page in the **Reader View** listing each **Writer** and their contribution.
 The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
 
+**Alias**:
+Another name an **Entry** goes by in the prose, such as "Aldous" for "Keeper Aldous".
+_Avoid_: Nickname, synonym
+
+**Mention**:
+A place in a **Chapter**'s text where an **Entry**'s name or **Alias** appears.
+_Avoid_: Link, reference, tag
+
+### Presence and notifications
+
+**Online**:
+A **User**'s state of having Coscribe open recently, shown to their **Friends** unless they turn it off.
+_Avoid_: Active, available
+
+**Presence**:
+Which **Chapter** a **Writer** is in right now, shown only to people who can read that **Story**.
+_Avoid_: Status, location, activity
+
+**Notification**:
+An in-app message telling one **User** that something happened in a **Story** they belong to or were invited to.
+_Avoid_: Alert, activity, update
+
 ## Relationships
 
 - A **Story** has exactly one **Host**, zero or more **Co-hosts**, and one or more **Writers** (the **Host** counts as one)
@@ -99,6 +121,9 @@ _Avoid_: Comments, messages
 - A **Chapter** has zero or more **Snapshots**
 - An **Invite** makes exactly one **User** a **Writer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
+- An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Mentions** of **Entries**
+- A **Notification** has exactly one recipient **User**
+- **Viewers** have no **Presence**; they are only ever counted, never named
 
 ## Example dialogue
 
@@ -111,4 +136,5 @@ _Avoid_: Comments, messages
 
 - "public story" first sounded like strangers could join and edit. Resolved: **Visibility** only governs viewing; editing is always invite-only.
 - "invite by link" could mean a reusable share link. Resolved: an **Invite Link** is single-use, for one person.
+- "watching" could suggest a named audience. Resolved: **Viewers** are anonymous counts everywhere; only **Writers** have **Presence**.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.

@@ -45,14 +45,14 @@ isOneToOne: false
                   ]
                 },"chapters": {
                   Row: {
-                    "created_at": string,"id": string,"locked": boolean,"position": number,"story_id": string,"title": string,"ydoc": string | null
+                    "author_chars": NonNullable<Json>,"created_at": string,"edited_at": string | null,"id": string,"locked": boolean,"position": number,"story_id": string,"title": string,"word_count": number,"ydoc": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"locked"?: boolean,"position": number,"story_id": string,"title": string,"ydoc"?: string | null
+                    "author_chars"?: NonNullable<Json>,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"locked"?: boolean,"position": number,"story_id": string,"title": string,"word_count"?: number,"ydoc"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"locked"?: boolean,"position"?: number,"story_id"?: string,"title"?: string,"ydoc"?: string | null
+                    "author_chars"?: NonNullable<Json>,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"locked"?: boolean,"position"?: number,"story_id"?: string,"title"?: string,"word_count"?: number,"ydoc"?: string | null
                   }
                   Relationships: [
                     {
@@ -209,14 +209,14 @@ isOneToOne: false
                   ]
                 },"story_members": {
                   Row: {
-                    "joined_at": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
+                    "author_color": string | null,"joined_at": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
+                    "author_color"?: string | null,"joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
                   }
                   Update: {
-                    "joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"user_id"?: string
+                    "author_color"?: string | null,"joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -250,6 +250,12 @@ isOneToOne: false
                            },
 "are_friends":
 { Args: { "a": string,"b": string }; Returns: boolean
+                           },
+"assign_story_color":
+{ Args: { "p_story": string,"p_user": string }; Returns: undefined
+                           },
+"author_palette":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
 "authorize_restore":
 { Args: { "p_snapshot": string }; Returns: string
@@ -289,14 +295,23 @@ isOneToOne: false
 "move_chapter":
 { Args: { "p_chapter": string,"p_direction": number }; Returns: undefined
                            },
+"next_free_color":
+{ Args: { "p_preferred": string,"p_taken": (string)[] }; Returns: string
+                           },
 "remove_member":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined
                            },
 "set_member_role":
 { Args: { "p_role": Database["public"]['Enums']["member_role"],"p_story": string,"p_user": string }; Returns: undefined
                            },
+"set_story_color":
+{ Args: { "p_color": string,"p_story": string }; Returns: undefined
+                           },
 "set_story_finished":
 { Args: { "p_finished": boolean,"p_story": string }; Returns: undefined
+                           },
+"story_colors_taken":
+{ Args: { "p_story": string,"p_user": string }; Returns: (string)[]
                            },
 "story_role":
 { Args: { "p_story": string }; Returns: Database["public"]['Enums']["member_role"]

@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { isUsernameAvailable, saveProfile, type ProfileFormState } from "@/lib/actions/profile";
-import { AUTHOR_COLORS, normalizeUsername, usernameError } from "@/lib/profile-rules";
+import { normalizeUsername, usernameError } from "@/lib/profile-rules";
+import { ColorSwatches } from "./ColorSwatches";
 import styles from "./ProfileForm.module.css";
 
 type Availability = "idle" | "checking" | "available" | "taken";
@@ -91,21 +92,11 @@ export function ProfileForm({
 
       <fieldset className={styles.field}>
         <legend className={styles.label}>Author color</legend>
-        <p className="muted">Your cursor and your text tint, wherever you write.</p>
-        <div className={styles.swatches}>
-          {AUTHOR_COLORS.map((color) => (
-            <label key={color} className={styles.swatch} style={{ "--swatch": color } as React.CSSProperties}>
-              <input
-                type="radio"
-                name="author_color"
-                value={color}
-                defaultChecked={color === state.authorColor}
-                required
-              />
-              <span className="sr-only">{color}</span>
-            </label>
-          ))}
-        </div>
+        <p className="muted">
+          Your cursor and your text tint, wherever you write. In a Story where another Writer already has it, you
+          get the nearest free color.
+        </p>
+        <ColorSwatches name="author_color" selected={state.authorColor} />
         {state.colorError && <p className={styles.error}>{state.colorError}</p>}
       </fieldset>
 

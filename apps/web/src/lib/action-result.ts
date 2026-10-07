@@ -13,6 +13,8 @@ const RPC_ERRORS: Record<string, string> = {
   host_cannot_leave: "Hand off Host before leaving.",
   story_finished: "This story is Finished.",
   last_chapter: "A story needs at least one Chapter.",
+  not_a_color: "Pick one of the colors.",
+  color_taken: "Another Writer in this story has that color.",
 };
 
 export function errorText(error: { message: string } | null): ActionResult {

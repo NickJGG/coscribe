@@ -1,7 +1,8 @@
 /**
  * Hocuspocus server for live Chapter and Entry documents.
  *
- * - Yjs state persists to `chapters.ydoc` / `entries.ydoc`.
+ * - Yjs state persists to `chapters.ydoc` / `entries.ydoc`. Chapters also store their word count and
+ *   per-author characters; on startup, Chapters stored before those columns existed are backfilled.
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
  *   story's membership, Visibility, status, and (for Chapters) lock state.
  * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts).
@@ -20,7 +21,14 @@ import { Server, type Hocuspocus } from "@hocuspocus/server"
 import { ACCESS_REVOKED, parseDocumentName, type AccessMessage } from "@coscribe/editor"
 import { verifyUser } from "./auth"
 import { env } from "./env"
-import { documentAccess, fetchDocument, storeDocument, storyContent, type DocumentRef } from "./documents"
+import {
+  backfillChapterStats,
+  documentAccess,
+  fetchDocument,
+  storeDocument,
+  storyContent,
+  type DocumentRef,
+} from "./documents"
 import { chapterStored, chapterUnloading, restoreSnapshot, snapshotPreview } from "./snapshots"
 
 type Context = { userId: string | null; storyId: string; document: DocumentRef }
@@ -38,9 +46,9 @@ const server = new Server<Context>({
         const doc = parseDocumentName(documentName)
         return doc ? fetchDocument(doc) : null
       },
-      store: async ({ documentName, state }) => {
+      store: async ({ documentName, state, document }) => {
         const doc = parseDocumentName(documentName)
-        if (doc) await storeDocument(doc, state)
+        if (doc) await storeDocument(doc, state, document)
       },
     }),
   ],
@@ -143,3 +151,8 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
 }
 
 server.listen()
+
+backfillChapterStats().then(
+  (count) => count && console.log(`backfilled stats for ${count} chapters`),
+  (error) => console.error("chapter stats backfill failed", error)
+)

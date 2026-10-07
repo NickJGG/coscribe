@@ -4,12 +4,12 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px var(--gutter);
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--hair);
 }
 
 .wordmark {
   font-family: var(--font-prose), Georgia, serif;
-  font-size: 1.25rem;
+  font-size: var(--step-1);
   font-weight: 700;
   text-decoration: none;
 }
@@ -34,6 +34,10 @@
 }
 
 .me {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
   text-decoration: none;
 }
 

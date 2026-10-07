@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { authorColorCss } from "@/lib/profile-rules";
 import styles from "./StoryChat.module.css";
 
 type Person = { id: string; username: string; author_color: string };
@@ -76,17 +77,23 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
     [messages, people]
   );
 
-  // Writers who joined after this page loaded.
+  // Writers who joined after this page loaded, in their color for this Story.
   useEffect(() => {
     if (!missing.length) return;
     void supabase
       .from("profiles")
-      .select("id, username, author_color")
+      .select("id, username, author_color, story_members (author_color)")
+      .eq("story_members.story_id", storyId)
       .in("id", missing)
       .then(({ data }) => {
-        if (data?.length) setPeople((current) => new Map([...current, ...data.map((p) => [p.id, p] as const)]));
+        if (!data?.length) return;
+        const found = data.map(({ story_members, ...p }) => ({
+          ...p,
+          author_color: story_members[0]?.author_color ?? p.author_color,
+        }));
+        setPeople((current) => new Map([...current, ...found.map((p) => [p.id, p] as const)]));
       });
-  }, [supabase, missing]);
+  }, [supabase, storyId, missing]);
 
   useEffect(() => {
     const list = listRef.current;
@@ -202,7 +209,7 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
                   <div className={styles.byline}>
                     <span
                       className={styles.author}
-                      style={{ "--author": person?.author_color ?? "var(--rule)" } as React.CSSProperties}
+                      style={{ "--author": person ? authorColorCss(person.author_color) : "var(--rule)" } as React.CSSProperties}
                     >
                       {person?.username ?? "…"}
                     </span>

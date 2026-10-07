@@ -54,7 +54,7 @@
 
 .eyebrow {
   color: var(--ink-muted);
-  font-size: 0.8125rem;
+  font-size: var(--step--1);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
 
 .byline {
   font-family: var(--font-prose), Georgia, serif;
-  font-size: 1.125rem;
+  font-size: var(--step-1);
   font-style: italic;
   overflow-wrap: anywhere;
 }
@@ -85,7 +85,7 @@
   padding: 10px 0;
   border-bottom: 1px dotted var(--rule);
   font-family: var(--font-prose), Georgia, serif;
-  font-size: 1.0625rem;
+  font-size: var(--step-1);
   counter-increment: chapter;
 }
 
@@ -209,7 +209,7 @@
 }
 
 .entryName {
-  font-size: 1.375rem;
+  font-size: var(--step-2);
   overflow-wrap: anywhere;
 }
 

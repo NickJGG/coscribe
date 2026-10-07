@@ -1,6 +1,6 @@
 .title {
   font-family: var(--font-prose), Georgia, serif;
-  font-size: 1.0625rem;
+  font-size: var(--step-1);
   font-weight: 600;
   text-decoration: none;
   overflow-wrap: anywhere;
