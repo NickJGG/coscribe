@@ -5,9 +5,9 @@ import { chapterExtensions, documentName, entryExtensions, parseDocumentName } f
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
 
-  it("allows only paragraphs, Scene Breaks, bold, and italic", () => {
+  it("allows only paragraphs, Scene Breaks, bold, italic, and authorship", () => {
     expect(Object.keys(schema.nodes).sort()).toEqual(["doc", "paragraph", "sceneBreak", "text"])
-    expect(Object.keys(schema.marks).sort()).toEqual(["bold", "italic"])
+    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic"])
   })
 
   it("accepts a Chapter with a Scene Break between paragraphs", () => {
@@ -36,7 +36,7 @@ describe("entry schema", () => {
       "sceneBreak",
       "text",
     ])
-    expect(Object.keys(schema.marks).sort()).toEqual(["bold", "italic"])
+    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic"])
   })
 
   it("accepts an Entry body with a list", () => {

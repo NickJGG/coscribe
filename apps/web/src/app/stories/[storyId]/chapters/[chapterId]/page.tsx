@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getChapters, getStory, liveWriter } from "@/lib/story";
+import { getChapters, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
@@ -57,7 +57,13 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         <h1 className={styles.title}>{chapter.title}</h1>
       </header>
 
-      <LiveDocument key={chapter.id} kind="chapter" id={chapter.id} writer={liveWriter(data)} />
+      <LiveDocument
+        key={chapter.id}
+        kind="chapter"
+        id={chapter.id}
+        writer={liveWriter(data)}
+        authors={storyAuthors(data)}
+      />
 
       <nav className={styles.pager} aria-label="Chapters">
         {prev ? (

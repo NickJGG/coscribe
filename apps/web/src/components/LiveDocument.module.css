@@ -176,3 +176,40 @@
 .prose li p + p {
   margin-top: 0.25em;
 }
+
+.barEnd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.authorship {
+  position: relative;
+}
+
+.authorship[data-show-authors] :global(span[data-author]) {
+  background-color: color-mix(in srgb, var(--author-tint, var(--ink-muted)) 28%, transparent);
+  border-radius: 2px;
+}
+
+.authorTip {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, calc(-100% - 6px));
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}

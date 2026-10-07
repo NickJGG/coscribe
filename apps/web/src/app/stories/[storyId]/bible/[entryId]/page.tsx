@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getEntry, getStory, liveWriter } from "@/lib/story";
+import { getEntry, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { canDeleteEntries } from "@/lib/story-roles";
 import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
@@ -92,7 +92,13 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
         )}
       </header>
 
-      <LiveDocument key={entry.id} kind="entry" id={entry.id} writer={liveWriter(data)} />
+      <LiveDocument
+        key={entry.id}
+        kind="entry"
+        id={entry.id}
+        writer={liveWriter(data)}
+        authors={storyAuthors(data)}
+      />
     </div>
   );
 }

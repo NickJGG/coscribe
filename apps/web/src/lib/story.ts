@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { isUuid } from "@/lib/action-result";
 import type { MemberRole } from "@/lib/story-roles";
-import type { Writer } from "@/components/LiveDocument";
+import type { StoryAuthor, Writer } from "@/components/LiveDocument";
 
 const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2 };
 
@@ -82,4 +82,13 @@ export function liveWriter({
   return myRole && viewer?.profile
     ? { userId: viewer.userId, name: viewer.profile.username, color: viewer.profile.author_color }
     : null;
+}
+
+/** Members' names and Author Colors, for tinting and labelling `author` marks. */
+export function storyAuthors({
+  members,
+}: {
+  members: { profile: { id: string; username: string; author_color: string } }[];
+}): StoryAuthor[] {
+  return members.map(({ profile }) => ({ id: profile.id, name: profile.username, color: profile.author_color }));
 }

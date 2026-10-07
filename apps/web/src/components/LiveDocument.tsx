@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -9,6 +9,7 @@ import { Placeholder } from "@tiptap/extensions";
 import * as Y from "yjs";
 import {
   ACCESS_REVOKED,
+  AuthorStamp,
   chapterExtensions,
   documentName,
   entryExtensions,
@@ -16,10 +17,14 @@ import {
   type DocumentKind,
 } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
+import { relativeTime } from "@/lib/relative-time";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
 export type Writer = { userId: string; name: string; color: string };
+
+/** A Story member whose text can carry an `author` mark. */
+export type StoryAuthor = { id: string; name: string; color: string };
 
 type Status = "connecting" | "live" | "offline" | "denied";
 type Session = { provider: HocuspocusProvider; ydoc: Y.Doc };
@@ -44,10 +49,21 @@ const STATUS_TEXT: Record<Exclude<Status, "denied">, string> = {
  * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  */
-export function LiveDocument({ kind, id, writer }: { kind: DocumentKind; id: string; writer: Writer | null }) {
+export function LiveDocument({
+  kind,
+  id,
+  writer,
+  authors,
+}: {
+  kind: DocumentKind;
+  id: string;
+  writer: Writer | null;
+  authors: StoryAuthor[];
+}) {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
   const [readOnly, setReadOnly] = useState(true);
+  const [showAuthors, setShowAuthors] = useState(false);
 
   useEffect(() => {
     const ydoc = new Y.Doc();
@@ -92,15 +108,25 @@ export function LiveDocument({ kind, id, writer }: { kind: DocumentKind; id: str
           {status === "denied" ? `You can no longer open this ${KINDS[kind].noun}.` : STATUS_TEXT[status]}
           {status === "live" && readOnly && writer && <span className="muted"> · Read-only</span>}
         </span>
-        {session && status !== "denied" && <Online provider={session.provider} noun={KINDS[kind].noun} />}
+        {session && status !== "denied" && (
+          <div className={styles.barEnd}>
+            <Online provider={session.provider} noun={KINDS[kind].noun} />
+            <label className={styles.toggle}>
+              <input type="checkbox" checked={showAuthors} onChange={(e) => setShowAuthors(e.target.checked)} />
+              Show authors
+            </label>
+          </div>
+        )}
       </div>
       {session && status !== "denied" && (
-        <LiveEditor
-          kind={kind}
-          session={session}
-          writer={writer}
-          editable={!readOnly && status !== "connecting"}
-        />
+        <Authorship authors={authors} show={showAuthors}>
+          <LiveEditor
+            kind={kind}
+            session={session}
+            writer={writer}
+            editable={!readOnly && status !== "connecting"}
+          />
+        </Authorship>
       )}
     </div>
   );
@@ -129,6 +155,7 @@ function LiveEditor({
         user: writer ?? { viewer: true },
       }),
       Placeholder.configure({ placeholder }),
+      AuthorStamp.configure({ userId: writer?.userId ?? null }),
     ],
     editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
@@ -205,6 +232,58 @@ function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
             1. List
           </button>
         </>
+      )}
+    </div>
+  );
+}
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+type Tip = { text: string; x: number; y: number };
+
+/** "Show authors": tints each `author` run by its Author Color, and hovering one says who wrote it and when. */
+function Authorship({ authors, show, children }: { authors: StoryAuthor[]; show: boolean; children: React.ReactNode }) {
+  const [tip, setTip] = useState<Tip | null>(null);
+  const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
+  const tints = useMemo(
+    () =>
+      authors
+        .filter((a) => HEX_COLOR.test(a.color))
+        .map((a) => `span[data-author="${a.id}"]{--author-tint:${a.color}}`)
+        .join(""),
+    [authors]
+  );
+
+  function onMouseOver(event: React.MouseEvent<HTMLDivElement>) {
+    const span = (event.target as Element).closest<HTMLElement>("span[data-author]");
+    if (!span) return setTip(null);
+    const name = byId.get(span.dataset.author!)?.name ?? "A former Writer";
+    const at = Number(span.dataset.at);
+    const box = event.currentTarget.getBoundingClientRect();
+    // A run can wrap across lines; anchor to the line under the pointer.
+    const line =
+      [...span.getClientRects()].find((r) => event.clientY >= r.top && event.clientY <= r.bottom) ??
+      span.getBoundingClientRect();
+    setTip({
+      text: at ? `${name}, ${relativeTime(at)}` : name,
+      x: event.clientX - box.left,
+      y: line.top - box.top,
+    });
+  }
+
+  return (
+    <div
+      className={styles.authorship}
+      data-show-authors={show || undefined}
+      onMouseOver={show ? onMouseOver : undefined}
+      onMouseLeave={() => setTip(null)}
+    >
+      {show && <style>{tints}</style>}
+      {children}
+      {show && tip && (
+        <div className={styles.authorTip} role="tooltip" style={{ left: tip.x, top: tip.y }}>
+          {tip.text}
+        </div>
       )}
     </div>
   );

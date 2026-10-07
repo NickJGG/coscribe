@@ -5,12 +5,14 @@ import Italic from "@tiptap/extension-italic"
 import { BulletList, ListItem, ListKeymap, OrderedList } from "@tiptap/extension-list"
 import Paragraph from "@tiptap/extension-paragraph"
 import Text from "@tiptap/extension-text"
+import { Author } from "./author"
 import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
+export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 
-/** Paragraphs, italic, bold, and Scene Breaks only. */
-export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak]
+/** Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text. */
+export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author]
 
 /** A Chapter's formatting plus bulleted and numbered lists. */
 export const entryExtensions = [...chapterExtensions, BulletList, OrderedList, ListItem, ListKeymap]
