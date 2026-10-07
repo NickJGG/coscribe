@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { refreshSyncAccess } from "@/lib/sync";
@@ -29,6 +29,8 @@ export async function addChapter(storyId: string, _prev: ActionResult, formData:
   const { data: chapterId, error } = await supabase.rpc("add_chapter", { p_story: storyId, p_title: title });
   if (error) return errorText(error);
 
+  // The desk sidebar lives in a layout the redirect would otherwise keep.
+  revalidatePath(`/stories/${storyId}`, "layout");
   redirect(`/stories/${storyId}/chapters/${chapterId}`);
 }
 

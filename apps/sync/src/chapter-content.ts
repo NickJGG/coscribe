@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { updateYFragment, yXmlFragmentToProseMirrorRootNode } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
-import { chapterSchema, countAuthorCharacters, DOCUMENT_FIELD, entrySchema, type DocumentKind } from "@coscribe/editor"
+import { chapterSchema, countAuthorCharacters, countWords, DOCUMENT_FIELD, entrySchema, type DocumentKind } from "@coscribe/editor"
 
 export type ChapterContent = ReturnType<typeof yXmlFragmentToProseMirrorRootNode>
 
@@ -30,9 +30,8 @@ export type ChapterStats = { words: number; authorChars: Record<string, number> 
 
 /** Word count, plus surviving characters per author (the tally Credits uses). */
 export function chapterStats(content: ChapterContent): ChapterStats {
-  const text = content.textBetween(0, content.content.size, "\n", "\n")
   return {
-    words: text.match(/\S+/gu)?.length ?? 0,
+    words: countWords(content),
     authorChars: Object.fromEntries(countAuthorCharacters(content.toJSON())),
   }
 }

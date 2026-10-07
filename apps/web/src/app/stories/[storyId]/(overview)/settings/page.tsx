@@ -223,7 +223,7 @@ async function Invites({ storyId, userId, memberIds }: { storyId: string; userId
     .sort((a, b) => a.username.localeCompare(b.username));
 
   return (
-    <section className="section">
+    <section className="section" id="invites">
       <h2>Invites</h2>
       <p className="muted">Each Invite makes one person a Writer.</p>
 

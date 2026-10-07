@@ -1,13 +1,6 @@
 import Link from "next/link";
-import { ENTRY_TYPES, type EntryType } from "@/lib/entries";
+import { ENTRY_GROUP_LABEL, ENTRY_TYPES, type EntryType } from "@/lib/entries";
 import styles from "./story.module.css";
-
-const GROUP_LABEL: Record<EntryType, string> = {
-  character: "Characters",
-  place: "Places",
-  item: "Items",
-  lore: "Lore",
-};
 
 type Entry = { id: string; type: EntryType; name: string };
 
@@ -20,7 +13,7 @@ export function BibleList({ storyId, entries }: { storyId: string; entries: Entr
     if (!group.length) return null;
     return (
       <div key={type} className={styles.bibleGroup}>
-        <h3 className="smallcaps">{GROUP_LABEL[type]}</h3>
+        <h3 className="smallcaps">{ENTRY_GROUP_LABEL[type]}</h3>
         <ul>
           {group.map((entry) => (
             <li key={entry.id}>

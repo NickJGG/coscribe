@@ -42,6 +42,14 @@ export function parseDocumentName(name: string): { kind: DocumentKind; id: strin
   return match ? { kind: match[1]!.toLowerCase() as DocumentKind, id: match[2]! } : null
 }
 
+/** Words in a Chapter or Entry body; paragraphs never run together. */
+export function countWords(doc: {
+  content: { size: number }
+  textBetween(from: number, to: number, blockSeparator: string, leafText: string): string
+}): number {
+  return doc.textBetween(0, doc.content.size, "\n", "\n").match(/\S+/gu)?.length ?? 0
+}
+
 /** Close reason apps/sync sends when a connection loses all access (removed, story made Private, document deleted). */
 export const ACCESS_REVOKED = "access-revoked"
 

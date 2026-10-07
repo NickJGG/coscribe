@@ -11,6 +11,14 @@ export const ENTRY_TYPE_LABEL: Record<EntryType, string> = {
   lore: "Lore",
 };
 
+/** Headings for the Story Bible's type groups. */
+export const ENTRY_GROUP_LABEL: Record<EntryType, string> = {
+  character: "Characters",
+  place: "Places",
+  item: "Items",
+  lore: "Lore",
+};
+
 export const NAME_MAX = 80;
 export const DESCRIPTION_MAX = 280;
 

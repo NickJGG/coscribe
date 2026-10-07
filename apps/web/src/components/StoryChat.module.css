@@ -11,6 +11,11 @@
   height: 72px;
 }
 
+/* The desk scrolls inside its own column and has no page bottom to clear. */
+:global(body:has([data-desk])) .clearance {
+  display: none;
+}
+
 .badge {
   min-width: 20px;
   padding: 0 6px;

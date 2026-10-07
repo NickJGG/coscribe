@@ -4,67 +4,50 @@
   gap: 12px;
 }
 
-.bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-  font-size: 0.875rem;
-}
-
-.status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink-muted);
-}
-
-.status::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--rule);
-}
-
-.status[data-status="live"]::before {
-  background: var(--success);
-}
-
-.status[data-status="denied"] {
+.denied {
   color: var(--danger);
 }
 
-.status[data-status="denied"]::before {
-  background: var(--danger);
-}
-
-.online {
+/* Stand-in text lines until the document syncs. */
+.loading {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px 12px;
-  list-style: none;
+  flex-direction: column;
+  gap: 0.95em;
+  padding-top: 52px;
+  font-size: var(--step-1);
 }
 
-.person {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 500;
+.loading span {
+  height: 0.8em;
+  border-radius: 4px;
+  background: var(--wash);
 }
 
-.toolbar {
+.toolRow {
   position: sticky;
   top: 0;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  min-height: 42px;
+  padding: 4px 0;
+  background: var(--paper);
+  font-size: 0.875rem;
+}
+
+.toolAside {
+  margin-left: auto;
+}
+
+.toolbar {
   display: flex;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--paper-raised);
-  align-self: flex-start;
 }
 
 .tool {
@@ -171,13 +154,6 @@
 
 .prose li p + p {
   margin-top: 0.25em;
-}
-
-.barEnd {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 16px;
 }
 
 .toggle {

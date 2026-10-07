@@ -11,6 +11,7 @@ import {
   ACCESS_REVOKED,
   AuthorStamp,
   chapterExtensions,
+  countWords,
   documentName,
   DOCUMENT_FIELD,
   entryExtensions,
@@ -20,7 +21,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relative-time";
 import { authorColorCss } from "@/lib/profile-rules";
-import { Avatar } from "./Avatar";
+import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
+import { useSyncSocket } from "./SyncSocket";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
@@ -29,7 +31,6 @@ export type Writer = { userId: string; name: string; color: string };
 /** A Story member whose text can carry an `author` mark. */
 export type StoryAuthor = { id: string; name: string; color: string };
 
-type Status = "connecting" | "live" | "offline" | "denied";
 type Session = { provider: HocuspocusProvider; ydoc: Y.Doc };
 
 const KINDS = {
@@ -42,15 +43,13 @@ const KINDS = {
   },
 } satisfies Record<DocumentKind, unknown>;
 
-const STATUS_TEXT: Record<Exclude<Status, "denied">, string> = {
-  connecting: "Connecting…",
-  live: "Live",
-  offline: "Reconnecting…",
-};
+const SLOW_MS = 1000;
 
 /**
  * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
+ * Inside a SyncSocketProvider it attaches to the shared socket; its connection, Writers present and word
+ * count go to the desk through LiveStatus.
  */
 export function LiveDocument({
   kind,
@@ -63,26 +62,35 @@ export function LiveDocument({
   writer: Writer | null;
   authors: StoryAuthor[];
 }) {
+  const acquireSocket = useSyncSocket();
+  const report = useLiveReport();
   const [session, setSession] = useState<Session | null>(null);
-  const [status, setStatus] = useState<Status>("connecting");
+  const [connection, setConnection] = useState<LiveConnection>("connecting");
+  const [synced, setSynced] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [readOnly, setReadOnly] = useState(true);
   const [showAuthors, setShowAuthors] = useState(false);
 
   useEffect(() => {
+    const name = documentName(kind, id);
+    report({ ...NO_DOCUMENT, doc: name });
     const ydoc = new Y.Doc();
     const supabase = createClient();
+    const shared = acquireSocket?.();
     const provider: HocuspocusProvider = new HocuspocusProvider({
-      url: process.env.NEXT_PUBLIC_SYNC_URL!,
-      name: documentName(kind, id),
+      ...(shared ? { websocketProvider: shared } : { url: process.env.NEXT_PUBLIC_SYNC_URL! }),
+      name,
       document: ydoc,
       token: async () => (await supabase.auth.getSession()).data.session?.access_token ?? "",
       onAuthenticated: ({ scope }) => setReadOnly(scope !== "read-write"),
-      onAuthenticationFailed: () => setStatus("denied"),
+      onAuthenticationFailed: () => setConnection("denied"),
       onSynced: ({ state }) => {
-        if (state) setStatus("live");
+        if (!state) return;
+        setConnection("live");
+        setSynced(true);
       },
       onStatus: ({ status }) => {
-        if (status === "disconnected") setStatus((s) => (s === "denied" ? s : "offline"));
+        if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
       },
       onStateless: ({ payload }) => {
         const message = JSON.parse(payload) as AccessMessage;
@@ -90,62 +98,83 @@ export function LiveDocument({
       },
       onClose: ({ event }) => {
         if (event.reason !== ACCESS_REVOKED) return;
-        setStatus("denied");
+        setConnection("denied");
         provider.destroy();
       },
     });
+    // A provider on a shared socket doesn't attach itself.
+    if (shared) provider.attach();
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
     // The provider is an external connection owned by this effect; the editor below needs the handle.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSession({ provider, ydoc });
 
     return () => {
+      clearTimeout(slowTimer);
       provider.destroy();
       ydoc.destroy();
+      report(NO_DOCUMENT);
     };
-  }, [kind, id]);
+  }, [kind, id, acquireSocket, report]);
+
+  useEffect(() => {
+    report({ connection, slow, readOnly });
+  }, [report, connection, slow, readOnly]);
+
+  usePresence(session?.provider ?? null);
+
+  if (connection === "denied") {
+    return (
+      <p className={styles.denied} role="status">
+        You can no longer open this {KINDS[kind].noun}.
+      </p>
+    );
+  }
 
   return (
     <div className={styles.live}>
-      <div className={styles.bar}>
-        <span className={styles.status} data-status={status} role="status">
-          {status === "denied" ? `You can no longer open this ${KINDS[kind].noun}.` : STATUS_TEXT[status]}
-          {status === "live" && readOnly && writer && <span className="muted"> · Read-only</span>}
-        </span>
-        {session && status !== "denied" && (
-          <div className={styles.barEnd}>
-            <Online provider={session.provider} noun={KINDS[kind].noun} />
-            <label className={styles.toggle}>
-              <input type="checkbox" checked={showAuthors} onChange={(e) => setShowAuthors(e.target.checked)} />
-              Show authors
-            </label>
-          </div>
-        )}
-      </div>
-      {session && status !== "denied" && (
+      {session && synced ? (
         <Authorship authors={authors} show={showAuthors}>
           <LiveEditor
             kind={kind}
             session={session}
             writer={writer}
-            editable={!readOnly && status !== "connecting"}
+            editable={!readOnly}
+            aside={
+              <label className={styles.toggle}>
+                <input type="checkbox" checked={showAuthors} onChange={(e) => setShowAuthors(e.target.checked)} />
+                Show authors
+              </label>
+            }
           />
         </Authorship>
+      ) : (
+        <div className={styles.loading} aria-label={`Loading the ${KINDS[kind].noun}`} role="status">
+          {LOADING_LINES.map((width, i) => (
+            <span key={i} style={{ width }} />
+          ))}
+        </div>
       )}
     </div>
   );
 }
+
+const LOADING_LINES = ["100%", "96%", "100%", "88%", "100%", "93%", "62%"];
 
 function LiveEditor({
   kind,
   session,
   writer,
   editable,
+  aside,
 }: {
   kind: DocumentKind;
   session: Session;
   writer: Writer | null;
   editable: boolean;
+  aside: React.ReactNode;
 }) {
+  const report = useLiveReport();
   const { extensions, label, placeholder } = KINDS[kind];
   const editor = useEditor({
     immediatelyRender: false,
@@ -168,9 +197,23 @@ function LiveEditor({
     editor?.setEditable(editable);
   }, [editor, editable]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const count = () => report({ words: countWords(editor.state.doc) });
+    count();
+    report({ ready: true });
+    editor.on("update", count);
+    return () => {
+      editor.off("update", count);
+    };
+  }, [editor, report]);
+
   return (
     <>
-      {editor && editable && <Toolbar editor={editor} lists={kind === "entry"} />}
+      <div className={styles.toolRow}>
+        {editor && editable && <Toolbar editor={editor} lists={kind === "entry"} />}
+        <div className={styles.toolAside}>{aside}</div>
+      </div>
       <EditorContent editor={editor} />
     </>
   );
@@ -309,45 +352,28 @@ export function Authorship({ authors, show, children }: { authors: StoryAuthor[]
   );
 }
 
-type Present = { key: string; name: string; color: string };
-
-/** Writers in this document right now (one entry per person, however many tabs), plus a Viewer count. */
-function Online({ provider, noun }: { provider: HocuspocusProvider; noun: string }) {
-  const [present, setPresent] = useState<{ writers: Present[]; viewers: number }>({ writers: [], viewers: 0 });
+/** Reports who is in this document: Writers by name, Viewers only as a count. */
+function usePresence(provider: HocuspocusProvider | null) {
+  const report = useLiveReport();
 
   useEffect(() => {
-    const awareness = provider.awareness;
+    const awareness = provider?.awareness;
     if (!awareness) return;
     const update = () => {
-      const writers = new Map<string, Present>();
+      const writers = new Map<string, PresentWriter>();
       let viewers = 0;
       for (const state of awareness.getStates().values()) {
-        const user = state.user as Partial<Writer> & { viewer?: boolean } | undefined;
+        const user = state.user as (Partial<Writer> & { viewer?: boolean }) | undefined;
         if (user?.userId && user.name && user.color) {
-          writers.set(user.userId, { key: user.userId, name: user.name, color: user.color });
+          writers.set(user.userId, { id: user.userId, name: user.name, color: user.color });
         } else if (user?.viewer) {
           viewers++;
         }
       }
-      setPresent({ writers: [...writers.values()], viewers });
+      report({ writers: [...writers.values()], viewers });
     };
+    update();
     awareness.on("change", update);
     return () => awareness.off("change", update);
-  }, [provider]);
-
-  return (
-    <ul className={styles.online} aria-label={`In this ${noun}`}>
-      {present.writers.map((w) => (
-        <li key={w.key} className={styles.person}>
-          <Avatar name={w.name} color={w.color} size="sm" />
-          {w.name}
-        </li>
-      ))}
-      {present.viewers > 0 && (
-        <li className="muted">
-          {present.viewers} {present.viewers === 1 ? "Viewer" : "Viewers"}
-        </li>
-      )}
-    </ul>
-  );
+  }, [provider, report]);
 }

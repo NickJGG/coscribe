@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { refresh } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { refreshSyncAccess } from "@/lib/sync";
@@ -26,6 +26,8 @@ export async function addEntry(storyId: string, _prev: ActionResult, formData: F
   // RLS rejects non-Writers and Finished stories alike.
   if (error) return NOT_ALLOWED;
 
+  // The desk sidebar lives in a layout the redirect would otherwise keep.
+  revalidatePath(`/stories/${storyId}`, "layout");
   redirect(`/stories/${storyId}/bible/${data.id}`);
 }
 

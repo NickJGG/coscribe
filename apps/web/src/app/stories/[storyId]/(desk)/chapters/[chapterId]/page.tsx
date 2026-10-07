@@ -42,13 +42,8 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href={`/stories/${story.id}`} className="muted">
-          &larr; {story.title}
-        </Link>
         <div className={styles.meta}>
-          <span className="muted">
-            Chapter {index + 1} of {chapters.length}
-          </span>
+          <span className="smallcaps">Chapter {index + 1}</span>
           {chapter.locked && <span className="pill">Locked</span>}
           {story.status === "finished" && (
             <Link href={`/stories/${story.id}/read/${chapter.id}`} className="button button-small">

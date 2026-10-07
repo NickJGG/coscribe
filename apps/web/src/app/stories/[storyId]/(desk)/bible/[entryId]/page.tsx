@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getEntry, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
@@ -36,9 +35,6 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href={`/stories/${story.id}`} className="muted">
-          &larr; {story.title}
-        </Link>
         <div className={styles.meta}>
           <span className="pill">{ENTRY_TYPE_LABEL[entry.type]}</span>
           <span className="muted">Story Bible</span>

@@ -37,9 +37,7 @@ export async function SiteHeader() {
             <Link href="/stories?new=1#new" className={`button button-small ${styles.newStory}`}>
               New Story
             </Link>
-            <FriendsMenu userId={profile.id} />
-            <NotificationsMenu userId={profile.id} />
-            <YouMenu profile={profile} />
+            <AccountMenus profile={profile} />
           </>
         ) : viewer ? (
           <>
@@ -62,6 +60,17 @@ export async function SiteHeader() {
         )}
       </div>
     </header>
+  );
+}
+
+/** Friends, Notifications and You: the right end of every header for a signed-in User. */
+export function AccountMenus({ profile }: { profile: { id: string; username: string; author_color: string; theme: Theme } }) {
+  return (
+    <>
+      <FriendsMenu userId={profile.id} />
+      <NotificationsMenu userId={profile.id} />
+      <YouMenu profile={profile} />
+    </>
   );
 }
 

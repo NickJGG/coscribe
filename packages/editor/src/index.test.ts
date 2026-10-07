@@ -1,6 +1,6 @@
 import { getSchema } from "@tiptap/core"
 import { describe, expect, it } from "vitest"
-import { chapterExtensions, documentName, entryExtensions, parseDocumentName } from "./index"
+import { chapterExtensions, countWords, documentName, entryExtensions, parseDocumentName } from "./index"
 
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
@@ -64,5 +64,25 @@ describe("document names", () => {
     expect(parseDocumentName(`snapshot:${id}`)).toBeNull()
     expect(parseDocumentName("chapter:nope")).toBeNull()
     expect(parseDocumentName(`entry:${id}:extra`)).toBeNull()
+  })
+})
+
+describe("countWords", () => {
+  const schema = getSchema(chapterExtensions)
+
+  it("counts across paragraphs and Scene Breaks without joining words", () => {
+    const doc = schema.nodeFromJSON({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "The bells began" }] },
+        { type: "sceneBreak" },
+        { type: "paragraph", content: [{ type: "text", text: "at low water." }] },
+      ],
+    })
+    expect(countWords(doc)).toBe(6)
+  })
+
+  it("is zero for an empty Chapter", () => {
+    expect(countWords(schema.nodeFromJSON({ type: "doc", content: [{ type: "paragraph" }] }))).toBe(0)
   })
 })
