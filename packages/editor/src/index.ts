@@ -11,6 +11,7 @@ import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
 export { countAuthorCharacters, type ContentJSON } from "./credits"
+export { blockTexts, countMentions, findMentions, type Mention, type MentionTarget } from "./mentions"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 
 /** Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text. */

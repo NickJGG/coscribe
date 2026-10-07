@@ -25,10 +25,42 @@ function writeScroll(doc: string, top: number) {
   } catch {}
 }
 
+const MENTION_HASH = /^#mention-([0-9a-f-]{36})$/i;
+const MENTION_TRIES = 10;
+const FLASH_MS = 1600;
+
+/**
+ * Scrolls to an Entry's first Mention and briefly highlights it, as a "Mentioned in" link asks. The
+ * underlines can land a frame or two after the text, so it looks again for a few frames before giving up.
+ * The returned stop function says whether it was still looking.
+ */
+function showMention(page: HTMLElement, entryId: string, otherwise: () => void) {
+  let tries = 0;
+  let frame = 0;
+  const find = () => {
+    frame = 0;
+    const mention = page.querySelector<HTMLElement>(`[data-mention="${entryId}"]`);
+    if (!mention) {
+      if (++tries < MENTION_TRIES) frame = requestAnimationFrame(find);
+      else otherwise();
+      return;
+    }
+    mention.scrollIntoView({ block: "center" });
+    mention.setAttribute("data-flash", "");
+    setTimeout(() => mention.removeAttribute("data-flash"), FLASH_MS);
+  };
+  find();
+  return () => {
+    cancelAnimationFrame(frame);
+    return frame !== 0;
+  };
+}
+
 /**
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
  * the right panel over all three. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
+ * A `#mention-<entryId>` link opens at that Entry's first Mention instead.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -42,9 +74,15 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   }, [pathname]);
 
   useEffect(() => {
-    if (!doc || !ready || restored.current === doc) return;
+    const page = scroller.current;
+    if (!doc || !ready || restored.current === doc || !page) return;
     restored.current = doc;
-    scroller.current?.scrollTo(0, readScroll(doc));
+    const entryId = MENTION_HASH.exec(location.hash)?.[1];
+    if (!entryId) return page.scrollTo(0, readScroll(doc));
+    const stop = showMention(page, entryId, () => page.scrollTo(0, readScroll(doc)));
+    return () => {
+      if (stop()) restored.current = null;
+    };
   }, [doc, ready]);
 
   return (

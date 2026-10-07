@@ -59,22 +59,10 @@ export const getEntries = cache(async (storyId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("entries")
-    .select("id, type, name, description")
+    .select("id, type, name, description, aliases, link_mentions")
     .eq("story_id", storyId)
     .order("name");
   return data ?? [];
-});
-
-export const getEntry = cache(async (storyId: string, entryId: string) => {
-  if (!isUuid(storyId) || !isUuid(entryId)) return null;
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("entries")
-    .select("id, type, name, description")
-    .eq("story_id", storyId)
-    .eq("id", entryId)
-    .maybeSingle();
-  return data;
 });
 
 /** How the viewer shows up in a live document: a named caret for members, nothing for Viewers. */

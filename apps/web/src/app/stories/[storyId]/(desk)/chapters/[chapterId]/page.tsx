@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getChapters, getStory, liveWriter, storyAuthors } from "@/lib/story";
+import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
+import { mentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
@@ -14,10 +15,10 @@ import styles from "./chapter.module.css";
 async function load(storyId: string, chapterId: string) {
   const data = await getStory(storyId);
   if (!data) return null;
-  const chapters = await getChapters(storyId);
+  const [chapters, entries] = await Promise.all([getChapters(storyId), getEntries(storyId)]);
   const index = chapters.findIndex((c) => c.id === chapterId);
   if (index < 0) return null;
-  return { ...data, chapters, index, chapter: chapters[index]! };
+  return { ...data, chapters, entries, index, chapter: chapters[index]! };
 }
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/chapters/[chapterId]">): Promise<Metadata> {
@@ -35,7 +36,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
     }
     notFound();
   }
-  const { story, chapters, index, chapter, myRole } = data;
+  const { story, chapters, entries, index, chapter, myRole } = data;
   const prev = chapters[index - 1];
   const next = chapters[index + 1];
   const authors = storyAuthors(data);
@@ -62,6 +63,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         id={chapter.id}
         writer={liveWriter(data)}
         authors={authors}
+        mentions={{ storyId: story.id, entries: mentionEntries(entries) }}
         tools={
           manage && (
             <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>

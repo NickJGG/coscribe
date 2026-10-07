@@ -22,7 +22,9 @@ import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relative-time";
 import { authorColorCss } from "@/lib/profile-rules";
 import { paragraphShares, type AuthorRun } from "@/lib/contribution";
+import type { MentionEntry } from "@/lib/entries";
 import { DeskToolbar } from "./DeskToolbar";
+import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { Switch } from "./Switch";
 import { useSyncSocket } from "./SyncSocket";
@@ -30,6 +32,9 @@ import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
 export type Writer = { userId: string; name: string; color: string };
+
+/** The Story Bible Entries whose Mentions this document underlines. */
+export type DocumentMentions = { storyId: string; entries: MentionEntry[] };
 
 /** A Story member whose text can carry an `author` mark. */
 export type StoryAuthor = { id: string; name: string; color: string };
@@ -53,7 +58,7 @@ const SLOW_MS = 1000;
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  * Inside a SyncSocketProvider it attaches to the shared socket; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
- * row's end, before Show authors.
+ * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
  */
 export function LiveDocument({
   kind,
@@ -61,12 +66,14 @@ export function LiveDocument({
   writer,
   authors,
   tools,
+  mentions,
 }: {
   kind: DocumentKind;
   id: string;
   writer: Writer | null;
   authors: StoryAuthor[];
   tools?: React.ReactNode;
+  mentions?: DocumentMentions;
 }) {
   const acquireSocket = useSyncSocket();
   const report = useLiveReport();
@@ -152,9 +159,18 @@ export function LiveDocument({
         </div>
       </DeskToolbar.Fill>
       {session && synced ? (
-        <Authorship authors={authors} show={showAuthors}>
-          <LiveEditor kind={kind} session={session} writer={writer} editable={!readOnly} onEditor={setEditor} />
-        </Authorship>
+        <MaybeMentionCards mentions={mentions}>
+          <Authorship authors={authors} show={showAuthors}>
+            <LiveEditor
+              kind={kind}
+              session={session}
+              writer={writer}
+              editable={!readOnly}
+              mentions={mentions?.entries}
+              onEditor={setEditor}
+            />
+          </Authorship>
+        </MaybeMentionCards>
       ) : (
         <div className={styles.loading} aria-label={`Loading the ${KINDS[kind].noun}`} role="status">
           {LOADING_LINES.map((width, i) => (
@@ -168,17 +184,30 @@ export function LiveDocument({
 
 const LOADING_LINES = ["100%", "96%", "100%", "88%", "100%", "93%", "62%"];
 
+function MaybeMentionCards({ mentions, children }: { mentions?: DocumentMentions; children: React.ReactNode }) {
+  if (!mentions) return children;
+  return (
+    <MentionCards storyId={mentions.storyId} entries={mentions.entries}>
+      {children}
+    </MentionCards>
+  );
+}
+
+const NO_MENTIONS: MentionEntry[] = [];
+
 function LiveEditor({
   kind,
   session,
   writer,
   editable,
+  mentions = NO_MENTIONS,
   onEditor,
 }: {
   kind: DocumentKind;
   session: Session;
   writer: Writer | null;
   editable: boolean;
+  mentions?: MentionEntry[];
   onEditor: (editor: Editor | null) => void;
 }) {
   const report = useLiveReport();
@@ -196,6 +225,7 @@ function LiveEditor({
       }),
       Placeholder.configure({ placeholder }),
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
+      Mentions.configure({ entries: mentions, focusable: !editable }),
     ],
     editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
@@ -203,6 +233,14 @@ function LiveEditor({
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
+
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const current = mentionKey.getState(editor.state);
+    if (current?.entries === mentions && current.focusable === !editable) return;
+    const config: MentionConfig = { entries: mentions, focusable: !editable };
+    editor.view.dispatch(editor.state.tr.setMeta(mentionKey, config));
+  }, [editor, mentions, editable]);
 
   useEffect(() => {
     onEditor(editor);

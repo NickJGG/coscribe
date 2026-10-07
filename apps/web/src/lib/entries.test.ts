@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterEntries, readEntryFields } from "./entries";
+import { filterEntries, readEntryFields, readEntryPatch } from "./entries";
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -45,5 +45,28 @@ describe("filterEntries", () => {
     expect(filterEntries(entries, "", "character")).toHaveLength(2);
     expect(filterEntries(entries, "  ", null)).toHaveLength(3);
     expect(filterEntries(entries, "mi", "place").map((e) => e.name)).toEqual(["Café Mira"]);
+  });
+});
+
+describe("readEntryPatch", () => {
+  it("maps only the fields sent", () => {
+    expect(readEntryPatch({ name: " Wren ", linkMentions: false })).toEqual({
+      columns: { name: "Wren", link_mentions: false },
+    });
+    expect(readEntryPatch({})).toEqual({ columns: {} });
+  });
+
+  it("tidies Aliases and drops blanks and repeats", () => {
+    expect(readEntryPatch({ aliases: ["  the  old keeper ", "", "Aldous", "ALDOUS", "Áldous"] })).toEqual({
+      columns: { aliases: ["the old keeper", "Aldous", "Áldous"] },
+    });
+  });
+
+  it("rejects long or too many Aliases and bad fields", () => {
+    expect(readEntryPatch({ aliases: ["x".repeat(81)] })).toHaveProperty("error");
+    expect(readEntryPatch({ aliases: Array.from({ length: 21 }, (_, i) => `a${i}`) })).toHaveProperty("error");
+    expect(readEntryPatch({ name: "  " })).toHaveProperty("error");
+    expect(readEntryPatch({ type: "weapon" as never })).toHaveProperty("error");
+    expect(readEntryPatch({ description: "x".repeat(281) })).toHaveProperty("error");
   });
 });

@@ -1,0 +1,79 @@
+.box {
+  position: relative;
+}
+
+.mention {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--faint);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+  border-radius: 2px;
+  transition: background-color 0.6s;
+}
+
+.mention:hover {
+  text-decoration-color: var(--ink-muted);
+}
+
+/* The Mention a "Mentioned in" link landed on. */
+.mention[data-flash] {
+  background: var(--accent-wash);
+  transition: none;
+}
+
+.card {
+  position: absolute;
+  z-index: 3;
+  left: clamp(0px, var(--x), 100% - min(20rem, 100%));
+  width: min(20rem, 100%);
+  margin-top: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+
+.card :global(.smallcaps) {
+  color: var(--ink-muted);
+}
+
+.name {
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: var(--step-1);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-family: var(--font-prose), Georgia, serif;
+}
+
+.loading {
+  height: 2.6em;
+  border-radius: 4px;
+  background: var(--wash);
+}
+
+.open {
+  align-self: flex-start;
+  margin-top: 4px;
+  color: var(--accent);
+  font-weight: 600;
+}

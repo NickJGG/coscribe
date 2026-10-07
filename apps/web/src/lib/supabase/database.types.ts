@@ -91,14 +91,14 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"description": string,"id": string,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
+                    "aliases": (string)[],"created_at": string,"created_by": string | null,"description": string,"id": string,"link_mentions": boolean,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_mentions"?: boolean,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"name"?: string,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_mentions"?: boolean,"name"?: string,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
                   }
                   Relationships: [
                     {

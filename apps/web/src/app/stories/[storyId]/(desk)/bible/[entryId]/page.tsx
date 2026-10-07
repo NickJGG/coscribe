@@ -1,17 +1,24 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getEntry, getStory, liveWriter, storyAuthors } from "@/lib/story";
+import { countMentions } from "@coscribe/editor";
+import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { canDeleteEntries } from "@/lib/story-roles";
-import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
-import { deleteEntry, updateEntry } from "@/lib/actions/entries";
+import { mentionEntries, type MentionEntry } from "@/lib/entries";
+import { fetchStoryContent } from "@/lib/sync";
+import { deleteEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
+import { EntryDetails } from "./EntryDetails";
 import styles from "./entry.module.css";
 
 async function load(storyId: string, entryId: string) {
-  const [data, entry] = await Promise.all([getStory(storyId), getEntry(storyId, entryId)]);
-  return data && entry ? { ...data, entry } : null;
+  const [data, entries] = await Promise.all([getStory(storyId), getEntries(storyId)]);
+  const all = mentionEntries(entries);
+  const entry = all.find((e) => e.id === entryId);
+  return data && entry ? { ...data, entries: all, entry } : null;
 }
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/bible/[entryId]">): Promise<Metadata> {
@@ -29,63 +36,29 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
     }
     notFound();
   }
-  const { story, entry, myRole } = data;
-  const editable = myRole && story.status !== "finished";
+  const { story, entries, entry, myRole } = data;
+  const editable = !!myRole && story.status !== "finished";
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <div className={styles.meta}>
-          <span className="pill">{ENTRY_TYPE_LABEL[entry.type]}</span>
-          <span className="muted">Story Bible</span>
-        </div>
-        <h1 className={styles.title}>{entry.name}</h1>
-        {entry.description && <p className={styles.description}>{entry.description}</p>}
-
-        {editable && (
-          <div className="row-actions">
-            <details className={styles.edit}>
-              <summary className="button button-small">Edit details</summary>
-              <ActionForm action={updateEntry.bind(null, story.id, entry.id)} className={styles.form}>
-                <label className={styles.field}>
-                  <span className={styles.label}>Type</span>
-                  <select name="type" className="input" defaultValue={entry.type}>
-                    {ENTRY_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {ENTRY_TYPE_LABEL[t]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>Name</span>
-                  <input name="name" className="input" defaultValue={entry.name} maxLength={NAME_MAX} required />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>Short description</span>
-                  <textarea
-                    name="description"
-                    className={`input ${styles.textarea}`}
-                    defaultValue={entry.description}
-                    maxLength={DESCRIPTION_MAX}
-                    rows={3}
-                  />
-                </label>
-                <div>
-                  <button className="button button-primary button-small">Save</button>
-                </div>
-              </ActionForm>
-            </details>
-            {canDeleteEntries(myRole) && (
+        <EntryDetails
+          key={entry.id}
+          storyId={story.id}
+          entry={entry}
+          editable={editable}
+          actions={
+            editable &&
+            canDeleteEntries(myRole) && (
               <ActionForm
                 action={deleteEntry.bind(null, story.id, entry.id)}
                 confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
               >
-                <button className="button button-small button-danger">Delete</button>
+                <button className="button button-ghost button-tiny button-danger">Delete</button>
               </ActionForm>
-            )}
-          </div>
-        )}
+            )
+          }
+        />
       </header>
 
       <LiveDocument
@@ -94,7 +67,49 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
         id={entry.id}
         writer={liveWriter(data)}
         authors={storyAuthors(data)}
+        mentions={{ storyId: story.id, entries: entries.filter((e) => e.id !== entry.id) }}
       />
+
+      <section className={styles.mentioned} aria-labelledby="mentioned-in">
+        <h2 id="mentioned-in" className="smallcaps">
+          Mentioned in
+        </h2>
+        <Suspense fallback={<p className="muted">Counting Mentions…</p>}>
+          <MentionedIn storyId={story.id} entry={entry} entries={entries} />
+        </Suspense>
+      </section>
     </div>
+  );
+}
+
+/** Each Chapter that mentions the Entry, with how often, linking to the first Mention. */
+async function MentionedIn({ storyId, entry, entries }: { storyId: string; entry: MentionEntry; entries: MentionEntry[] }) {
+  if (!entry.linkMentions) {
+    return <p className="muted">Mentions aren&rsquo;t linked for this Entry.</p>;
+  }
+  const [chapters, content] = await Promise.all([getChapters(storyId), fetchStoryContent(storyId)]);
+  if (!content) return <p className="muted">Mentions can&rsquo;t be counted right now.</p>;
+
+  const found = chapters.flatMap((chapter, i) => {
+    const body = content.chapter[chapter.id];
+    const count = body ? (countMentions(body, entries).get(entry.id) ?? 0) : 0;
+    return count ? [{ ...chapter, number: i + 1, count }] : [];
+  });
+  if (!found.length) return <p className="muted">No Chapter mentions {entry.name} yet.</p>;
+
+  return (
+    <ul className={styles.mentions}>
+      {found.map((c) => (
+        <li key={c.id}>
+          <Link href={`/stories/${storyId}/chapters/${c.id}#mention-${entry.id}`} className={styles.mentionLink}>
+            <span className={styles.mentionNumber}>{c.number}</span>
+            <span className={styles.mentionTitle}>{c.title}</span>
+            <span className={styles.mentionCount}>
+              {c.count} {c.count === 1 ? "Mention" : "Mentions"}
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
