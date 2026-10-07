@@ -12,6 +12,7 @@ import { addChapter } from "@/lib/actions/chapters";
 import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { AvatarStack } from "@/components/Avatar";
+import { ChatButton } from "@/components/StoryPanel";
 import { BibleList } from "./BibleList";
 import { ChapterList } from "./ChapterList";
 import styles from "./story.module.css";
@@ -97,6 +98,7 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
               Settings
             </Link>
           )}
+          {myRole && <ChatButton className="button" />}
           {finished && (
             <Link href={`/stories/${story.id}/read/credits`} className="button">
               Credits

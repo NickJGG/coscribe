@@ -3,7 +3,10 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { relativeTime } from "@/lib/relative-time";
+import { DeskToolbar } from "@/components/DeskToolbar";
 import { useLiveStatus } from "@/components/LiveStatus";
+import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
 import styles from "./desk.module.css";
 
 const SCROLL_KEY = "coscribe:desk-scroll:";
@@ -23,7 +26,8 @@ function writeScroll(doc: string, top: number) {
 }
 
 /**
- * The scrolling column beside the sidebar. Each document reopens where this browser tab last left it,
+ * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
+ * the right panel over all three. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
@@ -44,30 +48,59 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   }, [doc, ready]);
 
   return (
-    <div className={styles.main}>
-      <div
-        ref={scroller}
-        className={styles.scroll}
-        onScroll={(e) => {
-          if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
-        }}
-      >
-        {children}
+    <DeskToolbar.Provider>
+      <div className={styles.main}>
+        <DeskToolbar.Target className={styles.toolbarSlot} />
+        <div
+          ref={scroller}
+          className={styles.scroll}
+          onScroll={(e) => {
+            if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
+          }}
+        >
+          {children}
+        </div>
+        {footer}
+        <PanelSlot variant="desk" />
       </div>
-      {footer}
-    </div>
+    </DeskToolbar.Provider>
   );
 }
 
-/** Word count for everyone; signed-out Viewers also get one quiet way in. */
-export function DeskFooter({ signedOut }: { signedOut: boolean }) {
-  const { ready, words } = useLiveStatus();
+/**
+ * Word count for everyone. Members also see how many Writers are here; Co-hosts and up, on a Chapter,
+ * when it was last Snapshotted and the way into History. Signed-out Viewers get one quiet way in.
+ */
+export function DeskFooter({ member, signedOut }: { member: boolean; signedOut: boolean }) {
+  const { ready, words, writers } = useLiveStatus();
+  const panel = useStoryPanel();
+  const historyOpen = usePanelOpen("history");
+  const history = panel?.history;
 
   return (
     <footer className={styles.footer}>
       <span className={styles.tnum}>
         {ready && `${words.toLocaleString("en-US")} ${words === 1 ? "word" : "words"}`}
+        {ready && member && writers.length > 0 && ` · ${writers.length} here`}
       </span>
+      {history && (
+        <span className={styles.footerEnd}>
+          <span>
+            {history.latestAt
+              ? `Snapshot saved ${relativeTime(Date.parse(history.latestAt))}`
+              : "No Snapshots yet"}
+          </span>
+          <span aria-hidden>&middot;</span>
+          <button
+            type="button"
+            className={styles.footerButton}
+            aria-expanded={historyOpen}
+            onClick={() => panel?.toggle("history")}
+          >
+            History
+          </button>
+        </span>
+      )}
       {signedOut && (
         <Link href="/login" className={styles.footerLink}>
           Write one with your friends &rarr;

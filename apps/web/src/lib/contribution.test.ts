@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readAuthorChars, storyRibbon, type RibbonMember } from "./contribution";
+import { paragraphShares, readAuthorChars, storyRibbon, type RibbonMember } from "./contribution";
 
 const host: RibbonMember = { id: "h", name: "nick", color: "#d93f4c", role: "host", joinedAt: "2026-03-01" };
 const early: RibbonMember = { id: "a", name: "maya", color: "#3e63dd", role: "writer", joinedAt: "2026-01-01" };
@@ -43,5 +43,39 @@ describe("readAuthorChars", () => {
     expect(readAuthorChars(null)).toEqual({});
     expect(readAuthorChars([1, 2])).toEqual({});
     expect(readAuthorChars("x")).toEqual({});
+  });
+});
+
+describe("paragraphShares", () => {
+  it("merges each author's runs, in order of first appearance", () => {
+    const runs = [
+      { author: "nick", chars: 90 },
+      { author: "maya", chars: 7 },
+      { author: "nick", chars: 21 },
+      { author: "theo", chars: 29 },
+      { author: "nick", chars: 15 },
+    ];
+    expect(paragraphShares(runs)).toEqual([
+      { author: "nick", chars: 126 },
+      { author: "maya", chars: 7 },
+      { author: "theo", chars: 29 },
+    ]);
+  });
+
+  it("gives a single-author paragraph one share", () => {
+    expect(paragraphShares([{ author: "maya", chars: 140 }])).toEqual([{ author: "maya", chars: 140 }]);
+  });
+
+  it("skips empty runs, so an author appears where their first text does", () => {
+    const runs = [
+      { author: "juno", chars: 0 },
+      { author: "theo", chars: 4 },
+      { author: "juno", chars: 6 },
+    ];
+    expect(paragraphShares(runs).map((s) => s.author)).toEqual(["theo", "juno"]);
+  });
+
+  it("has no shares for an empty paragraph", () => {
+    expect(paragraphShares([])).toEqual([]);
   });
 });

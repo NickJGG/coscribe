@@ -8,6 +8,7 @@ import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
+import { ChapterTitle } from "./ChapterTitle";
 import styles from "./chapter.module.css";
 
 async function load(storyId: string, chapterId: string) {
@@ -38,6 +39,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const prev = chapters[index - 1];
   const next = chapters[index + 1];
   const authors = storyAuthors(data);
+  const manage = canManageChapters(myRole) && story.status !== "finished";
 
   return (
     <div className={styles.page}>
@@ -50,22 +52,8 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
               Reader View
             </Link>
           )}
-          {canManageChapters(myRole) && story.status !== "finished" && (
-            <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
-              <button className="button button-small">{chapter.locked ? "Unlock" : "Lock"}</button>
-            </ActionForm>
-          )}
-          {canManageChapters(myRole) && (
-            <SnapshotHistory
-              key={chapter.id}
-              chapterId={chapter.id}
-              authors={authors}
-              canRestore={story.status !== "finished"}
-              canName={myRole === "host"}
-            />
-          )}
         </div>
-        <h1 className={styles.title}>{chapter.title}</h1>
+        <ChapterTitle key={chapter.id} storyId={story.id} chapterId={chapter.id} title={chapter.title} renamable={manage} />
       </header>
 
       <LiveDocument
@@ -74,7 +62,25 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         id={chapter.id}
         writer={liveWriter(data)}
         authors={authors}
+        tools={
+          manage && (
+            <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
+              <button className="button button-ghost button-tiny">{chapter.locked ? "Unlock" : "Lock"}</button>
+            </ActionForm>
+          )
+        }
       />
+
+      {canManageChapters(myRole) && (
+        <SnapshotHistory
+          key={chapter.id}
+          chapterId={chapter.id}
+          chapterTitle={chapter.title}
+          authors={authors}
+          canRestore={story.status !== "finished"}
+          canName={myRole === "host"}
+        />
+      )}
 
       <nav className={styles.pager} aria-label="Chapters">
         {prev ? (

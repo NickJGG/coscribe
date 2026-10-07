@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authorColorCss } from "@/lib/profile-rules";
+import { Panel, usePanelOpen, useStoryPanel } from "./StoryPanel";
 import styles from "./StoryChat.module.css";
 
 type Person = { id: string; username: string; author_color: string };
@@ -20,15 +21,17 @@ function merge(current: Message[], incoming: Message[]): Message[] {
 }
 
 /**
- * The Story Chat side panel, rendered only for Writers and up. RLS keeps both history and Realtime
+ * Story Chat in the Story's right panel, rendered only for Writers and up. It stays mounted in the Story
+ * layout, so it keeps listening (and counting unread) while closed. RLS keeps both history and Realtime
  * delivery to members, so a Writer removed mid-session simply stops receiving messages.
  */
 export function StoryChat({ storyId, me, members }: { storyId: string; me: string; members: Person[] }) {
   const supabase = useMemo(() => createClient(), []);
-  const [open, setOpen] = useState(false);
+  const addUnread = useStoryPanel()?.addUnread;
+  const open = usePanelOpen("chat");
   const [messages, setMessages] = useState<Message[]>([]);
   const [hasEarlier, setHasEarlier] = useState(false);
-  const [unread, setUnread] = useState(0);
+  const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [people, setPeople] = useState(() => new Map(members.map((p) => [p.id, p])));
   const openRef = useRef(open);
@@ -61,7 +64,7 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
         { event: "INSERT", schema: "public", table: "chat_messages", filter: `story_id=eq.${storyId}` },
         ({ new: message }) => {
           setMessages((current) => merge(current, [message]));
-          if (!openRef.current && message.user_id !== me) setUnread((n) => n + 1);
+          if (!openRef.current && message.user_id !== me) addUnread?.();
         }
       )
       .subscribe((status) => {
@@ -70,7 +73,7 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, storyId, me, loadLatest]);
+  }, [supabase, storyId, me, loadLatest, addUnread]);
 
   const missing = useMemo(
     () => [...new Set(messages.map((m) => m.user_id))].filter((id) => !people.has(id)),
@@ -95,19 +98,15 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
       });
   }, [supabase, storyId, missing]);
 
+  // Opening the panel starts from the newest message.
+  useEffect(() => {
+    if (open) stickToBottom.current = true;
+  }, [open]);
+
   useEffect(() => {
     const list = listRef.current;
     if (open && list && stickToBottom.current) list.scrollTop = list.scrollHeight;
   }, [open, messages]);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [open]);
 
   async function loadEarlier() {
     const oldest = messages[0];
@@ -131,9 +130,8 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
     });
   }
 
-  async function send(form: HTMLFormElement) {
-    const field = form.elements.namedItem("body") as HTMLTextAreaElement;
-    const body = field.value.trim();
+  async function send() {
+    const body = draft.trim();
     if (!body) return;
 
     const { data, error } = await supabase
@@ -143,118 +141,88 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
       .single();
     if (error) return setError("Couldn't send. You may no longer be in this story.");
     setError(null);
-    field.value = "";
+    setDraft("");
     stickToBottom.current = true;
     setMessages((current) => merge(current, [data]));
   }
 
-  function toggle() {
-    stickToBottom.current = true;
-    setUnread(0);
-    setOpen((o) => !o);
-  }
-
   return (
-    <>
-      <div className={styles.clearance} aria-hidden />
-      <button
-        type="button"
-        className={`button ${styles.toggle}`}
-        aria-expanded={open}
-        aria-controls="story-chat"
-        onClick={toggle}
+    <Panel name="chat" title="Story Chat">
+      <ol
+        ref={listRef}
+        className={styles.messages}
+        aria-live="polite"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+        }}
       >
-        Chat
-        {unread > 0 && (
-          <span className={styles.badge}>
-            {unread}
-            <span className="sr-only"> unread</span>
-          </span>
+        {hasEarlier && (
+          <li className={styles.earlier}>
+            <button type="button" className="link-button muted" onClick={loadEarlier}>
+              Load earlier messages
+            </button>
+          </li>
         )}
-      </button>
-
-      <aside id="story-chat" className={styles.panel} hidden={!open} aria-label="Story Chat">
-        <header className={styles.head}>
-          <h2 className={styles.heading}>Story Chat</h2>
-          <button type="button" className="button button-small" onClick={() => setOpen(false)}>
-            Close
-          </button>
-        </header>
-
-        <ol
-          ref={listRef}
-          className={styles.messages}
-          aria-live="polite"
-          onScroll={(e) => {
-            const el = e.currentTarget;
-            stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-          }}
-        >
-          {hasEarlier && (
-            <li className={styles.earlier}>
-              <button type="button" className="link-button muted" onClick={loadEarlier}>
-                Load earlier messages
-              </button>
+        {!messages.length && !error && <li className="muted">No messages yet. Say hi to your co-writers.</li>}
+        {messages.map((m, i) => {
+          const prev = messages[i - 1];
+          const grouped =
+            prev?.user_id === m.user_id && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
+          const person = people.get(m.user_id);
+          return (
+            <li key={m.id} className={grouped ? styles.grouped : styles.message}>
+              {!grouped && (
+                <div className={styles.byline}>
+                  <span
+                    className={styles.author}
+                    style={{ "--author": person ? authorColorCss(person.author_color) : "var(--rule)" } as React.CSSProperties}
+                  >
+                    {person?.username ?? "…"}
+                  </span>
+                  <time className="muted" dateTime={m.created_at}>
+                    {formatTime(m.created_at)}
+                  </time>
+                </div>
+              )}
+              <p className={styles.body}>{m.body}</p>
             </li>
-          )}
-          {!messages.length && !error && <li className="muted">No messages yet. Say hi to your co-writers.</li>}
-          {messages.map((m, i) => {
-            const prev = messages[i - 1];
-            const grouped =
-              prev?.user_id === m.user_id && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
-            const person = people.get(m.user_id);
-            return (
-              <li key={m.id} className={grouped ? styles.grouped : styles.message}>
-                {!grouped && (
-                  <div className={styles.byline}>
-                    <span
-                      className={styles.author}
-                      style={{ "--author": person ? authorColorCss(person.author_color) : "var(--rule)" } as React.CSSProperties}
-                    >
-                      {person?.username ?? "…"}
-                    </span>
-                    <time className="muted" dateTime={m.created_at}>
-                      {formatTime(m.created_at)}
-                    </time>
-                  </div>
-                )}
-                <p className={styles.body}>{m.body}</p>
-              </li>
-            );
-          })}
-        </ol>
+          );
+        })}
+      </ol>
 
-        {error && (
-          <p role="alert" className={styles.error}>
-            {error}
-          </p>
-        )}
+      {error && (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
 
-        <form
-          className={styles.compose}
-          onSubmit={(e) => {
-            e.preventDefault();
-            void send(e.currentTarget);
+      <form
+        className={styles.compose}
+        onSubmit={(e) => {
+          e.preventDefault();
+          void send();
+        }}
+      >
+        <textarea
+          name="body"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className={`input ${styles.input}`}
+          placeholder="Message your co-writers"
+          aria-label="Message"
+          maxLength={2000}
+          rows={2}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
           }}
-        >
-          <textarea
-            name="body"
-            className={`input ${styles.input}`}
-            placeholder="Message your co-writers"
-            aria-label="Message"
-            maxLength={2000}
-            rows={2}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                e.currentTarget.form?.requestSubmit();
-              }
-            }}
-          />
-          <button className="button button-primary button-small">Send</button>
-        </form>
-      </aside>
-    </>
+        />
+        <button className="button button-primary button-small">Send</button>
+      </form>
+    </Panel>
   );
 }
 

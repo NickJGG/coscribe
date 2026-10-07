@@ -44,3 +44,14 @@ export function storyRibbon(
     .map(([id, chars]) => ({ id, name: formerNames.get(id) ?? "a former Writer", color: null, chars }));
   return [...current, ...former].filter((s) => s.chars > 0);
 }
+
+export type AuthorRun = { author: string; chars: number };
+
+/** One paragraph's split margin bar: each author's characters, in the order they first appear. */
+export function paragraphShares(runs: AuthorRun[]): AuthorRun[] {
+  const totals = new Map<string, number>();
+  for (const { author, chars } of runs) {
+    if (chars > 0) totals.set(author, (totals.get(author) ?? 0) + chars);
+  }
+  return [...totals].map(([author, chars]) => ({ author, chars }));
+}

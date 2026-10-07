@@ -8,6 +8,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { AccountMenus } from "@/components/SiteHeader";
 import { LiveStatusProvider } from "@/components/LiveStatus";
 import { SignInLink } from "@/components/SignInLink";
+import { ChatButton } from "@/components/StoryPanel";
 import { SyncSocketProvider } from "@/components/SyncSocket";
 import { DeskFrame } from "./DeskFrame";
 import { Breadcrumb, DeskStatus } from "./DeskHeader";
@@ -45,6 +46,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                   Invite
                 </Link>
               )}
+              {myRole && <ChatButton className="button button-small" />}
               {viewer?.profile ? (
                 <AccountMenus profile={viewer.profile} />
               ) : viewer ? (
@@ -91,7 +93,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 )
               }
             />
-            <DeskMain footer={<DeskFooter signedOut={!viewer} />}>{props.children}</DeskMain>
+            <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} />}>{props.children}</DeskMain>
           </div>
         </DeskFrame>
       </LiveStatusProvider>

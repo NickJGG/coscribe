@@ -13,7 +13,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.95em;
-  padding-top: 52px;
+  padding-top: 0.5em;
   font-size: var(--step-1);
 }
 
@@ -24,50 +24,68 @@
 }
 
 .toolRow {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
-  min-height: 42px;
-  padding: 4px 0;
+  gap: 4px 16px;
+  min-height: 40px;
+  padding: 4px 20px;
   background: var(--paper);
-  font-size: 0.875rem;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
 }
 
 .toolAside {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-left: auto;
 }
 
 .toolbar {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper-raised);
+  align-items: center;
+  gap: 2px;
 }
 
 .tool {
-  min-width: 36px;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: calc(var(--radius) - 2px);
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
   background: none;
-  color: var(--ink);
+  color: inherit;
   font: inherit;
   cursor: pointer;
 }
 
 .tool:hover {
-  border-color: var(--rule);
+  background: var(--wash);
+  color: var(--ink);
 }
 
 .tool[aria-pressed="true"] {
+  background: var(--hair);
+  color: var(--ink);
+}
+
+.tool em {
+  font-family: var(--font-prose), Georgia, serif;
+}
+
+.toolSep {
+  width: 1px;
+  height: 16px;
+  margin: 0 6px;
   background: var(--rule);
+}
+
+@media (pointer: coarse) {
+  .tool {
+    min-width: 44px;
+    height: 44px;
+  }
 }
 
 .prose {
@@ -156,23 +174,45 @@
   margin-top: 0.25em;
 }
 
-.toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--ink-muted);
-  cursor: pointer;
-}
-
 .authorship {
   position: relative;
-  /* Caret labels and the author tooltip can stick out past a phone's edge; don't let them scroll the page. */
+}
+
+.clip {
+  position: relative;
   overflow-x: clip;
 }
 
 .authorship[data-show-authors] :global(span[data-author]) {
   background-color: color-mix(in srgb, var(--author-tint, var(--ink-muted)) 28%, transparent);
   border-radius: 2px;
+}
+
+/* Sits in the page's side padding, left of the text. */
+.margin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  width: 3px;
+  pointer-events: none;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  width: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: 2px;
+  overflow: hidden;
+  opacity: 0.8;
+}
+
+.bar > span {
+  min-height: 3px;
+  background: var(--c, var(--faint));
 }
 
 .authorTip {

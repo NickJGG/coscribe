@@ -1,0 +1,59 @@
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.switch:hover {
+  color: var(--ink);
+}
+
+.track {
+  position: relative;
+  flex-shrink: 0;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--rule);
+  transition: background-color 0.15s;
+}
+
+.track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  transition: translate 0.15s;
+}
+
+.switch[aria-checked="true"] .track {
+  background: var(--ink);
+}
+
+.switch[aria-checked="true"] .track::after {
+  translate: 12px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .track::after {
+    transition: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .switch {
+    min-height: 44px;
+  }
+}

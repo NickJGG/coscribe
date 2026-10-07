@@ -1,0 +1,92 @@
+.slot {
+  display: contents;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  width: min(22rem, 100%);
+  border-left: 1px solid var(--rule);
+  background: var(--paper-raised);
+  box-shadow: -8px 0 24px rgb(0 0 0 / 0.08);
+  font-size: 0.875rem;
+  outline: none;
+  transition: translate 0.18s ease-out;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+@starting-style {
+  .panel {
+    translate: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
+  }
+}
+
+/* Site pages have no app frame to sit inside: the panel takes the window's right edge. */
+.slot[data-variant="site"] > .panel {
+  position: fixed;
+  z-index: 20;
+  width: min(24rem, 100vw);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.heading {
+  min-width: 0;
+  font-size: var(--step-0);
+  overflow-wrap: anywhere;
+}
+
+.close {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.closeIcon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+@media (pointer: coarse) {
+  .close {
+    width: 44px;
+    height: 44px;
+  }
+}
