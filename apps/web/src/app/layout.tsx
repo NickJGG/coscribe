@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Literata } from "next/font/google";
 import { getViewer } from "@/lib/viewer";
+import { Heartbeat } from "@/components/Heartbeat";
 import "./globals.css";
 
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
@@ -17,7 +18,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = (await getViewer())?.profile?.theme;
+  const profile = (await getViewer())?.profile;
+  const theme = profile?.theme;
 
   return (
     <html
@@ -25,7 +27,10 @@ export default async function RootLayout({
       className={`${ui.variable} ${prose.variable}`}
       data-theme={theme && theme !== "system" ? theme : undefined}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        {profile && <Heartbeat />}
+      </body>
     </html>
   );
 }

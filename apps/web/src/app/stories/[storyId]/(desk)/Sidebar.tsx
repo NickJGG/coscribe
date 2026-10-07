@@ -4,7 +4,11 @@ import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ENTRY_GROUP_LABEL, ENTRY_TYPES, filterEntries, type EntryType } from "@/lib/entries";
+import { joinNames } from "@/lib/presence";
+import { authorColorCss } from "@/lib/profile-rules";
 import { shortWords } from "@/lib/words";
+import { Avatar } from "@/components/Avatar";
+import { useHereNow, type HereNow } from "@/components/StoryPresence";
 import { useDeskFrame, type SidebarTab } from "./DeskFrame";
 import styles from "./desk.module.css";
 
@@ -41,6 +45,7 @@ export function Sidebar({
   const panes = useRef<Record<SidebarTab, HTMLDivElement | null>>({ chapters: null, bible: null });
   const scrollTops = useRef<Record<SidebarTab, number>>({ chapters: 0, bible: 0 });
   const tabRefs = useRef<Record<SidebarTab, HTMLButtonElement | null>>({ chapters: null, bible: null });
+  const here = useHereNow();
 
   // A pane that was hidden comes back where it was left.
   useLayoutEffect(() => {
@@ -81,6 +86,11 @@ export function Sidebar({
             <BibleIcon />
             <span className="sr-only">Story Bible</span>
           </button>
+          {here.length > 0 && (
+            <span className={styles.stripHere} title={`Here now: ${joinNames(here.map((h) => h.person.name))}`}>
+              <span className="sr-only">{here.length} here now</span>
+            </span>
+          )}
         </div>
 
         <div className={styles.full}>
@@ -129,7 +139,9 @@ export function Sidebar({
             onScroll={(e) => (scrollTops.current.chapters = e.currentTarget.scrollTop)}
           >
             <ol className={styles.list}>
-              {chapters.map((chapter, i) => (
+              {chapters.map((chapter, i) => {
+                const inside = here.filter((h) => h.documentId === chapter.id);
+                return (
                 <li key={chapter.id}>
                   <Link
                     href={`/stories/${storyId}/chapters/${chapter.id}`}
@@ -146,12 +158,19 @@ export function Sidebar({
                           <span className="sr-only">Locked,</span>
                         </>
                       )}
-                      {shortWords(chapter.word_count)}
-                      <span className="sr-only"> words</span>
+                      {inside.length ? (
+                        <PresenceDots here={inside} />
+                      ) : (
+                        <>
+                          {shortWords(chapter.word_count)}
+                          <span className="sr-only"> words</span>
+                        </>
+                      )}
                     </span>
                   </Link>
                 </li>
-              ))}
+                );
+              })}
             </ol>
             {newChapter}
           </div>
@@ -211,11 +230,62 @@ export function Sidebar({
             )}
             {newEntry}
           </div>
+
+          {here.length > 0 && (
+            <section className={styles.here} aria-labelledby="sidebar-here">
+              <h3 id="sidebar-here" className="smallcaps">
+                Here now
+              </h3>
+              <ul className={styles.list}>
+                {here.map((h) => {
+                  const where = whereIs(h, chapters, entries);
+                  return (
+                    <li key={h.userId}>
+                      <Link
+                        href={`/stories/${storyId}/${h.kind === "chapter" ? "chapters" : "bible"}/${h.documentId}`}
+                        scroll={false}
+                        className={styles.hereRow}
+                      >
+                        <Avatar name={h.person.name} color={h.person.color} size="sm" />
+                        <span className={styles.name}>{h.person.name}</span>
+                        {where && <span className={styles.meta}>{where}</span>}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
         </div>
       </aside>
       {overlay && <div className={styles.scrim} onClick={close} aria-hidden />}
     </>
   );
+}
+
+function PresenceDots({ here }: { here: HereNow[] }) {
+  return (
+    <span className={styles.dots}>
+      {here.map((h) => (
+        <span
+          key={h.userId}
+          className={styles.dot}
+          style={{ "--c": authorColorCss(h.person.color) } as React.CSSProperties}
+          title={h.person.name}
+          aria-hidden
+        />
+      ))}
+      <span className="sr-only">{joinNames(here.map((h) => h.person.name))} here now</span>
+    </span>
+  );
+}
+
+function whereIs(h: HereNow, chapters: Chapter[], entries: Entry[]): string | null {
+  if (h.kind === "chapter") {
+    const i = chapters.findIndex((c) => c.id === h.documentId);
+    return i < 0 ? null : `Ch. ${i + 1}`;
+  }
+  return entries.find((e) => e.id === h.documentId)?.name ?? null;
 }
 
 function PanelIcon() {

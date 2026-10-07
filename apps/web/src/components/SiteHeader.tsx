@@ -10,6 +10,7 @@ import { ActionForm } from "./ActionForm";
 import { Avatar } from "./Avatar";
 import { Dropdown } from "./Dropdown";
 import { NavLink } from "./NavLink";
+import { OnlineFriends } from "./OnlineFriends";
 import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./SiteHeader.module.css";
 
@@ -116,6 +117,7 @@ async function FriendsMenu({ userId }: { userId: string }) {
             ))}
           </section>
         )}
+        <OnlineFriends />
         <section className={styles.panelSection}>
           <h3 className="smallcaps">Your friends</h3>
           {friends.length ? (

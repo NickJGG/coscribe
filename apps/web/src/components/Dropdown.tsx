@@ -1,8 +1,15 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./Dropdown.module.css";
+
+const OpenContext = createContext(false);
+
+/** Whether the Dropdown around this content is open, for content that loads only when shown. */
+export function useDropdownOpen() {
+  return useContext(OpenContext);
+}
 
 /**
  * A button that opens a panel beneath it. Escape, a click outside, following a link inside, or navigating
@@ -82,7 +89,7 @@ export function Dropdown({
           if ((e.target as Element).closest("a")) setOpenOn(null);
         }}
       >
-        {children}
+        <OpenContext value={open}>{children}</OpenContext>
       </div>
     </div>
   );

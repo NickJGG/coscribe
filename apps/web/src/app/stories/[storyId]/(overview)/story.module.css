@@ -332,3 +332,10 @@
   flex-basis: 100%;
   margin-top: 0;
 }
+
+.hereNow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}

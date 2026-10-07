@@ -70,3 +70,11 @@ export async function setTheme(theme: Theme): Promise<void> {
   await supabase.from("profiles").update({ theme }).eq("id", me.userId);
   refresh();
 }
+
+/** Off hides you from Friends' "Online now". Writers in a shared Story still see you there. */
+export async function setShowOnline(show: boolean): Promise<void> {
+  const me = await requireProfile("/settings");
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ show_online: show === true }).eq("id", me.userId);
+  refresh();
+}

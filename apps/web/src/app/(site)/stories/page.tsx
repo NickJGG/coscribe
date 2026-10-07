@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { getPendingInvites } from "@/lib/connections";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
+import { presentWriters, writingLine } from "@/lib/presence";
 import { relativeTime } from "@/lib/relative-time";
 import { ROLE_LABEL } from "@/lib/story-roles";
 import { createStory } from "@/lib/actions/stories";
@@ -29,8 +30,9 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         role,
         story:stories (
           id, title, status, created_at,
-          chapters (word_count, author_chars, edited_at),
-          members:story_members (role, joined_at, author_color, profile:profiles (id, username, author_color))
+          chapters (id, position, word_count, author_chars, edited_at),
+          members:story_members (role, joined_at, author_color, profile:profiles (id, username, author_color)),
+          presence:story_presence (id, user_id, kind, document_id, connected_at)
         )
       `)
       .eq("user_id", me.userId),
@@ -50,10 +52,21 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       (latest, c) => (c.edited_at && (!latest || c.edited_at > latest) ? c.edited_at : latest),
       null
     );
+    const chapterNumbers = new Map(
+      story.chapters.toSorted((a, b) => a.position - b.position).map((c, i) => [c.id, i + 1])
+    );
+    const writing = writingLine(
+      presentWriters(story.presence, me.userId).flatMap((w) => {
+        const member = members.find((m) => m.id === w.userId);
+        const chapter = w.kind === "chapter" ? (chapterNumbers.get(w.documentId) ?? null) : null;
+        return member ? [{ name: member.name, chapter }] : [];
+      })
+    );
     return {
       ...story,
       role,
       members,
+      writing,
       editedAt,
       words: story.chapters.reduce((sum, c) => sum + c.word_count, 0),
       chars: story.chapters.map((c) => readAuthorChars(c.author_chars)),
@@ -110,7 +123,10 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
                     </>
                   ) : (
                     <>
-                      <span>{story.editedAt ? `Edited ${relativeTime(Date.parse(story.editedAt))}` : "No words yet"}</span>
+                      <span className={story.writing ? styles.writing : undefined}>
+                        {story.writing ??
+                          (story.editedAt ? `Edited ${relativeTime(Date.parse(story.editedAt))}` : "No words yet")}
+                      </span>
                       <span>{ROLE_LABEL[story.role]}</span>
                     </>
                   )}

@@ -129,3 +129,18 @@
   flex-direction: column;
   gap: 16px;
 }
+
+.writing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+
+.writing::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+}

@@ -398,6 +398,55 @@
   font-size: var(--step--1);
 }
 
+/* Presence */
+
+.dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.here {
+  flex-shrink: 0;
+  max-height: 40%;
+  padding: 10px 8px;
+  border-top: 1px solid var(--hair);
+  overflow-y: auto;
+}
+
+.here > h3 {
+  padding: 0 8px 6px;
+}
+
+.hereRow {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.hereRow:hover {
+  background: color-mix(in srgb, var(--paper-raised) 60%, transparent);
+}
+
+.stripHere {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent);
+}
+
 .add {
   display: block;
   width: 100%;
@@ -600,7 +649,8 @@
 }
 
 @media (pointer: coarse) {
-  .row {
+  .row,
+  .hereRow {
     min-height: 44px;
   }
 

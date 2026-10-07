@@ -6,6 +6,8 @@
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
  *   story's membership, Visibility, status, and (for Chapters) lock state.
  * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts).
+ * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
+ *   cleared before the server starts listening.
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
@@ -29,9 +31,10 @@ import {
   storyContent,
   type DocumentRef,
 } from "./documents"
+import { arrive, clearPresence, depart, setMember } from "./presence"
 import { chapterStored, chapterUnloading, restoreSnapshot, snapshotPreview } from "./snapshots"
 
-type Context = { userId: string | null; storyId: string; document: DocumentRef }
+type Context = { userId: string | null; storyId: string; document: DocumentRef; member: boolean; socketId: string }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 const ROUTE = new RegExp(`^/(stories|snapshots)/(${UUID})(?:/(refresh|restore|content))?$`, "i")
@@ -53,16 +56,24 @@ const server = new Server<Context>({
     }),
   ],
 
-  async onAuthenticate({ token, documentName, connectionConfig }) {
+  async onAuthenticate({ token, documentName, connectionConfig, socketId }) {
     const doc = parseDocumentName(documentName)
     if (!doc) throw new Error("unknown document")
 
     const userId = token ? await verifyUser(token) : null
-    const { storyId, access } = await documentAccess(doc, userId)
+    const { storyId, access, member } = await documentAccess(doc, userId)
     if (!storyId || !access) throw new Error("forbidden")
 
     connectionConfig.readOnly = access === "read"
-    return { userId, storyId, document: doc } satisfies Context
+    return { userId, storyId, document: doc, member, socketId } satisfies Context
+  },
+
+  async connected({ context }) {
+    arrive(context, context)
+  },
+
+  async onDisconnect({ context }) {
+    depart(context)
   },
 
   async afterStoreDocument({ documentName, document }) {
@@ -112,6 +123,8 @@ async function route(
       userId: null,
       storyId,
       document: { kind: "chapter" as const, id: chapterId },
+      member: false,
+      socketId: "server",
     }))
     response.writeHead(restored ? 204 : 404).end()
   } else {
@@ -139,7 +152,8 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
       const { context } = connection
       if (context.storyId !== storyId) continue
 
-      const { access } = await documentAccess(context.document, context.userId)
+      const { access, member } = await documentAccess(context.document, context.userId)
+      setMember(context, member)
       if (!access) {
         connection.close({ code: 4403, reason: ACCESS_REVOKED })
       } else if (connection.readOnly !== (access === "read")) {
@@ -150,7 +164,13 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
   }
 }
 
-server.listen()
+clearPresence().then(
+  () => server.listen(),
+  (error) => {
+    console.error("couldn't clear presence", error)
+    process.exit(1)
+  }
+)
 
 backfillChapterStats().then(
   (count) => count && console.log(`backfilled stats for ${count} chapters`),

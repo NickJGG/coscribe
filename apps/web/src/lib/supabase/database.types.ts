@@ -181,14 +181,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "author_color": string,"created_at": string,"id": string,"theme": Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color": string,"created_at"?: string,"id": string,"theme"?: Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username": string
                   }
                   Update: {
-                    "author_color"?: string,"created_at"?: string,"id"?: string,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
+                    "author_color"?: string,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
                   }
                   Relationships: [
                     
@@ -203,6 +203,40 @@ isOneToOne: false
                   }
                   Update: {
                     "created_at"?: string,"finished_at"?: string | null,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"story_activity": {
+                  Row: {
+                    "story_id": string,"updated_at": string,"viewers": number,"writers": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "story_id": string,"updated_at"?: string,"viewers"?: number,"writers"?: number
+                  }
+                  Update: {
+                    "story_id"?: string,"updated_at"?: string,"viewers"?: number,"writers"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "story_activity_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: true
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"story_changes": {
+                  Row: {
+                    "changed_at": string,"story_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "changed_at"?: string,"story_id": string
+                  }
+                  Update: {
+                    "changed_at"?: string,"story_id"?: string
                   }
                   Relationships: [
                     
@@ -227,6 +261,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "story_members_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"story_presence": {
+                  Row: {
+                    "connected_at": string,"document_id": string,"id": string,"kind": string,"story_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "connected_at"?: string,"document_id": string,"id"?: string,"kind": string,"story_id": string,"user_id": string
+                  }
+                  Update: {
+                    "connected_at"?: string,"document_id"?: string,"id"?: string,"kind"?: string,"story_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "story_presence_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "story_presence_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
@@ -280,6 +340,14 @@ isOneToOne: false
                            },
 "delete_chapter":
 { Args: { "p_chapter": string }; Returns: undefined
+                           },
+"friends_presence":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "author_color": string,"chapter_id": string,"chapter_title": string,"story_id": string,"story_title": string,"user_id": string,"username": string
+            }[]
+                           },
+"heartbeat":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "invite_friend":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined

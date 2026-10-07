@@ -4,6 +4,7 @@ import { canManageChapters, type MemberRole } from "@/lib/story-roles";
 import { deleteChapter, moveChapter, renameChapter, setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { Dropdown } from "@/components/Dropdown";
+import { ChapterPresence } from "@/components/StoryPresence";
 import styles from "./story.module.css";
 
 type Chapter = { id: string; title: string; locked: boolean; word_count: number; edited_at: string | null };
@@ -41,6 +42,7 @@ export function ChapterList({
             ) : (
               <span>No words yet</span>
             )}
+            <ChapterPresence chapterId={chapter.id} className={styles.hereNow} />
             {chapter.locked && (
               <span className={styles.locked}>
                 <LockIcon /> Locked

@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HocuspocusProvider } from "@hocuspocus/provider";
+import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Placeholder } from "@tiptap/extensions";
-import * as Y from "yjs";
 import {
   ACCESS_REVOKED,
   AuthorStamp,
@@ -27,7 +26,7 @@ import { DeskToolbar } from "./DeskToolbar";
 import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { Switch } from "./Switch";
-import { useSyncSocket } from "./SyncSocket";
+import { useLiveDocuments, type LiveSession } from "./SyncSocket";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
@@ -38,8 +37,6 @@ export type DocumentMentions = { storyId: string; entries: MentionEntry[] };
 
 /** A Story member whose text can carry an `author` mark. */
 export type StoryAuthor = { id: string; name: string; color: string };
-
-type Session = { provider: HocuspocusProvider; ydoc: Y.Doc };
 
 const KINDS = {
   chapter: { extensions: chapterExtensions, noun: "Chapter", label: "Chapter text", placeholder: "Start writing…" },
@@ -56,7 +53,7 @@ const SLOW_MS = 1000;
 /**
  * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
- * Inside a SyncSocketProvider it attaches to the shared socket; its connection, Writers present and word
+ * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
  */
@@ -75,9 +72,9 @@ export function LiveDocument({
   tools?: React.ReactNode;
   mentions?: DocumentMentions;
 }) {
-  const acquireSocket = useSyncSocket();
+  const documents = useLiveDocuments();
   const report = useLiveReport();
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<LiveSession | null>(null);
   const [connection, setConnection] = useState<LiveConnection>("connecting");
   const [synced, setSynced] = useState(false);
   const [slow, setSlow] = useState(false);
@@ -88,48 +85,55 @@ export function LiveDocument({
   useEffect(() => {
     const name = documentName(kind, id);
     report({ ...NO_DOCUMENT, doc: name });
-    const ydoc = new Y.Doc();
     const supabase = createClient();
-    const shared = acquireSocket?.();
-    const provider: HocuspocusProvider = new HocuspocusProvider({
-      ...(shared ? { websocketProvider: shared } : { url: process.env.NEXT_PUBLIC_SYNC_URL! }),
-      name,
-      document: ydoc,
-      token: async () => (await supabase.auth.getSession()).data.session?.access_token ?? "",
-      onAuthenticated: ({ scope }) => setReadOnly(scope !== "read-write"),
-      onAuthenticationFailed: () => setConnection("denied"),
-      onSynced: ({ state }) => {
-        if (!state) return;
-        setConnection("live");
-        setSynced(true);
-      },
-      onStatus: ({ status }) => {
-        if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
-      },
-      onStateless: ({ payload }) => {
-        const message = JSON.parse(payload) as AccessMessage;
-        if (message.type === "access") setReadOnly(message.readOnly);
-      },
-      onClose: ({ event }) => {
-        if (event.reason !== ACCESS_REVOKED) return;
-        setConnection("denied");
-        provider.destroy();
-      },
-    });
-    // A provider on a shared socket doesn't attach itself.
-    if (shared) provider.attach();
+    const live = documents.open(name, async () => (await supabase.auth.getSession()).data.session?.access_token ?? "");
+    const { provider } = live;
+
+    const onAuthenticated = ({ scope }: { scope: string }) => setReadOnly(scope !== "read-write");
+    const onAuthenticationFailed = () => setConnection("denied");
+    const onSynced = ({ state }: { state: boolean }) => {
+      if (!state) return;
+      setConnection("live");
+      setSynced(true);
+    };
+    const onStatus = ({ status }: { status: string }) => {
+      if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
+    };
+    const onStateless = ({ payload }: { payload: string }) => {
+      const message = JSON.parse(payload) as AccessMessage;
+      if (message.type === "access") setReadOnly(message.readOnly);
+    };
+    const onClose = ({ event }: { event: CloseEvent }) => {
+      if (event.reason === ACCESS_REVOKED) setConnection("denied");
+    };
+    provider.on("authenticated", onAuthenticated);
+    provider.on("authenticationFailed", onAuthenticationFailed);
+    provider.on("synced", onSynced);
+    provider.on("status", onStatus);
+    provider.on("stateless", onStateless);
+    provider.on("close", onClose);
+
+    // The session is an external connection owned by this effect: the editor below needs the handle, and
+    // one reused from a moment ago has already been answered, so its events won't come again.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (provider.isAuthenticated) setReadOnly(provider.authorizedScope !== "read-write");
+    if (provider.isSynced) onSynced({ state: true });
+    setSession(live);
+    /* eslint-enable react-hooks/set-state-in-effect */
     const slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
-    // The provider is an external connection owned by this effect; the editor below needs the handle.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSession({ provider, ydoc });
 
     return () => {
       clearTimeout(slowTimer);
-      provider.destroy();
-      ydoc.destroy();
+      provider.off("authenticated", onAuthenticated);
+      provider.off("authenticationFailed", onAuthenticationFailed);
+      provider.off("synced", onSynced);
+      provider.off("status", onStatus);
+      provider.off("stateless", onStateless);
+      provider.off("close", onClose);
+      documents.close(name);
       report(NO_DOCUMENT);
     };
-  }, [kind, id, acquireSocket, report]);
+  }, [kind, id, documents, report]);
 
   useEffect(() => {
     report({ connection, slow, readOnly });
@@ -204,7 +208,7 @@ function LiveEditor({
   onEditor,
 }: {
   kind: DocumentKind;
-  session: Session;
+  session: LiveSession;
   writer: Writer | null;
   editable: boolean;
   mentions?: MentionEntry[];
