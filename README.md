@@ -7,8 +7,8 @@ Vocabulary (Host, Writer, Viewer, Chapter, Story Bible, Snapshot, ...) is define
 ## Stack
 
 - `apps/web`: Next.js 16 (App Router) + React 19 + TypeScript, plain CSS modules. Hosted on Vercel.
-- `apps/sync`: Hocuspocus (Yjs) server for live Chapter and Entry documents. Hosted on Fly.io. *(stub)*
-- `packages/editor`: the shared Tiptap/ProseMirror schema used by both. *(stub)*
+- `apps/sync`: Hocuspocus (Yjs) server for live Chapter and Entry documents. Hosted on Fly.io.
+- `packages/editor`: the shared Tiptap/ProseMirror schema used by both.
 - Supabase: Postgres, Auth (Google and Discord OAuth), Realtime. Docker-backed local stack for dev.
 
 ## Local setup
@@ -25,8 +25,12 @@ cp apps/web/.env.local.example apps/web/.env.local
 Fill `apps/web/.env.local` with the API URL and Publishable key printed by `db:start` (or `pnpm db:status`).
 
 ```bash
+cp apps/sync/.env.example apps/sync/.env  # local defaults work as-is
+pnpm dev:sync                             # ws://localhost:1234
 pnpm dev                                  # http://localhost:3000
 ```
+
+`SYNC_SECRET` must match in `apps/web/.env.local` and `apps/sync/.env`.
 
 Use `localhost`, not `127.0.0.1`: the auth `site_url` is `http://localhost:3000`, and the PKCE cookie has to come back to the same host that started sign-in.
 
@@ -46,6 +50,7 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 | | |
 |---|---|
 | `dev` | Next.js dev server |
+| `dev:sync` | Hocuspocus sync server, restarting on change |
 | `build` | Production build of the web app |
 | `lint` | ESLint (web) |
 | `test` | Vitest over `apps/*/src` and `packages/*/src` |
@@ -59,10 +64,11 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 
 ```
 apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username],
-                            friends, stories, stories/[storyId](/settings), invite/[token]
+                            friends, stories, stories/[storyId](/settings), invite/[token],
+                            stories/[storyId]/chapters/[chapterId]
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
-apps/sync/                  Hocuspocus server
+apps/sync/                  Hocuspocus server (persistence, auth, refresh endpoint)
 packages/editor/            Shared editor schema
 supabase/migrations/        SQL migrations, applied by db:start / db:reset
 supabase/config.toml        Local stack config
@@ -78,3 +84,11 @@ supabase/config.toml        Local stack config
 ## Roles and permissions
 
 Role rules live in SQL: `story_role()` / `can_view_story()` helpers for RLS, and `security definer` RPCs for anything touching more than one row (create story, change roles, hand off Host, invites). `apps/web/src/lib/story-roles.ts` mirrors them only to decide which buttons to show.
+
+## Live editing
+
+Each Chapter is a Yjs document named `chapter:<uuid>`, served by `apps/sync` and stored in `chapters.ydoc`.
+
+1. The Chapter page opens a Hocuspocus connection, sending the Supabase access token (Viewers who aren't signed in send none).
+2. `onAuthenticate` verifies the token against the project's JWKS and looks up the user's role: members edit unless the Chapter is locked or the story is Finished; anyone else gets read-only access to a Public story, or is rejected.
+3. When the web app changes access (lock or unlock, remove or leave, Visibility, delete), it calls `POST /stories/<id>/refresh` on the sync server with `SYNC_SECRET`. Open connections switch to read-only or back live, or are disconnected.

@@ -16,6 +16,11 @@ export function atLeast(role: MemberRole | null | undefined, min: MemberRole): b
   return role != null && RANK[role] >= RANK[min];
 }
 
+/** Reorder, rename, delete, and lock or unlock Chapters. */
+export function canManageChapters(actor: MemberRole | null | undefined): boolean {
+  return atLeast(actor, "cohost");
+}
+
 export function canManageInvites(actor: MemberRole | null | undefined): boolean {
   return atLeast(actor, "cohost");
 }

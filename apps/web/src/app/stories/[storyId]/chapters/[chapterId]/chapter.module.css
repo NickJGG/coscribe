@@ -1,0 +1,198 @@
+.page {
+  width: 100%;
+  max-width: calc(var(--measure) + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 32px var(--gutter) 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.title {
+  font-size: 2rem;
+  overflow-wrap: anywhere;
+}
+
+.live {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  font-size: 0.875rem;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-muted);
+}
+
+.status::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rule);
+}
+
+.status[data-status="live"]::before {
+  background: var(--success);
+}
+
+.status[data-status="denied"] {
+  color: var(--danger);
+}
+
+.status[data-status="denied"]::before {
+  background: var(--danger);
+}
+
+.online {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  list-style: none;
+}
+
+.person {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+}
+
+.person::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--author);
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  align-self: flex-start;
+}
+
+.tool {
+  min-width: 36px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 2px);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tool:hover {
+  border-color: var(--rule);
+}
+
+.tool[aria-pressed="true"] {
+  background: var(--rule);
+}
+
+.prose {
+  min-height: 50vh;
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 1.125rem;
+  line-height: 1.75;
+  outline: none;
+  overflow-wrap: break-word;
+}
+
+.prose p + p {
+  margin-top: 0.9em;
+}
+
+.prose :global(hr[data-scene-break]) {
+  margin: 1.5em 0;
+  border: 0;
+  text-align: center;
+  cursor: default;
+}
+
+.prose :global(hr[data-scene-break])::after {
+  content: "* * *";
+  color: var(--ink-muted);
+  letter-spacing: 0.5em;
+}
+
+.prose :global(hr.ProseMirror-selectednode) {
+  outline: 2px solid var(--focus);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.prose :global(p.is-editor-empty:first-child)::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--ink-muted);
+  pointer-events: none;
+}
+
+/* Remote carets from CollaborationCaret. */
+.prose :global(.collaboration-carets__caret) {
+  position: relative;
+  margin: 0 -1px;
+  border-left: 1px solid;
+  border-right: 1px solid;
+  word-break: normal;
+  pointer-events: none;
+}
+
+.prose :global(.collaboration-carets__label) {
+  position: absolute;
+  top: -1.4em;
+  left: -1px;
+  padding: 1px 6px;
+  border-radius: 4px 4px 4px 0;
+  color: #fff;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}

@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "friendships": {
+            "chapters": {
+                  Row: {
+                    "created_at": string,"id": string,"locked": boolean,"position": number,"story_id": string,"title": string,"ydoc": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"locked"?: boolean,"position": number,"story_id": string,"title": string,"ydoc"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"locked"?: boolean,"position"?: number,"story_id"?: string,"title"?: string,"ydoc"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chapters_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"friendships": {
                   Row: {
                     "addressee_id": string,"created_at": string,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"]
                   }
@@ -153,6 +173,9 @@ isOneToOne: false
 "accept_invite_link":
 { Args: { "p_token": string }; Returns: string
                            },
+"add_chapter":
+{ Args: { "p_story": string,"p_title": string }; Returns: string
+                           },
 "are_friends":
 { Args: { "a": string,"b": string }; Returns: boolean
                            },
@@ -168,6 +191,9 @@ isOneToOne: false
 "create_story":
 { Args: { "p_title": string,"p_visibility": Database["public"]['Enums']["story_visibility"] }; Returns: string
                            },
+"delete_chapter":
+{ Args: { "p_chapter": string }; Returns: undefined
+                           },
 "invite_friend":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined
                            },
@@ -178,6 +204,9 @@ isOneToOne: false
                            },
 "leave_story":
 { Args: { "p_story": string }; Returns: undefined
+                           },
+"move_chapter":
+{ Args: { "p_chapter": string,"p_direction": number }; Returns: undefined
                            },
 "remove_member":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined

@@ -33,3 +33,15 @@ export const getStory = cache(async (storyId: string) => {
 
   return { story, members: sorted, myRole, viewer };
 });
+
+/** A visible Story's Chapters in reading order (empty if the viewer can't see the story). */
+export const getChapters = cache(async (storyId: string) => {
+  if (!isUuid(storyId)) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chapters")
+    .select("id, title, position, locked")
+    .eq("story_id", storyId)
+    .order("position");
+  return data ?? [];
+});

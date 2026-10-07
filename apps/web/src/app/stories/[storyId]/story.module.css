@@ -35,3 +35,38 @@
   gap: 8px 20px;
   list-style: none;
 }
+
+.chapterTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  overflow-wrap: anywhere;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineForm [role="alert"] {
+  flex-basis: 100%;
+  margin-top: 0;
+}
+
+.rename > summary {
+  list-style: none;
+}
+
+.rename > summary::-webkit-details-marker {
+  display: none;
+}
+
+.rename[open] {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

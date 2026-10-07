@@ -1,0 +1,20 @@
+export type Access = "write" | "read" | null
+
+export interface AccessFacts {
+  visibility: "public" | "private"
+  status: "active" | "finished"
+  locked: boolean
+  role: "host" | "cohost" | "writer" | null
+  /** Holds an unaccepted Invite to the story. */
+  invited: boolean
+}
+
+/**
+ * Members edit unless the Chapter is locked or the Story is Finished. Everyone else may watch when
+ * can_view_story() would let them (Public, or a pending Invite), read-only.
+ */
+export function decideAccess(facts: AccessFacts | null): Access {
+  if (!facts) return null
+  if (facts.role) return facts.locked || facts.status === "finished" ? "read" : "write"
+  return facts.visibility === "public" || facts.invited ? "read" : null
+}

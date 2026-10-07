@@ -5,6 +5,7 @@
   "packageManager": "pnpm@12.9.1",
   "scripts": {
     "dev": "pnpm --filter @coscribe/web run dev",
+    "dev:sync": "pnpm --filter @coscribe/sync run dev",
     "build": "pnpm --filter @coscribe/web run build",
     "lint": "pnpm --filter @coscribe/web run lint",
     "test": "vitest run",

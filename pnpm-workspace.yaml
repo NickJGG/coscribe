@@ -28,3 +28,4 @@ allowBuilds:
   supabase: true
   unrs-resolver: true
   sharp: true
+  esbuild: true

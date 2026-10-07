@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getStory } from "@/lib/story";
+import { getChapters, getStory } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { ROLE_LABEL } from "@/lib/story-roles";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 import { PersonLink } from "@/components/PersonLink";
+import { ChapterList } from "./ChapterList";
 import styles from "./story.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]">): Promise<Metadata> {
@@ -26,6 +27,7 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
   const { story, members, myRole, viewer } = data;
 
   const supabase = await createClient();
+  const chapters = await getChapters(story.id);
   const { data: invite } =
     viewer && !myRole
       ? await supabase
@@ -75,7 +77,12 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
 
       <section className="section">
         <h2>Chapters</h2>
-        <p className="muted">No chapters yet. Live chapter editing arrives soon.</p>
+        <ChapterList
+          storyId={story.id}
+          chapters={chapters}
+          myRole={myRole}
+          finished={story.status === "finished"}
+        />
       </section>
 
       <section className="section">

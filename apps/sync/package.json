@@ -3,9 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "typecheck": "tsc -p ."
   },
   "dependencies": {
-    "@coscribe/editor": "workspace:*"
+    "@coscribe/editor": "workspace:*",
+    "@hocuspocus/extension-database": "^4.7.0",
+    "@hocuspocus/server": "^4.7.0",
+    "jose": "^6.2.12",
+    "postgres": "^3.4.9",
+    "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
   }
 }
