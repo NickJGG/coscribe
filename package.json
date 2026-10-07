@@ -1,0 +1,24 @@
+{
+  "name": "coscribe",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "scripts": {
+    "dev": "pnpm --filter @coscribe/web run dev",
+    "build": "pnpm --filter @coscribe/web run build",
+    "lint": "pnpm --filter @coscribe/web run lint",
+    "test": "vitest run",
+    "typecheck": "pnpm -r run typecheck",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:types": "supabase gen types typescript --local > apps/web/src/lib/supabase/database.types.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "supabase": "^2.120.0",
+    "typescript": "^5",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,58 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { isAuthorColor, normalizeUsername, usernameError } from "@/lib/profile-rules";
+import { safeNext } from "@/lib/safe-next";
+
+export type ProfileFormState = {
+  username: string;
+  authorColor: string;
+  usernameError?: string;
+  colorError?: string;
+  formError?: string;
+};
+
+const UNIQUE_VIOLATION = "23505";
+
+export async function saveProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
+  const username = normalizeUsername(String(formData.get("username") ?? ""));
+  const authorColor = String(formData.get("author_color") ?? "");
+  const state: ProfileFormState = { username, authorColor };
+
+  const nameProblem = usernameError(username);
+  if (nameProblem) return { ...state, usernameError: nameProblem };
+  if (!isAuthorColor(authorColor)) return { ...state, colorError: "Pick one of the colors." };
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims.sub;
+  if (!userId) redirect("/login");
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ id: userId, username, author_color: authorColor });
+
+  if (error?.code === UNIQUE_VIOLATION) return { ...state, usernameError: "That username is taken." };
+  if (error) return { ...state, formError: "Couldn't save your profile. Try again." };
+
+  revalidatePath("/", "layout");
+  redirect(safeNext(formData.get("next"), `/u/${username}`));
+}
+
+/** Live hint while typing; saveProfile still enforces uniqueness through the unique constraint. */
+export async function isUsernameAvailable(raw: string): Promise<boolean> {
+  const username = normalizeUsername(raw);
+  if (usernameError(username)) return false;
+
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const { data: owner } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+
+  return !owner || owner.id === data?.claims.sub;
+}

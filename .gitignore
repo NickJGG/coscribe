@@ -1,0 +1,21 @@
+node_modules
+dist
+*.log
+.DS_Store
+*.stackdump
+*.tsbuildinfo
+
+# env files
+.env*
+!.env.example
+!.env.local.example
+
+# next.js
+.next/
+out/
+next-env.d.ts
+.vercel
+
+# supabase local stack artifacts
+supabase/.temp/
+supabase/.branches/

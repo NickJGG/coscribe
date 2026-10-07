@@ -1,0 +1,21 @@
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 320px;
+}
+
+.discord {
+  background: #5865f2;
+  border-color: #5865f2;
+  color: #ffffff;
+}
+
+.discord:hover {
+  border-color: #5865f2;
+  filter: brightness(1.08);
+}
+
+.error {
+  color: var(--danger);
+}

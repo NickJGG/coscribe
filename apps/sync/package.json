@@ -1,0 +1,11 @@
+{
+  "name": "@coscribe/sync",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@coscribe/editor": "workspace:*"
+  }
+}

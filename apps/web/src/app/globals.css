@@ -1,0 +1,143 @@
+:root {
+  --paper: #fbf8f3;
+  --paper-raised: #ffffff;
+  --ink: #1f1d1a;
+  --ink-muted: #6b665e;
+  --rule: #e6e0d6;
+  --accent: #b5441a;
+  --accent-ink: #ffffff;
+  --danger: #c0352b;
+  --success: #2f7a3e;
+  --focus: #3e63dd;
+
+  --radius: 8px;
+  --gutter: 16px;
+  --measure: 40rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #17150f;
+    --paper-raised: #211e18;
+    --ink: #ece6dc;
+    --ink-muted: #a39b8f;
+    --rule: #37322a;
+    --accent: #e0703f;
+    --accent-ink: #17150f;
+    --danger: #ef6b5f;
+    --success: #6cc17c;
+    --focus: #8da4ef;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-prose), Georgia, serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.page {
+  width: 100%;
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 48px var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.muted {
+  color: var(--ink-muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--ink-muted);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.button-primary:hover {
+  border-color: var(--accent);
+  filter: brightness(1.08);
+}
+
+.link-button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
