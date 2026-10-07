@@ -43,6 +43,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"chat_messages": {
+                  Row: {
+                    "body": string,"created_at": string,"id": string,"story_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body": string,"created_at"?: string,"id"?: string,"story_id": string,"user_id"?: string
+                  }
+                  Update: {
+                    "body"?: string,"created_at"?: string,"id"?: string,"story_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chat_messages_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chat_messages_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"entries": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"description": string,"id": string,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"name"?: string,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "entries_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "entries_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"friendships": {
                   Row: {
                     "addressee_id": string,"created_at": string,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"]
@@ -185,6 +237,9 @@ isOneToOne: false
 "can_view_story":
 { Args: { "p_story": string }; Returns: boolean
                            },
+"can_write_story":
+{ Args: { "p_story": string }; Returns: boolean
+                           },
 "create_invite_link":
 { Args: { "p_story": string }; Returns: string
                            },
@@ -222,7 +277,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","story_status": "active"|"finished","story_visibility": "public"|"private"
+            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","story_status": "active"|"finished","story_visibility": "public"|"private"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -342,7 +397,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"]
+            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"]
           }
         }
 } as const

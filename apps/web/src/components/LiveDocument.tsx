@@ -7,9 +7,16 @@ import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Placeholder } from "@tiptap/extensions";
 import * as Y from "yjs";
-import { ACCESS_REVOKED, chapterDocumentName, chapterExtensions, type AccessMessage } from "@coscribe/editor";
+import {
+  ACCESS_REVOKED,
+  chapterExtensions,
+  documentName,
+  entryExtensions,
+  type AccessMessage,
+  type DocumentKind,
+} from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
-import styles from "./chapter.module.css";
+import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
 export type Writer = { userId: string; name: string; color: string };
@@ -17,18 +24,27 @@ export type Writer = { userId: string; name: string; color: string };
 type Status = "connecting" | "live" | "offline" | "denied";
 type Session = { provider: HocuspocusProvider; ydoc: Y.Doc };
 
-const STATUS_TEXT: Record<Status, string> = {
+const KINDS = {
+  chapter: { extensions: chapterExtensions, noun: "Chapter", label: "Chapter text", placeholder: "Start writing…" },
+  entry: {
+    extensions: entryExtensions,
+    noun: "Entry",
+    label: "Entry body",
+    placeholder: "Everything the Writers should keep straight…",
+  },
+} satisfies Record<DocumentKind, unknown>;
+
+const STATUS_TEXT: Record<Exclude<Status, "denied">, string> = {
   connecting: "Connecting…",
   live: "Live",
   offline: "Reconnecting…",
-  denied: "You can no longer open this Chapter.",
 };
 
 /**
- * The live Chapter document. Edit rights come from apps/sync, not props: it can switch this editor
- * between read-only and editable at any time (lock, unlock) or cut it off (removed, made Private).
+ * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
+ * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  */
-export function ChapterEditor({ chapterId, writer }: { chapterId: string; writer: Writer | null }) {
+export function LiveDocument({ kind, id, writer }: { kind: DocumentKind; id: string; writer: Writer | null }) {
   const [session, setSession] = useState<Session | null>(null);
   const [status, setStatus] = useState<Status>("connecting");
   const [readOnly, setReadOnly] = useState(true);
@@ -38,7 +54,7 @@ export function ChapterEditor({ chapterId, writer }: { chapterId: string; writer
     const supabase = createClient();
     const provider: HocuspocusProvider = new HocuspocusProvider({
       url: process.env.NEXT_PUBLIC_SYNC_URL!,
-      name: chapterDocumentName(chapterId),
+      name: documentName(kind, id),
       document: ydoc,
       token: async () => (await supabase.auth.getSession()).data.session?.access_token ?? "",
       onAuthenticated: ({ scope }) => setReadOnly(scope !== "read-write"),
@@ -67,38 +83,54 @@ export function ChapterEditor({ chapterId, writer }: { chapterId: string; writer
       provider.destroy();
       ydoc.destroy();
     };
-  }, [chapterId]);
+  }, [kind, id]);
 
   return (
     <div className={styles.live}>
       <div className={styles.bar}>
         <span className={styles.status} data-status={status} role="status">
-          {STATUS_TEXT[status]}
+          {status === "denied" ? `You can no longer open this ${KINDS[kind].noun}.` : STATUS_TEXT[status]}
           {status === "live" && readOnly && writer && <span className="muted"> · Read-only</span>}
         </span>
-        {session && status !== "denied" && <Online provider={session.provider} />}
+        {session && status !== "denied" && <Online provider={session.provider} noun={KINDS[kind].noun} />}
       </div>
       {session && status !== "denied" && (
-        <LiveEditor session={session} writer={writer} editable={!readOnly && status !== "connecting"} />
+        <LiveEditor
+          kind={kind}
+          session={session}
+          writer={writer}
+          editable={!readOnly && status !== "connecting"}
+        />
       )}
     </div>
   );
 }
 
-function LiveEditor({ session, writer, editable }: { session: Session; writer: Writer | null; editable: boolean }) {
+function LiveEditor({
+  kind,
+  session,
+  writer,
+  editable,
+}: {
+  kind: DocumentKind;
+  session: Session;
+  writer: Writer | null;
+  editable: boolean;
+}) {
+  const { extensions, label, placeholder } = KINDS[kind];
   const editor = useEditor({
     immediatelyRender: false,
     editable: false,
     extensions: [
-      ...chapterExtensions,
+      ...extensions,
       Collaboration.configure({ document: session.ydoc }),
       CollaborationCaret.configure({
         provider: session.provider,
         user: writer ?? { viewer: true },
       }),
-      Placeholder.configure({ placeholder: "Start writing…" }),
+      Placeholder.configure({ placeholder }),
     ],
-    editorProps: { attributes: { class: styles.prose, "aria-label": "Chapter text" } },
+    editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
 
   useEffect(() => {
@@ -107,16 +139,21 @@ function LiveEditor({ session, writer, editable }: { session: Session; writer: W
 
   return (
     <>
-      {editor && editable && <Toolbar editor={editor} />}
+      {editor && editable && <Toolbar editor={editor} lists={kind === "entry"} />}
       <EditorContent editor={editor} />
     </>
   );
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
   const active = useEditorState({
     editor,
-    selector: ({ editor }) => ({ bold: editor.isActive("bold"), italic: editor.isActive("italic") }),
+    selector: ({ editor }) => ({
+      bold: editor.isActive("bold"),
+      italic: editor.isActive("italic"),
+      bulletList: editor.isActive("bulletList"),
+      orderedList: editor.isActive("orderedList"),
+    }),
   });
 
   return (
@@ -147,14 +184,36 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         * * *
       </button>
+      {lists && (
+        <>
+          <button
+            type="button"
+            className={styles.tool}
+            aria-pressed={active.bulletList}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            title="Bulleted list (type - and a space)"
+          >
+            &bull; List
+          </button>
+          <button
+            type="button"
+            className={styles.tool}
+            aria-pressed={active.orderedList}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            title="Numbered list (type 1. and a space)"
+          >
+            1. List
+          </button>
+        </>
+      )}
     </div>
   );
 }
 
 type Present = { key: string; name: string; color: string };
 
-/** Writers in this Chapter right now (one entry per person, however many tabs), plus a Viewer count. */
-function Online({ provider }: { provider: HocuspocusProvider }) {
+/** Writers in this document right now (one entry per person, however many tabs), plus a Viewer count. */
+function Online({ provider, noun }: { provider: HocuspocusProvider; noun: string }) {
   const [present, setPresent] = useState<{ writers: Present[]; viewers: number }>({ writers: [], viewers: 0 });
 
   useEffect(() => {
@@ -178,7 +237,7 @@ function Online({ provider }: { provider: HocuspocusProvider }) {
   }, [provider]);
 
   return (
-    <ul className={styles.online} aria-label="In this Chapter">
+    <ul className={styles.online} aria-label={`In this ${noun}`}>
       {present.writers.map((w) => (
         <li key={w.key} className={styles.person} style={{ "--author": w.color } as React.CSSProperties}>
           {w.name}

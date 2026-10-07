@@ -1,9 +1,9 @@
 /**
- * Hocuspocus server for live Chapter documents.
+ * Hocuspocus server for live Chapter and Entry documents.
  *
- * - Yjs state persists to `chapters.ydoc`.
+ * - Yjs state persists to `chapters.ydoc` / `entries.ydoc`.
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
- *   story's membership, Visibility, and lock state.
+ *   story's membership, Visibility, status, and (for Chapters) lock state.
  * - `POST /stories/<id>/refresh` (Bearer SYNC_SECRET) re-checks every open connection to that story
  *   after the web app changes access: lowers or raises read-only live, or disconnects.
  */
@@ -14,9 +14,9 @@ import { Server, type Hocuspocus } from "@hocuspocus/server"
 import { ACCESS_REVOKED, parseDocumentName, type AccessMessage } from "@coscribe/editor"
 import { verifyUser } from "./auth"
 import { env } from "./env"
-import { chapterAccess, fetchChapter, storeChapter } from "./chapters"
+import { documentAccess, fetchDocument, storeDocument, type DocumentRef } from "./documents"
 
-type Context = { userId: string | null; storyId: string; chapterId: string }
+type Context = { userId: string | null; storyId: string; document: DocumentRef }
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -26,11 +26,11 @@ const server = new Server<Context>({
     new Database({
       fetch: async ({ documentName }) => {
         const doc = parseDocumentName(documentName)
-        return doc ? fetchChapter(doc.id) : null
+        return doc ? fetchDocument(doc) : null
       },
       store: async ({ documentName, state }) => {
         const doc = parseDocumentName(documentName)
-        if (doc) await storeChapter(doc.id, state)
+        if (doc) await storeDocument(doc, state)
       },
     }),
   ],
@@ -40,11 +40,11 @@ const server = new Server<Context>({
     if (!doc) throw new Error("unknown document")
 
     const userId = token ? await verifyUser(token) : null
-    const { storyId, access } = await chapterAccess(doc.id, userId)
+    const { storyId, access } = await documentAccess(doc, userId)
     if (!storyId || !access) throw new Error("forbidden")
 
     connectionConfig.readOnly = access === "read"
-    return { userId, storyId, chapterId: doc.id } satisfies Context
+    return { userId, storyId, document: doc } satisfies Context
   },
 
   async onRequest({ request, response, instance }) {
@@ -73,7 +73,7 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
       const { context } = connection
       if (context.storyId !== storyId) continue
 
-      const { access } = await chapterAccess(context.chapterId, context.userId)
+      const { access } = await documentAccess(context.document, context.userId)
       if (!access) {
         connection.close({ code: 4403, reason: ACCESS_REVOKED })
       } else if (connection.readOnly !== (access === "read")) {

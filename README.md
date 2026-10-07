@@ -65,9 +65,10 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 ```
 apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username],
                             friends, stories, stories/[storyId](/settings), invite/[token],
-                            stories/[storyId]/chapters/[chapterId]
+                            stories/[storyId]/chapters/[chapterId], stories/[storyId]/bible/[entryId]
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
+apps/web/src/components/    Shared UI, including LiveDocument (the Tiptap editor) and StoryChat
 apps/sync/                  Hocuspocus server (persistence, auth, refresh endpoint)
 packages/editor/            Shared editor schema
 supabase/migrations/        SQL migrations, applied by db:start / db:reset
@@ -87,8 +88,12 @@ Role rules live in SQL: `story_role()` / `can_view_story()` helpers for RLS, and
 
 ## Live editing
 
-Each Chapter is a Yjs document named `chapter:<uuid>`, served by `apps/sync` and stored in `chapters.ydoc`.
+Each Chapter and each Story Bible Entry body is a Yjs document, named `chapter:<uuid>` or `entry:<uuid>`, served by `apps/sync` and stored in `chapters.ydoc` / `entries.ydoc`. An Entry's type, name, and short description are plain columns, so the Story Bible can be listed and searched without opening every document.
 
 1. The Chapter page opens a Hocuspocus connection, sending the Supabase access token (Viewers who aren't signed in send none).
-2. `onAuthenticate` verifies the token against the project's JWKS and looks up the user's role: members edit unless the Chapter is locked or the story is Finished; anyone else gets read-only access to a Public story, or is rejected.
-3. When the web app changes access (lock or unlock, remove or leave, Visibility, delete), it calls `POST /stories/<id>/refresh` on the sync server with `SYNC_SECRET`. Open connections switch to read-only or back live, or are disconnected.
+2. `onAuthenticate` verifies the token against the project's JWKS and looks up the user's role: members edit unless the Chapter is locked or the story is Finished (Entries have no lock); anyone else gets read-only access to a Public story, or is rejected.
+3. When the web app changes access (lock or unlock, remove or leave, Visibility, delete a story, Chapter, or Entry), it calls `POST /stories/<id>/refresh` on the sync server with `SYNC_SECRET`. Open connections switch to read-only or back live, or are disconnected.
+
+## Story Chat
+
+`chat_messages` rows are readable and writable only by members (RLS via `story_role()`), and the table is in the `supabase_realtime` publication. The panel lives in `stories/[storyId]/layout.tsx`, so it stays subscribed while moving between a story's pages, and it's never rendered for Viewers. Realtime applies the same select policy per subscriber, so a removed Writer stops receiving messages.

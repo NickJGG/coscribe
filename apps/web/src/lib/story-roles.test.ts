@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { atLeast, canChangeRole, canLeave, canManageChapters, canManageInvites, canRemove, type MemberRole } from "./story-roles";
+import {
+  atLeast,
+  canChangeRole,
+  canDeleteEntries,
+  canLeave,
+  canManageChapters,
+  canManageInvites,
+  canRemove,
+  type MemberRole,
+} from "./story-roles";
 
 const ROLES: MemberRole[] = ["writer", "cohost", "host"];
 
@@ -27,6 +36,13 @@ describe("canManageChapters", () => {
   it("allows Co-hosts and the Host only", () => {
     expect(ROLES.filter((r) => canManageChapters(r))).toEqual(["cohost", "host"]);
     expect(canManageChapters(null)).toBe(false);
+  });
+});
+
+describe("canDeleteEntries", () => {
+  it("allows Co-hosts and the Host only", () => {
+    expect(ROLES.filter((r) => canDeleteEntries(r))).toEqual(["cohost", "host"]);
+    expect(canDeleteEntries(null)).toBe(false);
   });
 });
 

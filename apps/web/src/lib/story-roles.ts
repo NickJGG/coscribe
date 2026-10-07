@@ -21,6 +21,11 @@ export function canManageChapters(actor: MemberRole | null | undefined): boolean
   return atLeast(actor, "cohost");
 }
 
+/** Mirrors Chapters: any Writer adds and edits Entries, Co-hosts and up delete them. */
+export function canDeleteEntries(actor: MemberRole | null | undefined): boolean {
+  return atLeast(actor, "cohost");
+}
+
 export function canManageInvites(actor: MemberRole | null | undefined): boolean {
   return atLeast(actor, "cohost");
 }

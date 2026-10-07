@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getChapters, getStory } from "@/lib/story";
+import { getChapters, getStory, liveWriter } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
-import { ChapterEditor } from "./ChapterEditor";
+import { LiveDocument } from "@/components/LiveDocument";
 import styles from "./chapter.module.css";
 
 async function load(storyId: string, chapterId: string) {
@@ -33,13 +33,9 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
     }
     notFound();
   }
-  const { story, chapters, index, chapter, myRole, viewer } = data;
+  const { story, chapters, index, chapter, myRole } = data;
   const prev = chapters[index - 1];
   const next = chapters[index + 1];
-  const writer =
-    myRole && viewer?.profile
-      ? { userId: viewer.userId, name: viewer.profile.username, color: viewer.profile.author_color }
-      : null;
 
   return (
     <div className={styles.page}>
@@ -61,7 +57,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         <h1 className={styles.title}>{chapter.title}</h1>
       </header>
 
-      <ChapterEditor key={chapter.id} chapterId={chapter.id} writer={writer} />
+      <LiveDocument key={chapter.id} kind="chapter" id={chapter.id} writer={liveWriter(data)} />
 
       <nav className={styles.pager} aria-label="Chapters">
         {prev ? (

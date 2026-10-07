@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getChapters, getStory } from "@/lib/story";
+import { getChapters, getEntries, getStory } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { ROLE_LABEL } from "@/lib/story-roles";
+import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
+import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { PersonLink } from "@/components/PersonLink";
+import { BibleList } from "./BibleList";
 import { ChapterList } from "./ChapterList";
 import styles from "./story.module.css";
 
@@ -27,7 +30,8 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
   const { story, members, myRole, viewer } = data;
 
   const supabase = await createClient();
-  const chapters = await getChapters(story.id);
+  const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
+  const finished = story.status === "finished";
   const { data: invite } =
     viewer && !myRole
       ? await supabase
@@ -40,7 +44,7 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
       : { data: null };
 
   return (
-    <div className="page">
+    <div className={styles.page}>
       {invite && (
         <div className={styles.invite}>
           <p>You&rsquo;ve been invited to write in this story.</p>
@@ -75,15 +79,37 @@ export default async function StoryPage(props: PageProps<"/stories/[storyId]">) 
         )}
       </header>
 
-      <section className="section">
-        <h2>Chapters</h2>
-        <ChapterList
-          storyId={story.id}
-          chapters={chapters}
-          myRole={myRole}
-          finished={story.status === "finished"}
-        />
-      </section>
+      <div className={styles.columns}>
+        <section className="section">
+          <h2>Chapters</h2>
+          <ChapterList storyId={story.id} chapters={chapters} myRole={myRole} finished={finished} />
+        </section>
+
+        <section className="section">
+          <h2>Story Bible</h2>
+          <BibleList storyId={story.id} entries={entries} />
+          {myRole && !finished && (
+            <ActionForm action={addEntry.bind(null, story.id)} className={styles.inlineForm}>
+              <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
+                {ENTRY_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {ENTRY_TYPE_LABEL[t]}
+                  </option>
+                ))}
+              </select>
+              <input
+                name="name"
+                className="input"
+                placeholder="Name"
+                maxLength={NAME_MAX}
+                required
+                aria-label="New Entry name"
+              />
+              <button className="button">Add Entry</button>
+            </ActionForm>
+          )}
+        </section>
+      </div>
 
       <section className="section">
         <h2>Writers</h2>
