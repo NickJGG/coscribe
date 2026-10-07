@@ -1,0 +1,137 @@
+.dialog {
+  width: min(1080px, calc(100vw - 2 * var(--gutter)));
+  height: min(820px, calc(100dvh - 2 * var(--gutter)));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 8px 40px rgb(0 0 0 / 0.2);
+}
+
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.4);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+
+.heading {
+  font-size: 1.25rem;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.timeline {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border-right: 1px solid var(--rule);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 2px);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  border-color: var(--rule);
+}
+
+.item[aria-current] {
+  border-color: var(--rule);
+  background: var(--paper-raised);
+}
+
+.when {
+  font-weight: 500;
+}
+
+.name {
+  color: var(--accent);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.preview {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 24px 32px;
+}
+
+.view {
+  max-width: var(--measure);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.view [contenteditable] {
+  min-height: auto;
+}
+
+.actions,
+.nameForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 720px) {
+  .body {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 35%) 1fr;
+  }
+
+  .timeline {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .preview {
+    padding: 12px var(--gutter) 24px;
+  }
+}

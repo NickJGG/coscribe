@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest"
+import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
+import * as Y from "yjs"
+import { chapterSchema, DOCUMENT_FIELD } from "@coscribe/editor"
+import { chapterContent, contentHash, decodeChapter, replaceChapterContent } from "./chapter-content"
+
+const mia = { userId: "mia", at: 1 }
+const jordan = { userId: "jordan", at: 2 }
+
+function para(...runs: [string, typeof mia][]) {
+  return {
+    type: "paragraph",
+    content: runs.map(([text, author]) => ({ type: "text", text, marks: [{ type: "author", attrs: author }] })),
+  }
+}
+
+function chapterDoc(...paragraphs: ReturnType<typeof para>[]): Y.Doc {
+  const doc = new Y.Doc()
+  prosemirrorJSONToYXmlFragment(chapterSchema, { type: "doc", content: paragraphs }, doc.getXmlFragment(DOCUMENT_FIELD))
+  return doc
+}
+
+describe("chapter content", () => {
+  it("round-trips through Snapshot bytes with author marks intact", () => {
+    const doc = chapterDoc(para(["Once upon a time ", mia], ["there was", jordan]))
+    const restored = decodeChapter(Y.encodeStateAsUpdate(doc))
+    expect(restored.toJSON()).toEqual(chapterContent(doc).toJSON())
+    expect(restored.firstChild!.child(1).marks[0]!.attrs).toEqual(jordan)
+  })
+
+  it("hashes equal content equally, and tells authors apart", () => {
+    const a = chapterDoc(para(["Same words.", mia]))
+    const b = chapterDoc(para(["Same words.", mia]))
+    const c = chapterDoc(para(["Same words.", jordan]))
+    expect(contentHash(chapterContent(a))).toBe(contentHash(chapterContent(b)))
+    expect(contentHash(chapterContent(a))).not.toBe(contentHash(chapterContent(c)))
+  })
+
+  it("restores as a diff that a connected client merges, keeping the original authors", () => {
+    const snapshot = chapterContent(chapterDoc(para(["Kept.", mia]), para(["Deleted by Jordan.", mia])))
+    const live = chapterDoc(para(["Kept.", mia]), para(["Written later.", jordan]))
+    const client = new Y.Doc()
+    Y.applyUpdate(client, Y.encodeStateAsUpdate(live))
+    live.on("update", (update: Uint8Array) => Y.applyUpdate(client, update))
+
+    const keptParagraph = live.getXmlFragment(DOCUMENT_FIELD).get(0)
+    replaceChapterContent(live, snapshot)
+
+    expect(chapterContent(live).toJSON()).toEqual(snapshot.toJSON())
+    expect(chapterContent(client).toJSON()).toEqual(snapshot.toJSON())
+    expect(live.getXmlFragment(DOCUMENT_FIELD).get(0)).toBe(keptParagraph)
+  })
+})

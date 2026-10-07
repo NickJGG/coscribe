@@ -1,4 +1,5 @@
 /** Shared Tiptap/ProseMirror schemas for Chapters and Entry bodies. Used by the web editor and apps/sync. */
+import { getSchema } from "@tiptap/core"
 import Bold from "@tiptap/extension-bold"
 import Document from "@tiptap/extension-document"
 import Italic from "@tiptap/extension-italic"
@@ -14,8 +15,14 @@ export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs
 /** Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text. */
 export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author]
 
+/** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
+export const chapterSchema = getSchema(chapterExtensions)
+
 /** A Chapter's formatting plus bulleted and numbered lists. */
 export const entryExtensions = [...chapterExtensions, BulletList, OrderedList, ListItem, ListKeymap]
+
+/** The Yjs XmlFragment that holds the text (Tiptap Collaboration's default field). */
+export const DOCUMENT_FIELD = "default"
 
 export type DocumentKind = "chapter" | "entry"
 

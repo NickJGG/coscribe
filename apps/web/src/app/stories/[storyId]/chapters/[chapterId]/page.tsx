@@ -7,6 +7,7 @@ import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
+import { SnapshotHistory } from "@/components/SnapshotHistory";
 import styles from "./chapter.module.css";
 
 async function load(storyId: string, chapterId: string) {
@@ -36,6 +37,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const { story, chapters, index, chapter, myRole } = data;
   const prev = chapters[index - 1];
   const next = chapters[index + 1];
+  const authors = storyAuthors(data);
 
   return (
     <div className={styles.page}>
@@ -53,6 +55,15 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
               <button className="button button-small">{chapter.locked ? "Unlock" : "Lock"}</button>
             </ActionForm>
           )}
+          {canManageChapters(myRole) && (
+            <SnapshotHistory
+              key={chapter.id}
+              chapterId={chapter.id}
+              authors={authors}
+              canRestore={story.status !== "finished"}
+              canName={myRole === "host"}
+            />
+          )}
         </div>
         <h1 className={styles.title}>{chapter.title}</h1>
       </header>
@@ -62,7 +73,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         kind="chapter"
         id={chapter.id}
         writer={liveWriter(data)}
-        authors={storyAuthors(data)}
+        authors={authors}
       />
 
       <nav className={styles.pager} aria-label="Chapters">

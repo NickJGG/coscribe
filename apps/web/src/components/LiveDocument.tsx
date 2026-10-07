@@ -12,6 +12,7 @@ import {
   AuthorStamp,
   chapterExtensions,
   documentName,
+  DOCUMENT_FIELD,
   entryExtensions,
   type AccessMessage,
   type DocumentKind,
@@ -149,7 +150,7 @@ function LiveEditor({
     editable: false,
     extensions: [
       ...extensions,
-      Collaboration.configure({ document: session.ydoc }),
+      Collaboration.configure({ document: session.ydoc, field: DOCUMENT_FIELD }),
       CollaborationCaret.configure({
         provider: session.provider,
         user: writer ?? { viewer: true },
@@ -242,7 +243,7 @@ const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 type Tip = { text: string; x: number; y: number };
 
 /** "Show authors": tints each `author` run by its Author Color, and hovering one says who wrote it and when. */
-function Authorship({ authors, show, children }: { authors: StoryAuthor[]; show: boolean; children: React.ReactNode }) {
+export function Authorship({ authors, show, children }: { authors: StoryAuthor[]; show: boolean; children: React.ReactNode }) {
   const [tip, setTip] = useState<Tip | null>(null);
   const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
   const tints = useMemo(

@@ -69,7 +69,7 @@ apps/web/src/app/           Routes: home, login, auth/callback, onboarding, sett
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
 apps/web/src/components/    Shared UI, including LiveDocument (the Tiptap editor) and StoryChat
-apps/sync/                  Hocuspocus server (persistence, auth, refresh endpoint)
+apps/sync/                  Hocuspocus server (persistence, auth, Snapshots, HTTP endpoints)
 packages/editor/            Shared editor schema
 supabase/migrations/        SQL migrations, applied by db:start / db:reset
 supabase/config.toml        Local stack config
@@ -93,6 +93,17 @@ Each Chapter and each Story Bible Entry body is a Yjs document, named `chapter:<
 1. The Chapter page opens a Hocuspocus connection, sending the Supabase access token (Viewers who aren't signed in send none).
 2. `onAuthenticate` verifies the token against the project's JWKS and looks up the user's role: members edit unless the Chapter is locked or the story is Finished (Entries have no lock); anyone else gets read-only access to a Public story, or is rejected.
 3. When the web app changes access (lock or unlock, remove or leave, Visibility, delete a story, Chapter, or Entry), it calls `POST /stories/<id>/refresh` on the sync server with `SYNC_SECRET`. Open connections switch to read-only or back live, or are disconnected.
+
+## Snapshots
+
+`apps/sync` saves a Chapter's full Yjs state to `chapter_snapshots` after about 10 minutes of activity and when the last connection leaves, skipping it when the text and author marks match the latest Snapshot. The timing is kept in memory, so a sync restart only delays the next one.
+
+Co-hosts and up open History on a Chapter. The web app checks permissions through Supabase (RLS on `chapter_snapshots`, the `authorize_restore()` RPC), then calls `apps/sync` with `SYNC_SECRET`:
+
+- `GET /snapshots/<id>` decodes the Snapshot and returns ProseMirror JSON for the preview.
+- `POST /snapshots/<id>/restore` first snapshots the current text ("Before Restore"), then rewrites the live Chapter through a Hocuspocus direct connection as a diff, which open editors receive like any other edit. Author marks come back with the text.
+
+"Copy from this Snapshot" copies the preview's selection (or all of it) as ProseMirror clipboard HTML, so pasting into the Chapter keeps each run's original author. Hosts can name Snapshots.
 
 ## Story Chat
 

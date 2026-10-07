@@ -11,6 +11,7 @@
     "@coscribe/editor": "workspace:*",
     "@hocuspocus/extension-database": "^4.7.0",
     "@hocuspocus/server": "^4.7.0",
+    "@tiptap/y-tiptap": "^3.0.9",
     "jose": "^6.2.12",
     "postgres": "^3.4.9",
     "yjs": "^13.6.33"

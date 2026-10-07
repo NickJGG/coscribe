@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "chapters": {
+            "chapter_snapshots": {
+                  Row: {
+                    "chapter_id": string,"content_hash": string,"id": string,"name": string | null,"state": string,"taken_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "chapter_id": string,"content_hash": string,"id"?: string,"name"?: string | null,"state": string,"taken_at"?: string
+                  }
+                  Update: {
+                    "chapter_id"?: string,"content_hash"?: string,"id"?: string,"name"?: string | null,"state"?: string,"taken_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chapter_snapshots_chapter_id_fkey"
+      columns: ["chapter_id"]
+isOneToOne: false
+      referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"chapters": {
                   Row: {
                     "created_at": string,"id": string,"locked": boolean,"position": number,"story_id": string,"title": string,"ydoc": string | null
                   }
@@ -231,6 +251,9 @@ isOneToOne: false
 "are_friends":
 { Args: { "a": string,"b": string }; Returns: boolean
                            },
+"authorize_restore":
+{ Args: { "p_snapshot": string }; Returns: string
+                           },
 "befriend":
 { Args: { "a": string,"b": string }; Returns: undefined
                            },
@@ -239,6 +262,9 @@ isOneToOne: false
                            },
 "can_write_story":
 { Args: { "p_story": string }; Returns: boolean
+                           },
+"chapter_story":
+{ Args: { "p_chapter": string }; Returns: string
                            },
 "create_invite_link":
 { Args: { "p_story": string }; Returns: string
