@@ -1,10 +1,14 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isAuthorColor, normalizeUsername, usernameError } from "@/lib/profile-rules";
 import { safeNext } from "@/lib/safe-next";
+import { requireProfile } from "@/lib/viewer";
+import type { Database } from "@/lib/supabase/database.types";
+
+export type Theme = Database["public"]["Enums"]["theme"];
 
 export type ProfileFormState = {
   username: string;
@@ -55,4 +59,14 @@ export async function isUsernameAvailable(raw: string): Promise<boolean> {
     .maybeSingle();
 
   return !owner || owner.id === data?.claims.sub;
+}
+
+const THEMES: readonly Theme[] = ["light", "dark", "system"];
+
+export async function setTheme(theme: Theme): Promise<void> {
+  if (!THEMES.includes(theme)) return;
+  const me = await requireProfile("/settings");
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ theme }).eq("id", me.userId);
+  refresh();
 }

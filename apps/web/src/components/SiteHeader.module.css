@@ -1,57 +1,316 @@
 .header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 12px var(--gutter);
+  align-items: stretch;
+  gap: 22px;
+  min-height: 56px;
+  padding: 0 var(--gutter);
   border-bottom: 1px solid var(--hair);
+  font-size: 0.875rem;
 }
 
 .wordmark {
+  align-self: center;
   font-family: var(--font-prose), Georgia, serif;
   font-size: var(--step-1);
   font-weight: 700;
+  letter-spacing: -0.01em;
   text-decoration: none;
 }
 
 .nav {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 8px 16px;
-  font-size: 0.9375rem;
+  gap: 18px;
 }
 
-@media (max-width: 480px) {
-  .nav {
-    gap: 6px 12px;
-  }
-}
-
-.nav a {
-  text-underline-offset: 3px;
-}
-
-.me {
+.navLink {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 500;
+  color: var(--ink-muted);
   text-decoration: none;
 }
 
-.count {
+.navLink:hover {
+  color: var(--ink);
+}
+
+.navLink[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* Sits on the header's bottom rule. */
+.navLink[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--ink);
+}
+
+.end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .header {
+    gap: 14px;
+  }
+
+  .newStory {
+    display: none;
+  }
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.iconButton {
+  position: relative;
   display: inline-grid;
   place-items: center;
-  min-width: 18px;
-  height: 18px;
-  margin-left: 4px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.iconButton:hover,
+.iconButton[aria-expanded="true"] {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.iconButton :global(.badge) {
+  position: absolute;
+  top: 1px;
+  right: -1px;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+.avatarButton {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (pointer: coarse) {
+  .iconButton,
+  .avatarButton {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Friends and Notifications panels */
+
+.panel {
+  width: 22rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.panelHead h2 {
+  font-size: var(--step-0);
+}
+
+.panelHead a {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.panelHead a:hover {
+  color: var(--ink);
+}
+
+.panelBody {
+  max-height: min(60vh, 28rem);
+  overflow-y: auto;
+}
+
+.panelSection {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px 6px;
+}
+
+.panelSection + .panelSection {
+  border-top: 1px solid var(--hair);
+}
+
+.panelSection > h3 {
+  padding: 0 8px 4px;
+}
+
+.personRow {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+
+a.personRow:hover {
+  background: var(--wash);
+}
+
+.personName {
+  font-weight: 500;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.notice {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: var(--radius);
+}
+
+.noticeText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.storyName {
+  font-family: var(--font-prose), Georgia, serif;
   font-weight: 600;
-  vertical-align: 1px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.storyName:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.empty {
+  padding: 4px 8px 8px;
+}
+
+.more {
+  padding: 4px 8px;
+  font-size: var(--step--1);
+}
+
+.panelFoot {
+  padding: 10px 16px;
+  border-top: 1px solid var(--hair);
+}
+
+.panelFoot .input {
+  max-width: none;
+  min-height: 34px;
+  background: var(--paper);
+  font-size: var(--step--1);
+}
+
+/* You menu */
+
+.menu {
+  width: 15.5rem;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--hair);
+  text-decoration: none;
+}
+
+.who b {
+  display: block;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.who small {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.menuItem:hover,
+button.menuItem:hover {
+  background: var(--wash);
+}
+
+.theme {
+  justify-content: space-between;
+  gap: 12px;
+  cursor: default;
+}
+
+.divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
 }

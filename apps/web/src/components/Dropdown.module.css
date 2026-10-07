@@ -1,0 +1,29 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  min-width: 13.5rem;
+  max-width: calc(100vw - 2 * var(--gutter));
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  font-size: 0.875rem;
+  overflow: hidden;
+}
+
+.panel[data-align="start"] {
+  right: auto;
+  left: 0;
+}
+
+/* Outranks a caller's panelClassName that sets display. */
+.panel[hidden] {
+  display: none;
+}

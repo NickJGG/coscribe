@@ -47,7 +47,7 @@ export const getChapters = cache(async (storyId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("chapters")
-    .select("id, title, position, locked")
+    .select("id, title, position, locked, word_count, edited_at")
     .eq("story_id", storyId)
     .order("position");
   return data ?? [];

@@ -193,10 +193,80 @@ a {
   font-size: 0.875rem;
 }
 
+.button-tiny {
+  min-height: 26px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+}
+
 @media (pointer: coarse) {
-  .button-small {
+  .button-small,
+  .button-tiny {
     min-height: 44px;
   }
+}
+
+.button-ghost {
+  border-color: transparent;
+  background: none;
+  color: var(--ink-muted);
+}
+
+.button-ghost:hover {
+  border-color: transparent;
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.smallcaps {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.segmented {
+  display: inline-flex;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+}
+
+.segmented button {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segmented button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
 }
 
 .input {

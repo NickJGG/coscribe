@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Literata } from "next/font/google";
-import { SiteHeader } from "@/components/SiteHeader";
+import { getViewer } from "@/lib/viewer";
 import "./globals.css";
 
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
@@ -11,17 +11,21 @@ export const metadata: Metadata = {
   description: "Write one story together, live, with your friends.",
 };
 
-export default function RootLayout({
+/** The one root layout: each shell (Site, desk, Reader) adds its own header beneath it. */
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = (await getViewer())?.profile?.theme;
+
   return (
-    <html lang="en" className={`${ui.variable} ${prose.variable}`}>
-      <body>
-        <SiteHeader />
-        <main>{children}</main>
-      </body>
+    <html
+      lang="en"
+      className={`${ui.variable} ${prose.variable}`}
+      data-theme={theme && theme !== "system" ? theme : undefined}
+    >
+      <body>{children}</body>
     </html>
   );
 }

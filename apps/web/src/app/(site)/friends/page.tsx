@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Form from "next/form";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
+import { getFriendships } from "@/lib/connections";
 import { relationTo, usernamePrefixPattern } from "@/lib/friends";
 import { acceptFriendRequest, removeFriendship, sendFriendRequest } from "@/lib/actions/friends";
 import { ActionForm } from "@/components/ActionForm";
@@ -9,27 +10,12 @@ import { PersonLink } from "@/components/PersonLink";
 
 export const metadata: Metadata = { title: "Friends" };
 
-type Person = { id: string; username: string; author_color: string };
-
 export default async function FriendsPage(props: PageProps<"/friends">) {
   const me = await requireProfile("/friends");
   const { q } = await props.searchParams;
   const query = typeof q === "string" ? q : "";
   const supabase = await createClient();
-
-  const { data } = await supabase.from("friendships").select(`
-    requester_id, addressee_id, status,
-    requester:profiles!friendships_requester_id_fkey (id, username, author_color),
-    addressee:profiles!friendships_addressee_id_fkey (id, username, author_color)
-  `);
-  const connections = (data ?? []).map((row) => ({
-    ...row,
-    other: row.requester_id === me.userId ? row.addressee : row.requester,
-  }));
-  const byName = (a: { other: Person }, b: { other: Person }) => a.other.username.localeCompare(b.other.username);
-  const friends = connections.filter((c) => c.status === "accepted").sort(byName);
-  const incoming = connections.filter((c) => c.status === "pending" && c.addressee_id === me.userId).sort(byName);
-  const outgoing = connections.filter((c) => c.status === "pending" && c.requester_id === me.userId).sort(byName);
+  const { connections, friends, incoming, outgoing } = await getFriendships(me.userId);
 
   const pattern = usernamePrefixPattern(query);
   const { data: results } = pattern

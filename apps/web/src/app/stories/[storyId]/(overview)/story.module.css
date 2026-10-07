@@ -1,0 +1,334 @@
+/* The overview's wider column, so Chapters and the Story Bible sit side by side. */
+.page {
+  width: 100%;
+  max-width: calc(58rem + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 40px var(--gutter) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-top: 24px;
+  }
+
+  .title {
+    font-size: var(--step-3);
+  }
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--accent-wash);
+  font-size: 0.875rem;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--step-4);
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.byline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.byline a {
+  text-decoration: none;
+}
+
+.byline a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.columns {
+  display: grid;
+  gap: 28px 44px;
+  align-items: start;
+}
+
+@media (min-width: 760px) {
+  .columns {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.sectionHead h2 {
+  color: var(--ink);
+}
+
+.sectionHead > span {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.headAction {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+  list-style: none;
+}
+
+.headAction::-webkit-details-marker {
+  display: none;
+}
+
+.headAction:hover {
+  color: var(--ink);
+}
+
+.empty {
+  padding: 12px 0;
+}
+
+/* Chapters */
+
+.chapters {
+  list-style: none;
+}
+
+.chapter {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.chapterNumber {
+  color: var(--faint);
+  font-family: var(--font-prose), Georgia, serif;
+  font-variant-numeric: oldstyle-nums;
+}
+
+.chapterTitle {
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.chapterTitle:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chapterSub {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lockIcon {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.menuWrap {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.more {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--faint);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.more:hover,
+.more[aria-expanded="true"] {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+@media (pointer: coarse) {
+  .more {
+    min-width: 44px;
+    height: 44px;
+  }
+}
+
+.menu {
+  width: 15rem;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  list-style: none;
+}
+
+.menuItem::-webkit-details-marker {
+  display: none;
+}
+
+.menuItem:hover {
+  background: var(--wash);
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
+}
+
+.renameForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 6px 8px;
+}
+
+.renameForm .input {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+}
+
+.renameForm [role="alert"] {
+  flex-basis: 100%;
+  margin-top: 0;
+}
+
+/* Story Bible */
+
+.bibleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.bibleGroup ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  list-style: none;
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 0.9375rem;
+}
+
+.bibleGroup a {
+  text-decoration: none;
+}
+
+.bibleGroup a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.addEntry {
+  padding-top: 10px;
+}
+
+.addEntry[open] > summary {
+  margin-bottom: 8px;
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inlineForm select.input {
+  width: auto;
+}
+
+.inlineForm [role="alert"] {
+  flex-basis: 100%;
+  margin-top: 0;
+}

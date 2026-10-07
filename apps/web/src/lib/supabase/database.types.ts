@@ -181,14 +181,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "author_color": string,"created_at": string,"id": string,"username": string
+                    "author_color": string,"created_at": string,"id": string,"theme": Database["public"]['Enums']["theme"],"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color": string,"created_at"?: string,"id": string,"username": string
+                    "author_color": string,"created_at"?: string,"id": string,"theme"?: Database["public"]['Enums']["theme"],"username": string
                   }
                   Update: {
-                    "author_color"?: string,"created_at"?: string,"id"?: string,"username"?: string
+                    "author_color"?: string,"created_at"?: string,"id"?: string,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
                   }
                   Relationships: [
                     
@@ -321,7 +321,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","story_status": "active"|"finished","story_visibility": "public"|"private"
+            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","story_status": "active"|"finished","story_visibility": "public"|"private","theme": "light"|"dark"|"system"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -441,7 +441,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"]
+            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"],"theme": ["light", "dark", "system"]
           }
         }
 } as const

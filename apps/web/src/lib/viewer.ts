@@ -11,7 +11,7 @@ export const getViewer = cache(async () => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, author_color, created_at")
+    .select("id, username, author_color, theme, created_at")
     .eq("id", userId)
     .maybeSingle();
 
