@@ -1,0 +1,25 @@
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px 24px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper-raised);
+}
+
+/* Room for both lines at full length, so the box never jumps while theo types. */
+.demo .prose {
+  min-height: 10.5em;
+  font-size: 1.0625rem;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}

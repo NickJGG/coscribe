@@ -233,14 +233,14 @@ isOneToOne: false
                   ]
                 },"stories": {
                   Row: {
-                    "created_at": string,"finished_at": string | null,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
+                    "created_at": string,"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"finished_at"?: string | null,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Update: {
-                    "created_at"?: string,"finished_at"?: string | null,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Relationships: [
                     
@@ -404,6 +404,11 @@ isOneToOne: false
 "leave_story":
 { Args: { "p_story": string }; Returns: undefined
                            },
+"live_public_stories":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "id": string,"title": string,"viewers": number,"writers": number
+            }[]
+                           },
 "mark_notifications_read":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
@@ -415,6 +420,11 @@ isOneToOne: false
                            },
 "notify":
 { Args: { "p_detail"?: Json,"p_invite"?: string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_recipients": (string)[],"p_story": string }; Returns: undefined
+                           },
+"public_stories":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "edited_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"viewers": number,"writers": number
+            }[]
                            },
 "remove_member":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined

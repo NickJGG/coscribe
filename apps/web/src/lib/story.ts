@@ -85,3 +85,11 @@ export function storyAuthors({
 }): StoryAuthor[] {
   return members.map(({ profile }) => ({ id: profile.id, name: profile.username, color: profile.author_color }));
 }
+
+/** Usernames of former Writers whose text survives. Deleted accounts are simply missing. */
+export async function formerWriterNames(ids: string[]): Promise<Map<string, string>> {
+  if (!ids.length) return new Map();
+  const supabase = await createClient();
+  const { data } = await supabase.from("profiles").select("id, username").in("id", [...new Set(ids)]);
+  return new Map((data ?? []).map((p) => [p.id, p.username]));
+}

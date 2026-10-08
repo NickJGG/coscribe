@@ -26,12 +26,20 @@ export async function SiteHeader() {
       <Link href={profile ? "/stories" : "/"} className={styles.wordmark}>
         Coscribe
       </Link>
-      {profile && (
+      {profile ? (
         <nav className={styles.nav} aria-label="Main">
           <NavLink href="/stories" className={styles.navLink}>
             Stories
           </NavLink>
         </nav>
+      ) : (
+        !viewer && (
+          <nav className={`${styles.nav} ${styles.watch}`} aria-label="Main">
+            <NavLink href="/stories" className={styles.navLink}>
+              Watch live stories
+            </NavLink>
+          </nav>
+        )
       )}
       <div className={styles.end}>
         {profile ? (

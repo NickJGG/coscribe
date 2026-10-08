@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/viewer";
+import { getViewer, requireProfile } from "@/lib/viewer";
+import { formerWriterNames } from "@/lib/story";
 import { getPendingInvites } from "@/lib/connections";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { presentWriters, writingLine } from "@/lib/presence";
@@ -13,11 +14,16 @@ import { ActionForm } from "@/components/ActionForm";
 import { AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { StoryFields } from "@/components/StoryFields";
+import { PublicStories } from "./PublicStories";
 import styles from "./stories.module.css";
 
-export const metadata: Metadata = { title: "Your stories" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getViewer()) ? "Your stories" : "Live stories" };
+}
 
+/** Your Stories, or for signed-out visitors the Public ones, being written first. */
 export default async function StoriesPage(props: PageProps<"/stories">) {
+  if (!(await getViewer())) return <PublicStories />;
   const me = await requireProfile("/stories");
   const { new: wantsNew } = await props.searchParams;
   const supabase = await createClient();
@@ -74,7 +80,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
   });
   stories.sort((a, b) => (b.editedAt ?? b.created_at).localeCompare(a.editedAt ?? a.created_at));
 
-  const formerNames = await namesOf(
+  const formerNames = await formerWriterNames(
     stories.flatMap((s) => {
       const memberIds = new Set(s.members.map((m) => m.id));
       return s.chars.flatMap(Object.keys).filter((id) => !memberIds.has(id));
@@ -158,12 +164,4 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       </details>
     </div>
   );
-}
-
-/** Usernames of former Writers whose text survives. Deleted accounts are simply missing. */
-async function namesOf(ids: string[]): Promise<Map<string, string>> {
-  if (!ids.length) return new Map();
-  const supabase = await createClient();
-  const { data } = await supabase.from("profiles").select("id, username").in("id", [...new Set(ids)]);
-  return new Map((data ?? []).map((p) => [p.id, p.username]));
 }
