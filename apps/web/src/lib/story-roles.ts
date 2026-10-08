@@ -26,6 +26,11 @@ export function canDeleteEntries(actor: MemberRole | null | undefined): boolean 
   return atLeast(actor, "cohost");
 }
 
+/** A whole Note (with its replies), or a single reply: its writer, or Co-hosts and up. */
+export function canDeleteNote(actor: MemberRole | null | undefined, isAuthor: boolean): boolean {
+  return actor != null && (isAuthor || atLeast(actor, "cohost"));
+}
+
 export function canManageInvites(actor: MemberRole | null | undefined): boolean {
   return atLeast(actor, "cohost");
 }

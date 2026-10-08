@@ -1,5 +1,5 @@
 import type * as Y from "yjs"
-import { documentName, type DocumentKind } from "@coscribe/editor"
+import { documentName, stripNoteMarks, type DocumentKind } from "@coscribe/editor"
 import { decideAccess, type Access, type AccessFacts } from "./access"
 import { chapterContent, chapterStats, decodeChapter } from "./chapter-content"
 import { sql } from "./db"
@@ -82,7 +82,8 @@ export type StoryContent = Record<DocumentKind, Record<string, Record<string, un
 
 /**
  * Every Chapter and Entry body in a story as ProseMirror JSON, keyed by id. Documents open in `loaded`
- * are read live, since storage lags edits by a debounce; the rest are decoded from storage.
+ * are read live, since storage lags edits by a debounce; the rest are decoded from storage. Note marks
+ * are stripped: this feeds the public Reader View.
  */
 export async function storyContent(storyId: string, loaded: (name: string) => Y.Doc | undefined): Promise<StoryContent> {
   const rows = await sql<{ kind: DocumentKind; id: string; ydoc: Uint8Array | null }[]>`
@@ -94,7 +95,7 @@ export async function storyContent(storyId: string, loaded: (name: string) => Y.
   for (const { kind, id, ydoc } of rows) {
     const live = loaded(documentName(kind, id))
     const node = live ? chapterContent(live, kind) : ydoc ? decodeChapter(ydoc, kind) : null
-    content[kind][id] = node?.toJSON() ?? { type: "doc" }
+    content[kind][id] = node ? stripNoteMarks(node.toJSON()) : { type: "doc" }
   }
   return content
 }

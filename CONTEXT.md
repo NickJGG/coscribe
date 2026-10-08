@@ -103,6 +103,10 @@ The page in the **Reader View** listing each **Writer** and their contribution.
 The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
 
+**Note**:
+A remark pinned to a passage of a **Chapter**'s text that others can reply to, open until it is Resolved.
+_Avoid_: Comment, annotation, margin note
+
 **Alias**:
 Another name an **Entry** goes by in the prose, such as "Aldous" for "Keeper Aldous".
 _Avoid_: Nickname, synonym
@@ -134,6 +138,7 @@ _Avoid_: Alert, activity, update
 - An **Invite** makes exactly one **User** a **Writer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
 - An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Mentions** of **Entries**
+- A **Chapter** has zero or more **Notes**; only **Writers** and above see them
 - A **Notification** has exactly one recipient **User**
 - **Viewers** have no **Presence**; they are only ever counted, never named
 

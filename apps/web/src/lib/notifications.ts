@@ -12,6 +12,7 @@ export type Notification = {
   story_id: string | null;
   story_title: string;
   invite_id: string | null;
+  note_id: string | null;
   detail: Json;
   created_at: string;
   read_at: string | null;
@@ -19,7 +20,7 @@ export type Notification = {
 };
 
 export const NOTIFICATION_COLUMNS =
-  "id, kind, story_id, story_title, invite_id, detail, created_at, read_at, actor:profiles!notifications_actor_id_fkey (id, username, author_color)";
+  "id, kind, story_id, story_title, invite_id, note_id, detail, created_at, read_at, actor:profiles!notifications_actor_id_fkey (id, username, author_color)";
 
 /** How many the Notifications dropdown shows, and how many each "See all" page shows. */
 export const LATEST_SHOWN = 8;
@@ -68,6 +69,14 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
       return "deleted";
     case "removed":
       return "removed you from";
+    case "note_reply": {
+      const title = detailText(n.detail, "chapter_title");
+      return title ? `replied to a Note on “${title}” in` : "replied to a Note in";
+    }
+    case "note_resolved": {
+      const title = detailText(n.detail, "chapter_title");
+      return title ? `resolved your Note on “${title}” in` : "resolved your Note in";
+    }
     case "role_changed": {
       const role = detailText(n.detail, "role") as MemberRole | null;
       if (role === "host") return "handed you Host of";
@@ -77,9 +86,14 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
 }
 
 /** Where clicking it goes, or null when there's nowhere left to go (Story deleted, or you were removed). */
-export function notificationHref(n: Pick<Notification, "kind" | "story_id" | "detail">): string | null {
+export function notificationHref(n: Pick<Notification, "kind" | "story_id" | "note_id" | "detail">): string | null {
   if (!n.story_id || n.kind === "story_deleted" || n.kind === "removed") return null;
   const story = `/stories/${n.story_id}`;
+  if (n.kind === "note_reply" || n.kind === "note_resolved") {
+    const chapter = detailText(n.detail, "chapter_id");
+    if (!chapter) return story;
+    return n.note_id ? `${story}/chapters/${chapter}?note=${n.note_id}` : `${story}/chapters/${chapter}`;
+  }
   if (n.kind === "chapter_added") {
     const chapter = detailText(n.detail, "chapter_id");
     return chapter ? `${story}/chapters/${chapter}` : story;

@@ -7,6 +7,7 @@ const base: Notification = {
   story_id: "s1",
   story_title: "Gull Point",
   invite_id: null,
+  note_id: null,
   detail: {},
   created_at: "2026-10-07T10:00:00Z",
   read_at: null,
@@ -19,6 +20,13 @@ describe("notificationVerb", () => {
       "added “The Tide” to"
     );
     expect(notificationVerb({ kind: "chapter_added", detail: {} })).toBe("added a Chapter to");
+  });
+
+  it("names the Note's Chapter", () => {
+    expect(notificationVerb({ kind: "note_reply", detail: { chapter_title: "The Tide" } })).toBe(
+      "replied to a Note on “The Tide” in"
+    );
+    expect(notificationVerb({ kind: "note_resolved", detail: {} })).toBe("resolved your Note in");
   });
 
   it("says which role", () => {
@@ -42,6 +50,13 @@ describe("notificationHref", () => {
       "/stories/s1/chapters/c9"
     );
     expect(notificationHref({ ...base, kind: "story_finished" })).toBe("/stories/s1/read");
+  });
+
+  it("opens the Chapter with the Note active", () => {
+    const reply = { ...base, kind: "note_reply" as const, note_id: "n7", detail: { chapter_id: "c9" } };
+    expect(notificationHref(reply)).toBe("/stories/s1/chapters/c9?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1/chapters/c9?note=n7");
+    expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/chapters/c9");
   });
 
   it("has no link once the Story is gone or you were removed", () => {

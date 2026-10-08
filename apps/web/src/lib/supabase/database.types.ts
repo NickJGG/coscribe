@@ -179,16 +179,92 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"notifications": {
+                },"note_replies": {
                   Row: {
-                    "actor_id": string | null,"created_at": string,"detail": NonNullable<Json>,"id": string,"invite_id": string | null,"kind": Database["public"]['Enums']["notification_kind"],"read_at": string | null,"recipient_id": string,"story_id": string | null,"story_title": string
+                    "author_id": string | null,"body": string,"chapter_id": string,"created_at": string,"edited_at": string | null,"id": string,"note_id": string,"story_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind": Database["public"]['Enums']["notification_kind"],"read_at"?: string | null,"recipient_id": string,"story_id"?: string | null,"story_title": string
+                    "author_id"?: string | null,"body": string,"chapter_id": string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"note_id": string,"story_id": string
                   }
                   Update: {
-                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind"?: Database["public"]['Enums']["notification_kind"],"read_at"?: string | null,"recipient_id"?: string,"story_id"?: string | null,"story_title"?: string
+                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"note_id"?: string,"story_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "note_replies_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "note_replies_chapter_id_fkey"
+      columns: ["chapter_id"]
+isOneToOne: false
+      referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "note_replies_note_id_fkey"
+      columns: ["note_id"]
+isOneToOne: false
+      referencedRelation: "notes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "note_replies_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notes": {
+                  Row: {
+                    "author_id": string | null,"body": string,"chapter_id": string,"created_at": string,"edited_at": string | null,"id": string,"quote": string,"resolved_at": string | null,"resolved_by": string | null,"story_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id"?: string | null,"body": string,"chapter_id": string,"created_at"?: string,"edited_at"?: string | null,"id": string,"quote": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id": string
+                  }
+                  Update: {
+                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"quote"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "notes_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notes_chapter_id_fkey"
+      columns: ["chapter_id"]
+isOneToOne: false
+      referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notes_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notes_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"notifications": {
+                  Row: {
+                    "actor_id": string | null,"created_at": string,"detail": NonNullable<Json>,"id": string,"invite_id": string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id": string | null,"read_at": string | null,"recipient_id": string,"story_id": string | null,"story_title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id": string,"story_id"?: string | null,"story_title": string
+                  }
+                  Update: {
+                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind"?: Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id"?: string,"story_id"?: string | null,"story_title"?: string
                   }
                   Relationships: [
                     {
@@ -202,6 +278,12 @@ isOneToOne: false
       columns: ["invite_id"]
 isOneToOne: false
       referencedRelation: "invites"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_note_id_fkey"
+      columns: ["note_id"]
+isOneToOne: false
+      referencedRelation: "notes"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "notifications_recipient_id_fkey"
@@ -346,6 +428,9 @@ isOneToOne: false
 "add_chapter":
 { Args: { "p_story": string,"p_title": string }; Returns: string
                            },
+"add_note":
+{ Args: { "p_body": string,"p_chapter": string,"p_id": string,"p_quote": string }; Returns: undefined
+                           },
 "are_friends":
 { Args: { "a": string,"b": string }; Returns: boolean
                            },
@@ -419,7 +504,7 @@ isOneToOne: false
 { Args: { "p_preferred": string,"p_taken": (string)[] }; Returns: string
                            },
 "notify":
-{ Args: { "p_detail"?: Json,"p_invite"?: string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_recipients": (string)[],"p_story": string }; Returns: undefined
+{ Args: { "p_detail"?: Json,"p_invite"?: string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_note"?: string,"p_recipients": (string)[],"p_story": string }; Returns: undefined
                            },
 "public_stories":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -429,8 +514,14 @@ isOneToOne: false
 "remove_member":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined
                            },
+"reply_note":
+{ Args: { "p_body": string,"p_note": string }; Returns: string
+                           },
 "set_member_role":
 { Args: { "p_role": Database["public"]['Enums']["member_role"],"p_story": string,"p_user": string }; Returns: undefined
+                           },
+"set_note_resolved":
+{ Args: { "p_note": string,"p_resolved": boolean }; Returns: undefined
                            },
 "set_story_color":
 { Args: { "p_color": string,"p_story": string }; Returns: undefined
@@ -452,7 +543,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","notification_kind": "invite_received"|"writer_joined"|"chapter_added"|"story_finished"|"story_deleted"|"removed"|"role_changed","story_status": "active"|"finished","story_visibility": "public"|"private","theme": "light"|"dark"|"system"
+            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "writer"|"cohost"|"host","notification_kind": "invite_received"|"writer_joined"|"chapter_added"|"story_finished"|"story_deleted"|"removed"|"role_changed"|"note_reply"|"note_resolved","story_status": "active"|"finished","story_visibility": "public"|"private","theme": "light"|"dark"|"system"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -572,7 +663,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"notification_kind": ["invite_received", "writer_joined", "chapter_added", "story_finished", "story_deleted", "removed", "role_changed"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"],"theme": ["light", "dark", "system"]
+            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["writer", "cohost", "host"],"notification_kind": ["invite_received", "writer_joined", "chapter_added", "story_finished", "story_deleted", "removed", "role_changed", "note_reply", "note_resolved"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"],"theme": ["light", "dark", "system"]
           }
         }
 } as const

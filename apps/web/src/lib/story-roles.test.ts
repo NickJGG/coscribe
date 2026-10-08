@@ -3,6 +3,7 @@ import {
   atLeast,
   canChangeRole,
   canDeleteEntries,
+  canDeleteNote,
   canLeave,
   canManageChapters,
   canManageInvites,
@@ -74,5 +75,16 @@ describe("canLeave", () => {
   it("keeps the Host from leaving", () => {
     expect(ROLES.filter((r) => canLeave(r))).toEqual(["writer", "cohost"]);
     expect(canLeave(null)).toBe(false);
+  });
+});
+
+describe("canDeleteNote", () => {
+  it("lets the writer delete their own, and Co-hosts and the Host delete anyone's", () => {
+    expect(ROLES.filter((r) => canDeleteNote(r, true))).toEqual(ROLES);
+    expect(ROLES.filter((r) => canDeleteNote(r, false))).toEqual(["cohost", "host"]);
+  });
+
+  it("never lets a non-member delete", () => {
+    expect(canDeleteNote(null, true)).toBe(false);
   });
 });

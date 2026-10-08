@@ -7,15 +7,21 @@ import { BulletList, ListItem, ListKeymap, OrderedList } from "@tiptap/extension
 import Paragraph from "@tiptap/extension-paragraph"
 import Text from "@tiptap/extension-text"
 import { Author } from "./author"
+import { Note, NotePaste } from "./note"
 import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
 export { countAuthorCharacters, type ContentJSON } from "./credits"
 export { blockTexts, countMentions, findMentions, type Mention, type MentionTarget } from "./mentions"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
+export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 
-/** Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text. */
-export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author]
+/**
+ * Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text and
+ * `note` marks on noted passages. Every client and apps/sync must share this schema: y-tiptap drops
+ * text carrying a mark it doesn't know.
+ */
+export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author, Note, NotePaste]
 
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)

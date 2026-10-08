@@ -28,6 +28,22 @@ describe("chapter content", () => {
     expect(restored.firstChild!.child(1).marks[0]!.attrs).toEqual(jordan)
   })
 
+  it("round-trips overlapping Notes with both ids", () => {
+    const note = (id: string) => ({ type: "note", attrs: { id } })
+    const author = { type: "author", attrs: mia }
+    const paragraph = {
+      type: "paragraph",
+      content: [
+        { type: "text", text: "The ", marks: [author, note("a")] },
+        { type: "text", text: "cat", marks: [author, note("a"), note("b")] },
+        { type: "text", text: " sat.", marks: [author, note("b")] },
+      ],
+    }
+    const doc = new Y.Doc()
+    prosemirrorJSONToYXmlFragment(chapterSchema, { type: "doc", content: [paragraph] }, doc.getXmlFragment(DOCUMENT_FIELD))
+    expect(decodeChapter(Y.encodeStateAsUpdate(doc)).toJSON()).toEqual({ type: "doc", content: [paragraph] })
+  })
+
   it("decodes Entry bodies with the Entry schema, lists included", () => {
     const doc = new Y.Doc()
     const body = {
