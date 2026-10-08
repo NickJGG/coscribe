@@ -8,6 +8,20 @@
   gap: 24px;
 }
 
+/* With Show Notes on, a second column for the Note cards, which sit beside the text (notes.module.css). */
+.page:has([data-note-margin]) {
+  max-width: calc(var(--measure) + 32px + 18rem + 2 * var(--gutter));
+  display: grid;
+  grid-template-columns: minmax(0, var(--measure)) 18rem;
+  justify-content: center;
+  column-gap: 32px;
+  row-gap: 24px;
+}
+
+.page:has([data-note-margin]) > * {
+  grid-column: 1;
+}
+
 .header {
   display: flex;
   flex-direction: column;

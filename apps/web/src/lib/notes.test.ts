@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupNotes, NOTE_QUOTE_MAX, noteQuote, type Note } from "./notes";
+import { groupNotes, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
 
 function note(id: string, created_at: string, resolved_at: string | null = null): Note {
   return {
@@ -55,5 +55,23 @@ describe("groupNotes", () => {
       ["b", { from: 5 }],
     ]);
     expect(groupNotes(notes, ranges).open.map((n) => n.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("stackCards", () => {
+  it("leaves cards that fit where they want to be", () => {
+    expect(stackCards([0, 200, 400], [100, 100, 100], -1, 10)).toEqual([0, 200, 400]);
+  });
+
+  it("pushes later cards down past the one above", () => {
+    expect(stackCards([0, 50, 60], [100, 40, 40], -1, 10)).toEqual([0, 110, 160]);
+  });
+
+  it("keeps the active card in place and pushes earlier ones up", () => {
+    expect(stackCards([0, 50, 60], [100, 40, 40], 1, 10)).toEqual([-60, 50, 100]);
+  });
+
+  it("handles no cards", () => {
+    expect(stackCards([], [], 0, 10)).toEqual([]);
   });
 });

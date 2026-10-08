@@ -40,3 +40,15 @@ export function groupNotes(notes: readonly Note[], ranges: ReadonlyMap<string, {
   groups.detached.sort((a, b) => time(a.created_at) - time(b.created_at));
   return groups;
 }
+
+/**
+ * Tops for margin cards that each want to sit at `wants[i]` (in document order), so none overlap: the
+ * active card keeps its place, later cards push down below it, earlier ones push up above it.
+ */
+export function stackCards(wants: readonly number[], heights: readonly number[], active: number, gap: number): number[] {
+  const tops = [...wants];
+  const pivot = Math.max(0, Math.min(active, wants.length - 1));
+  for (let i = pivot + 1; i < tops.length; i++) tops[i] = Math.max(wants[i]!, tops[i - 1]! + heights[i - 1]! + gap);
+  for (let i = pivot - 1; i >= 0; i--) tops[i] = Math.min(wants[i]!, tops[i + 1]! - heights[i]! - gap);
+  return tops;
+}

@@ -1,48 +1,26 @@
 "use client";
 
-import { createContext, useContext, useSyncExternalStore } from "react";
+import { createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLocalSetting } from "@/lib/local-setting";
 import styles from "./reader.module.css";
 
 const SIZES = [0.9, 1, 1.125, 1.25];
 const DEFAULT_SIZE = 1;
 const SIZE_KEY = "coscribe:reader-size";
-const listeners = new Set<() => void>();
 
-function readSize() {
-  try {
-    const stored = Number(localStorage.getItem(SIZE_KEY) ?? NaN);
-    return Number.isInteger(stored) && SIZES[stored] !== undefined ? stored : DEFAULT_SIZE;
-  } catch {
-    return DEFAULT_SIZE;
-  }
-}
-
-function writeSize(size: number) {
-  try {
-    if (size === DEFAULT_SIZE) localStorage.removeItem(SIZE_KEY);
-    else localStorage.setItem(SIZE_KEY, String(size));
-  } catch {}
-  listeners.forEach((listener) => listener());
-}
-
-function subscribeSize(listener: () => void) {
-  listeners.add(listener);
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
-}
-
-const SizeContext = createContext(DEFAULT_SIZE);
+const SizeContext = createContext<{ size: number; setSize: (size: number) => void }>({
+  size: DEFAULT_SIZE,
+  setSize: () => {},
+});
 
 /** The Reader's text size, remembered by this browser, applied to everything inside as `--reader-scale`. */
 export function ReaderFrame({ className, children }: { className?: string; children: React.ReactNode }) {
-  const size = useSyncExternalStore(subscribeSize, readSize, () => DEFAULT_SIZE);
+  const [stored, setSize] = useLocalSetting(SIZE_KEY, DEFAULT_SIZE);
+  const size = Number.isInteger(stored) && SIZES[stored] !== undefined ? stored : DEFAULT_SIZE;
   return (
-    <SizeContext value={size}>
+    <SizeContext value={{ size, setSize }}>
       <div className={className} style={{ "--reader-scale": SIZES[size] } as React.CSSProperties}>
         {children}
       </div>
@@ -51,15 +29,15 @@ export function ReaderFrame({ className, children }: { className?: string; child
 }
 
 export function TextSize() {
-  const size = useContext(SizeContext);
+  const { size, setSize } = useContext(SizeContext);
   return (
     <span className={styles.textSize} role="group" aria-label="Text size">
-      <button type="button" onClick={() => writeSize(size - 1)} disabled={size === 0} aria-label="Smaller text">
+      <button type="button" onClick={() => setSize(size - 1)} disabled={size === 0} aria-label="Smaller text">
         A
       </button>
       <button
         type="button"
-        onClick={() => writeSize(size + 1)}
+        onClick={() => setSize(size + 1)}
         disabled={size === SIZES.length - 1}
         aria-label="Larger text"
       >

@@ -1,0 +1,258 @@
+/* Passages: decorations in the editor. A shadow, not a border, so the line height never changes. */
+.highlight {
+  background: var(--note);
+  box-shadow: inset 0 -2px 0 var(--note-line);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.active {
+  background: var(--note-strong);
+}
+
+/* Over the Authorship box; only its own controls take clicks. */
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer > * {
+  pointer-events: auto;
+}
+
+.addButton {
+  position: absolute;
+  z-index: 3;
+  transform: translateY(calc(-100% - 6px));
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Beside the text, in the page's second column (chapter.module.css). */
+.margin {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 32px);
+  width: 18rem;
+}
+
+.card {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--step--1);
+  line-height: 1.45;
+  cursor: pointer;
+  transition:
+    top 0.2s,
+    box-shadow 0.15s,
+    border-color 0.15s;
+}
+
+.card[data-active] {
+  border-color: var(--note-line);
+  box-shadow: var(--shadow);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}
+
+.quote {
+  margin-bottom: 8px;
+  padding-left: 8px;
+  border-left: 2px solid var(--note-line);
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.quote::before {
+  content: "\201C";
+}
+
+.quote::after {
+  content: "\201D";
+}
+
+.message {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.message > :first-child {
+  margin-top: 1px;
+}
+
+.messageMain {
+  min-width: 0;
+}
+
+.byline {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 20px;
+}
+
+.name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.when {
+  flex-shrink: 0;
+  color: var(--faint);
+  font-size: 0.6875rem;
+}
+
+.body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0 0 28px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+  list-style: none;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.resolve {
+  align-self: flex-start;
+  color: var(--success);
+}
+
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.input {
+  max-width: none;
+  min-height: 0;
+  padding: 5px 8px;
+  font-size: var(--step--1);
+  line-height: 1.4;
+  field-sizing: content;
+  max-height: 10lh;
+  resize: none;
+}
+
+.composeButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.error {
+  margin-top: 4px;
+  color: var(--danger);
+  font-size: 0.75rem;
+}
+
+.more {
+  margin-left: auto;
+  align-self: center;
+}
+
+.moreButton {
+  min-width: 28px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--faint);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.moreButton:hover,
+.moreButton[aria-expanded="true"] {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.menu {
+  min-width: 9rem;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: var(--wash);
+}
+
+.danger {
+  color: var(--danger);
+}
+
+@media (pointer: coarse) {
+  .moreButton {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .menuItem {
+    min-height: 44px;
+  }
+}

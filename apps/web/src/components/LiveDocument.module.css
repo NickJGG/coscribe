@@ -60,9 +60,14 @@
   cursor: pointer;
 }
 
-.tool:hover {
+.tool:hover:not(:disabled) {
   background: var(--wash);
   color: var(--ink);
+}
+
+.tool:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 
 .tool[aria-pressed="true"] {

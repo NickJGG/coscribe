@@ -61,7 +61,7 @@ function showMention(page: HTMLElement, entryId: string, otherwise: () => void) 
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
  * the right panel over all three. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
- * A `#mention-<entryId>` link opens at that Entry's first Mention instead.
+ * A `#mention-<entryId>` link opens at that Entry's first Mention instead, and a `?note=` link leaves it to the Note.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -78,6 +78,8 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     const page = scroller.current;
     if (!doc || !ready || restored.current === doc || !page) return;
     restored.current = doc;
+    // The Notes on the page scroll to a linked Note themselves.
+    if (new URLSearchParams(location.search).has("note")) return;
     const entryId = MENTION_HASH.exec(location.hash)?.[1];
     if (!entryId) return page.scrollTo(0, readScroll(doc));
     const stop = showMention(page, entryId, () => page.scrollTo(0, readScroll(doc)));

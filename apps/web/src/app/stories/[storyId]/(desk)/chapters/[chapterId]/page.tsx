@@ -9,6 +9,7 @@ import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
+import { NotesProvider } from "@/components/notes/NotesProvider";
 import { ChapterTitle } from "./ChapterTitle";
 import styles from "./chapter.module.css";
 
@@ -41,6 +42,25 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const next = chapters[index + 1];
   const authors = storyAuthors(data);
   const manage = canManageChapters(myRole) && story.status !== "finished";
+  const writer = liveWriter(data);
+
+  const live = (
+    <LiveDocument
+      key={chapter.id}
+      kind="chapter"
+      id={chapter.id}
+      writer={writer}
+      authors={authors}
+      mentions={{ storyId: story.id, entries: mentionEntries(entries) }}
+      tools={
+        manage && (
+          <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
+            <button className="button button-ghost button-tiny">{chapter.locked ? "Unlock" : "Lock"}</button>
+          </ActionForm>
+        )
+      }
+    />
+  );
 
   return (
     <div className={styles.page}>
@@ -57,21 +77,20 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         <ChapterTitle key={chapter.id} storyId={story.id} chapterId={chapter.id} title={chapter.title} renamable={manage} />
       </header>
 
-      <LiveDocument
-        key={chapter.id}
-        kind="chapter"
-        id={chapter.id}
-        writer={liveWriter(data)}
-        authors={authors}
-        mentions={{ storyId: story.id, entries: mentionEntries(entries) }}
-        tools={
-          manage && (
-            <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
-              <button className="button button-ghost button-tiny">{chapter.locked ? "Unlock" : "Lock"}</button>
-            </ActionForm>
-          )
-        }
-      />
+      {myRole && writer ? (
+        <NotesProvider
+          key={chapter.id}
+          chapterId={chapter.id}
+          me={writer.userId}
+          myRole={myRole}
+          authors={authors}
+          finished={story.status === "finished"}
+        >
+          {live}
+        </NotesProvider>
+      ) : (
+        live
+      )}
 
       {canManageChapters(myRole) && (
         <SnapshotHistory

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -21,12 +21,16 @@ import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relative-time";
 import { authorColorCss } from "@/lib/profile-rules";
 import { paragraphShares, type AuthorRun } from "@/lib/contribution";
+import { useMeasure } from "@/lib/use-measure";
 import type { MentionEntry } from "@/lib/entries";
 import { DeskToolbar } from "./DeskToolbar";
 import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { Switch } from "./Switch";
 import { useLiveDocuments, type LiveSession } from "./SyncSocket";
+import { canAddNote, NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
+import { NoteLayer } from "./notes/NoteMargin";
+import { useNotes } from "./notes/NotesProvider";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
@@ -56,6 +60,7 @@ const SLOW_MS = 1000;
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
+ * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes.
  */
 export function LiveDocument({
   kind,
@@ -81,6 +86,21 @@ export function LiveDocument({
   const [readOnly, setReadOnly] = useState(true);
   const [showAuthors, setShowAuthors] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const notes = useNotes();
+  const attachNotes = notes?.setEditor;
+  const onActivateNote = notes?.setActive;
+  const onAddNote = notes?.startDraft;
+  // The editor is built once with these, so they must never change (and don't).
+  const noteOptions = useMemo<NoteHighlightOptions | undefined>(
+    () => (onActivateNote && onAddNote ? { onActivate: onActivateNote, onAddNote } : undefined),
+    [onActivateNote, onAddNote]
+  );
+
+  useEffect(() => {
+    if (!attachNotes) return;
+    attachNotes(editor);
+    return () => attachNotes(null);
+  }, [attachNotes, editor]);
 
   useEffect(() => {
     const name = documentName(kind, id);
@@ -153,9 +173,16 @@ export function LiveDocument({
     <div className={styles.live}>
       <DeskToolbar.Fill>
         <div className={styles.toolRow}>
-          {editor && !readOnly && <Toolbar editor={editor} lists={kind === "entry"} />}
+          {editor && !readOnly && (
+            <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
+          )}
           <div className={styles.toolAside}>
             {tools}
+            {notes && (
+              <Switch checked={notes.show} onChange={notes.setShow}>
+                Show Notes
+              </Switch>
+            )}
             <Switch checked={showAuthors} onChange={setShowAuthors}>
               Show authors
             </Switch>
@@ -164,13 +191,18 @@ export function LiveDocument({
       </DeskToolbar.Fill>
       {session && synced ? (
         <MaybeMentionCards mentions={mentions}>
-          <Authorship authors={authors} show={showAuthors}>
+          <Authorship
+            authors={authors}
+            show={showAuthors}
+            aside={notes && editor && <NoteLayer editor={editor} />}
+          >
             <LiveEditor
               kind={kind}
               session={session}
               writer={writer}
               editable={!readOnly}
               mentions={mentions?.entries}
+              notes={noteOptions}
               onEditor={setEditor}
             />
           </Authorship>
@@ -205,6 +237,7 @@ function LiveEditor({
   writer,
   editable,
   mentions = NO_MENTIONS,
+  notes,
   onEditor,
 }: {
   kind: DocumentKind;
@@ -212,6 +245,7 @@ function LiveEditor({
   writer: Writer | null;
   editable: boolean;
   mentions?: MentionEntry[];
+  notes?: NoteHighlightOptions;
   onEditor: (editor: Editor | null) => void;
 }) {
   const report = useLiveReport();
@@ -230,6 +264,7 @@ function LiveEditor({
       Placeholder.configure({ placeholder }),
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
       Mentions.configure({ entries: mentions, focusable: !editable }),
+      ...(notes ? [NoteHighlights.configure(notes)] : []),
     ],
     editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
@@ -281,7 +316,7 @@ function renderCaret(user: Record<string, unknown>): HTMLElement {
   return caret;
 }
 
-function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
+function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean; onAddNote?: () => void }) {
   const active = useEditorState({
     editor,
     selector: ({ editor }) => ({
@@ -289,6 +324,7 @@ function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
       italic: editor.isActive("italic"),
       bulletList: editor.isActive("bulletList"),
       orderedList: editor.isActive("orderedList"),
+      note: canAddNote(editor),
     }),
   });
 
@@ -344,6 +380,21 @@ function Toolbar({ editor, lists }: { editor: Editor; lists: boolean }) {
           </button>
         </>
       )}
+      {onAddNote && (
+        <>
+          <span className={styles.toolSep} aria-hidden />
+          <button
+            type="button"
+            className={styles.tool}
+            disabled={!active.note}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onAddNote}
+            title="Add Note on the selected text (Ctrl+Alt+M)"
+          >
+            Add Note
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -355,16 +406,31 @@ type Tip = { text: string; x: number; y: number };
 /** A paragraph's split margin bar, placed against the Authorship box. */
 type Bar = { top: number; height: number; shares: AuthorRun[] };
 
+const NO_BARS: Bar[] = [];
+
 /**
  * "Show authors": tints each `author` run by its Author Color, puts a bar in the margin of each paragraph
  * split by each Writer's share of its characters, and hovering a run says who wrote it and when.
  */
-export function Authorship({ authors, show, children }: { authors: StoryAuthor[]; show: boolean; children: React.ReactNode }) {
+export function Authorship({
+  authors,
+  show,
+  aside,
+  children,
+}: {
+  authors: StoryAuthor[];
+  show: boolean;
+  /** Laid over the box beside the text, unclipped, like the bars. */
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const [tip, setTip] = useState<Tip | null>(null);
   const box = useRef<HTMLDivElement>(null);
   const clip = useRef<HTMLDivElement>(null);
   const text = useRef<HTMLDivElement>(null);
-  const bars = useParagraphBars(box, text, show);
+  const roots = useMemo(() => [text], []);
+  const measure = useCallback(() => measureBars(box.current!, text.current!), []);
+  const bars = useMeasure(roots, show ? measure : null, NO_BARS);
   const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
   const tints = useMemo(
     () =>
@@ -417,6 +483,7 @@ export function Authorship({ authors, show, children }: { authors: StoryAuthor[]
           ))}
         </div>
       )}
+      {aside}
       {/* Caret labels and the tooltip can stick out past a phone's edge; the margin bars must not be cut off. */}
       <div ref={clip} className={styles.clip}>
         <div ref={text}>{children}</div>
@@ -431,49 +498,9 @@ export function Authorship({ authors, show, children }: { authors: StoryAuthor[]
 }
 
 /**
- * Each paragraph's margin bar, measured from its rendered `span[data-author]` runs and measured again
- * whenever the text changes or reflows. Works the same over a live editor and over static Reader markup.
+ * Each paragraph's margin bar, measured from its rendered `span[data-author]` runs. Works the same over a
+ * live editor and over static Reader markup.
  */
-function useParagraphBars(
-  box: React.RefObject<HTMLElement | null>,
-  text: React.RefObject<HTMLElement | null>,
-  show: boolean
-): Bar[] {
-  const [bars, setBars] = useState<Bar[]>([]);
-
-  useEffect(() => {
-    const origin = box.current;
-    const root = text.current;
-    if (!show || !origin || !root) return;
-    let frame = 0;
-    let last = "";
-    const measure = () => {
-      frame = 0;
-      const next = measureBars(origin, root);
-      const key = JSON.stringify(next);
-      if (key === last) return;
-      last = key;
-      setBars(next);
-    };
-    const schedule = () => {
-      frame ||= requestAnimationFrame(measure);
-    };
-    schedule();
-    const mutations = new MutationObserver(schedule);
-    mutations.observe(root, { subtree: true, childList: true, characterData: true });
-    const resizes = new ResizeObserver(schedule);
-    resizes.observe(root);
-    return () => {
-      cancelAnimationFrame(frame);
-      mutations.disconnect();
-      resizes.disconnect();
-      setBars([]);
-    };
-  }, [box, text, show]);
-
-  return bars;
-}
-
 function measureBars(origin: HTMLElement, root: HTMLElement): Bar[] {
   const paragraphs = [...root.querySelectorAll("p")];
   if (!paragraphs.length) return [];

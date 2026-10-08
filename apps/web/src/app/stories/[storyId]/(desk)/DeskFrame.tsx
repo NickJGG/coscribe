@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useEffectEvent, useRef, useState, useSyncExternalStore } from "react";
+import { createContext, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
+import { useLocalSetting } from "@/lib/local-setting";
 
 export type SidebarTab = "chapters" | "bible";
 
@@ -22,33 +23,6 @@ const FrameContext = createContext<Frame | null>(null);
 
 const WIDE = "(min-width: 1025px)";
 const COLLAPSED_KEY = "coscribe:sidebar-collapsed";
-const listeners = new Set<() => void>();
-
-function readCollapsed() {
-  try {
-    return localStorage.getItem(COLLAPSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeCollapsed(collapsed: boolean) {
-  try {
-    if (collapsed) localStorage.setItem(COLLAPSED_KEY, "1");
-    else localStorage.removeItem(COLLAPSED_KEY);
-  } catch {}
-  listeners.forEach((listener) => listener());
-}
-
-function subscribeCollapsed(listener: () => void) {
-  listeners.add(listener);
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
-}
-
 function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 }
@@ -60,7 +34,7 @@ function isTyping(target: EventTarget | null) {
 export function DeskFrame({ className, children }: { className?: string; children: React.ReactNode }) {
   const pathname = usePathname();
   const { entryId } = useParams<{ entryId?: string }>();
-  const collapsed = useSyncExternalStore(subscribeCollapsed, readCollapsed, () => false);
+  const [collapsed, setCollapsed] = useLocalSetting(COLLAPSED_KEY, false);
   // Tying these to the page they were set on resets them on navigation without an effect.
   const [overlayOn, setOverlayOn] = useState<string | null>(null);
   const [chosen, setChosen] = useState<{ on: string; tab: SidebarTab } | null>(null);
@@ -72,11 +46,11 @@ export function DeskFrame({ className, children }: { className?: string; childre
   const setTab = (next: SidebarTab) => setChosen({ on: pathname, tab: next });
   const open = (next?: SidebarTab) => {
     if (next) setTab(next);
-    if (matchMedia(WIDE).matches) writeCollapsed(false);
+    if (matchMedia(WIDE).matches) setCollapsed(false);
     else setOverlayOn(pathname);
   };
   const toggle = () => {
-    if (matchMedia(WIDE).matches) writeCollapsed(!collapsed);
+    if (matchMedia(WIDE).matches) setCollapsed(!collapsed);
     else setOverlayOn(overlay ? null : pathname);
   };
   const close = () => setOverlayOn(null);
