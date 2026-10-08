@@ -47,7 +47,8 @@ function Node({ node }: { node: JSONContent }) {
   }
 }
 
-function Text({ node }: { node: JSONContent }) {
+/** A text node wrapped in its marks, as the editor renders them. */
+export function Text({ node }: { node: JSONContent }) {
   let out: React.ReactNode = node.text;
   for (const mark of node.marks ?? []) {
     if (mark.type === "bold") out = <strong>{out}</strong>;

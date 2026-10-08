@@ -28,6 +28,7 @@ import { DeskToolbar } from "./DeskToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
 import { FindBar } from "./FindBar";
 import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
+import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { Switch } from "./Switch";
 import { useLiveDocuments, type LiveSession } from "./SyncSocket";
@@ -66,6 +67,7 @@ const SLOW_MS = 1000;
  * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
+ * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
  */
 export function LiveDocument({
   kind,
@@ -95,6 +97,9 @@ export function LiveDocument({
   const findQuery = params.get("find")?.trim() ?? "";
   const findCurrent = occurrence(params.get("n"));
   const notes = useNotes();
+  const compare = useSnapshotCompare();
+  const attachCompare = compare?.setEditor;
+  const comparing = !!compare?.compare;
   const attachNotes = notes?.setEditor;
   const onActivateNote = notes?.setActive;
   const onAddNote = notes?.startDraft;
@@ -109,6 +114,12 @@ export function LiveDocument({
     attachNotes(editor);
     return () => attachNotes(null);
   }, [attachNotes, editor]);
+
+  useEffect(() => {
+    if (!attachCompare) return;
+    attachCompare(editor);
+    return () => attachCompare(null);
+  }, [attachCompare, editor]);
 
   useEffect(() => {
     const name = documentName(kind, id);
@@ -178,27 +189,29 @@ export function LiveDocument({
   }
 
   return (
-    <div className={styles.live}>
-      <DeskToolbar.Fill>
-        <div className={styles.toolRow}>
-          {editor && !readOnly && (
-            <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
-          )}
-          <div className={styles.toolAside}>
-            {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
-            {tools}
-            {notes && <NotesButton />}
-            {notes && (
-              <Switch checked={notes.show} onChange={notes.setShow}>
-                Show Notes
-              </Switch>
+    <div className={styles.live} hidden={comparing}>
+      {!comparing && (
+        <DeskToolbar.Fill>
+          <div className={styles.toolRow}>
+            {editor && !readOnly && (
+              <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
             )}
-            <Switch checked={showAuthors} onChange={setShowAuthors}>
-              Show authors
-            </Switch>
+            <div className={styles.toolAside}>
+              {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
+              {tools}
+              {notes && <NotesButton />}
+              {notes && (
+                <Switch checked={notes.show} onChange={notes.setShow}>
+                  Show Notes
+                </Switch>
+              )}
+              <Switch checked={showAuthors} onChange={setShowAuthors}>
+                Show authors
+              </Switch>
+            </div>
           </div>
-        </div>
-      </DeskToolbar.Fill>
+        </DeskToolbar.Fill>
+      )}
       {session && synced ? (
         <MaybeMentionCards mentions={mentions}>
           <Authorship
@@ -443,11 +456,13 @@ const NO_BARS: Bar[] = [];
 export function Authorship({
   authors,
   show,
+  bars: showBars = true,
   aside,
   children,
 }: {
   authors: StoryAuthor[];
   show: boolean;
+  bars?: boolean;
   /** Laid over the box beside the text, unclipped, like the bars. */
   aside?: React.ReactNode;
   children: React.ReactNode;
@@ -458,7 +473,7 @@ export function Authorship({
   const text = useRef<HTMLDivElement>(null);
   const roots = useMemo(() => [text], []);
   const measure = useCallback(() => measureBars(box.current!, text.current!), []);
-  const bars = useMeasure(roots, show ? measure : null, NO_BARS);
+  const bars = useMeasure(roots, show && showBars ? measure : null, NO_BARS);
   const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
   const tints = useMemo(
     () =>
@@ -500,7 +515,7 @@ export function Authorship({
       onMouseLeave={() => setTip(null)}
     >
       {show && <style>{tints}</style>}
-      {show && (
+      {show && showBars && (
         <div className={styles.margin} aria-hidden>
           {bars.map((bar, i) => (
             <span key={i} className={styles.bar} style={{ top: bar.top, height: bar.height }}>

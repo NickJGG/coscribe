@@ -8,6 +8,8 @@ import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
+import { SnapshotCompareProvider } from "@/components/SnapshotCompare";
+import { SnapshotCompareView } from "@/components/SnapshotCompareView";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { NotesProvider } from "@/components/notes/NotesProvider";
 import { NotesPanel } from "@/components/notes/NotesPanel";
@@ -63,6 +65,23 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
     />
   );
 
+  const text =
+    myRole && writer ? (
+      <NotesProvider
+        key={chapter.id}
+        chapterId={chapter.id}
+        me={writer.userId}
+        myRole={myRole}
+        authors={authors}
+        finished={story.status === "finished"}
+      >
+        {live}
+        <NotesPanel />
+      </NotesProvider>
+    ) : (
+      live
+    );
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -78,31 +97,14 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         <ChapterTitle key={chapter.id} storyId={story.id} chapterId={chapter.id} title={chapter.title} renamable={manage} />
       </header>
 
-      {myRole && writer ? (
-        <NotesProvider
-          key={chapter.id}
-          chapterId={chapter.id}
-          me={writer.userId}
-          myRole={myRole}
-          authors={authors}
-          finished={story.status === "finished"}
-        >
-          {live}
-          <NotesPanel />
-        </NotesProvider>
+      {canManageChapters(myRole) ? (
+        <SnapshotCompareProvider key={chapter.id} chapterId={chapter.id}>
+          {text}
+          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName={myRole === "host"} />
+          <SnapshotHistory chapterId={chapter.id} chapterTitle={chapter.title} />
+        </SnapshotCompareProvider>
       ) : (
-        live
-      )}
-
-      {canManageChapters(myRole) && (
-        <SnapshotHistory
-          key={chapter.id}
-          chapterId={chapter.id}
-          chapterTitle={chapter.title}
-          authors={authors}
-          canRestore={story.status !== "finished"}
-          canName={myRole === "host"}
-        />
+        text
       )}
 
       <nav className={styles.pager} aria-label="Chapters">

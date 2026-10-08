@@ -12,6 +12,7 @@ export type HistoryInfo = { latestAt: string | null };
 type StoryPanel = {
   open: PanelName | null;
   toggle: (name: PanelName) => void;
+  show: (name: PanelName) => void;
   close: (name?: PanelName) => void;
   unread: number;
   addUnread: () => void;
@@ -36,14 +37,18 @@ export function StoryPanelProvider({ children }: { children: React.ReactNode }) 
     if (name === "chat") setUnread(0);
     setPanel((current) => (current === name ? null : name));
   }, []);
+  const show = useCallback((name: PanelName) => {
+    if (name === "chat") setUnread(0);
+    setPanel(name);
+  }, []);
   const close = useCallback(
     (name?: PanelName) => setPanel((current) => (!name || current === name ? null : current)),
     []
   );
   const addUnread = useCallback(() => setUnread((n) => n + 1), []);
   const value = useMemo<StoryPanel>(
-    () => ({ open: panel, toggle, close, unread, addUnread, history, setHistory }),
-    [panel, toggle, close, unread, addUnread, history]
+    () => ({ open: panel, toggle, show, close, unread, addUnread, history, setHistory }),
+    [panel, toggle, show, close, unread, addUnread, history]
   );
 
   return (

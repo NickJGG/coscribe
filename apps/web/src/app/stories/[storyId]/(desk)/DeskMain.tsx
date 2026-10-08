@@ -84,9 +84,9 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     const page = scroller.current;
     if (!doc || !ready || restored.current === doc || !page) return;
     restored.current = doc;
-    // The Notes on the page scroll to a linked Note themselves.
+    // The Notes on the page scroll to a linked Note themselves; a Snapshot comparison opens at its top.
     const search = new URLSearchParams(location.search);
-    if (search.has("note") || (search.has("find") && search.has("n"))) return;
+    if (search.has("note") || search.has("compare") || (search.has("find") && search.has("n"))) return;
     const entryId = MENTION_HASH.exec(location.hash)?.[1];
     if (!entryId) return page.scrollTo(0, readScroll(doc));
     const stop = show(page, `[data-mention="${entryId}"]`, false, () => page.scrollTo(0, readScroll(doc)));

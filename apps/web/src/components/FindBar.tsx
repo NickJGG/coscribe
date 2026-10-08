@@ -13,7 +13,7 @@ import styles from "./Find.module.css";
 
 const MOVED_MS = 2500;
 
-function isTyping(target: EventTarget | null) {
+export function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 }
 
