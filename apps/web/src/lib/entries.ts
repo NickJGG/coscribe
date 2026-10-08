@@ -85,22 +85,6 @@ export function readEntryPatch(
   return { columns };
 }
 
-type Listed = { type: EntryType; name: string };
-
-/** Entries of `type` (all when null) whose name contains every word of `query`, ignoring case and accents. */
-export function filterEntries<T extends Listed>(entries: T[], query: string, type: EntryType | null): T[] {
-  const words = fold(query).split(/\s+/).filter(Boolean);
-  return entries.filter((e) => {
-    if (type && e.type !== type) return false;
-    const name = fold(e.name);
-    return words.every((w) => name.includes(w));
-  });
-}
-
-function fold(text: string): string {
-  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
-}
-
 /** An Entry as a live document's Mentions and their cards see it. */
 export type MentionEntry = {
   id: string;

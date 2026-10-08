@@ -16,7 +16,11 @@ type Frame = {
   open: (tab?: SidebarTab) => void;
   toggle: () => void;
   close: () => void;
+  /** Keeps an open overlay open on `path`, for navigation the overlay itself starts (typing a search). */
+  keepOverlay: (path: string) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
+  /** Opens the sidebar and puts the caret in Story search. */
+  focusSearch: () => void;
 };
 
 const FrameContext = createContext<Frame | null>(null);
@@ -29,7 +33,7 @@ function isTyping(target: EventTarget | null) {
 
 /**
  * The desk's sidebar state, shared by the sidebar and the breadcrumb that opens it on phones. Ctrl+\
- * collapses or opens the sidebar; "/" opens the Bible tab's search.
+ * collapses or opens the sidebar; "/" focuses Story search.
  */
 export function DeskFrame({ className, children }: { className?: string; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -54,6 +58,13 @@ export function DeskFrame({ className, children }: { className?: string; childre
     else setOverlayOn(overlay ? null : pathname);
   };
   const close = () => setOverlayOn(null);
+  const keepOverlay = (path: string) => {
+    if (overlay) setOverlayOn(path);
+  };
+  const focusSearch = () => {
+    open();
+    requestAnimationFrame(() => searchRef.current?.focus());
+  };
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
     if (e.key === "\\" && (e.ctrlKey || e.metaKey)) {
@@ -63,8 +74,7 @@ export function DeskFrame({ className, children }: { className?: string; childre
       close();
     } else if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target)) {
       e.preventDefault();
-      open("bible");
-      requestAnimationFrame(() => searchRef.current?.focus());
+      focusSearch();
     }
   });
 
@@ -74,7 +84,7 @@ export function DeskFrame({ className, children }: { className?: string; childre
   }, []);
 
   return (
-    <FrameContext value={{ collapsed, overlay, tab, setTab, open, toggle, close, searchRef }}>
+    <FrameContext value={{ collapsed, overlay, tab, setTab, open, toggle, close, keepOverlay, searchRef, focusSearch }}>
       <div
         className={className}
         data-desk

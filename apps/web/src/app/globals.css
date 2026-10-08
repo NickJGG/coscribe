@@ -19,6 +19,9 @@
   --note: rgb(214 160 40 / 0.18);
   --note-strong: rgb(214 160 40 / 0.42);
   --note-line: #c9951f;
+  --find: rgb(62 99 221 / 0.14);
+  --find-current: rgb(62 99 221 / 0.3);
+  --find-ring: rgb(62 99 221 / 0.8);
   color-scheme: light;
 
   --step--1: 0.8125rem;
@@ -56,6 +59,9 @@
     --note: rgb(230 180 60 / 0.16);
     --note-strong: rgb(230 180 60 / 0.36);
     --note-line: #e0b245;
+    --find: rgb(141 164 239 / 0.18);
+    --find-current: rgb(141 164 239 / 0.36);
+    --find-ring: #8da4ef;
     color-scheme: dark;
   }
 }
@@ -81,6 +87,9 @@
   --note: rgb(230 180 60 / 0.16);
   --note-strong: rgb(230 180 60 / 0.36);
   --note-line: #e0b245;
+  --find: rgb(141 164 239 / 0.18);
+  --find-current: rgb(141 164 239 / 0.36);
+  --find-ring: #8da4ef;
   color-scheme: dark;
 }
 

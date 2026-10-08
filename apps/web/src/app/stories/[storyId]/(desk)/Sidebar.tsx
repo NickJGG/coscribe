@@ -1,9 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
-import { ENTRY_GROUP_LABEL, ENTRY_TYPES, filterEntries, type EntryType } from "@/lib/entries";
+import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ENTRY_GROUP_LABEL, ENTRY_TYPES, type EntryType } from "@/lib/entries";
 import { joinNames } from "@/lib/presence";
 import { shortWords } from "@/lib/words";
 import { Avatar } from "@/components/Avatar";
@@ -20,8 +20,8 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 ];
 
 /**
- * Navigation through a Story: the Overview and (for members) Settings, then Chapters and Story Bible
- * tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and
+ * Navigation through a Story: the Overview, (for members) Settings and Story search, then Chapters and
+ * Story Bible tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and
  * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id.
  */
 export function Sidebar({
@@ -47,9 +47,8 @@ export function Sidebar({
   newChapter: React.ReactNode;
   newEntry: React.ReactNode;
 }) {
-  const { collapsed, overlay, tab, setTab, open, toggle, close, searchRef } = useDeskFrame();
+  const { collapsed, overlay, tab, setTab, open, toggle, close, focusSearch } = useDeskFrame();
   const { chapterId, entryId } = useParams<{ chapterId?: string; entryId?: string }>();
-  const [query, setQuery] = useState("");
   const panes = useRef<Record<SidebarTab, HTMLDivElement | null>>({ chapters: null, bible: null });
   const scrollTops = useRef<Record<SidebarTab, number>>({ chapters: 0, bible: 0 });
   const tabRefs = useRef<Record<SidebarTab, HTMLButtonElement | null>>({ chapters: null, bible: null });
@@ -74,7 +73,6 @@ export function Sidebar({
     }
   }, [chapterId]);
 
-  const found = filterEntries(entries, query, null);
   const onTabKey = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     const next = tab === "chapters" ? "bible" : "chapters";
@@ -101,6 +99,10 @@ export function Sidebar({
           <button type="button" className={styles.stripButton} onClick={() => open("bible")} title="Story Bible">
             <BibleIcon />
             <span className="sr-only">Story Bible</span>
+          </button>
+          <button type="button" className={styles.stripButton} onClick={focusSearch} title="Search (/)">
+            <SearchIcon />
+            <span className="sr-only">Search</span>
           </button>
           {here.length > 0 && (
             <span className={styles.stripHere} title={`Here now: ${joinNames(here.map((h) => h.person.name))}`}>
@@ -145,6 +147,7 @@ export function Sidebar({
                   <span className={styles.name}>Settings</span>
                 </Link>
               )}
+              <SearchRow storyId={storyId} />
             </nav>
             <div role="tablist" aria-label="Sidebar" className={styles.tabs}>
               {TABS.map(({ tab: t, label }) => (
@@ -236,22 +239,8 @@ export function Sidebar({
             hidden={tab !== "bible"}
             onScroll={(e) => (scrollTops.current.bible = e.currentTarget.scrollTop)}
           >
-            {entries.length > 0 && (
-              <label className={styles.search}>
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search the Bible"
-                  aria-label="Search the Bible"
-                  autoComplete="off"
-                />
-                <kbd aria-hidden>/</kbd>
-              </label>
-            )}
             {ENTRY_TYPES.map((type) => {
-              const group = found.filter((e) => e.type === type);
+              const group = entries.filter((e) => e.type === type);
               if (!group.length) return null;
               return (
                 <div key={type} className={styles.group}>
@@ -274,11 +263,7 @@ export function Sidebar({
                 </div>
               );
             })}
-            {entries.length === 0 ? (
-              <p className={`muted ${styles.empty}`}>No Entries yet.</p>
-            ) : (
-              !found.length && <p className={`muted ${styles.empty}`}>No Entries match.</p>
-            )}
+            {entries.length === 0 && <p className={`muted ${styles.empty}`}>No Entries yet.</p>}
             {newEntry}
           </div>
 
@@ -311,6 +296,105 @@ export function Sidebar({
       </aside>
       {overlay && <div className={styles.scrim} onClick={close} aria-hidden />}
     </>
+  );
+}
+
+const DEBOUNCE_MS = 150;
+
+/**
+ * Story search's box. Typing opens the Search page with one history entry, then refines it in place, so
+ * Back leaves search; emptying the box goes Back. On the Search page the box follows `q`.
+ */
+function SearchRow({ storyId }: { storyId: string }) {
+  const { searchRef, keepOverlay, close } = useDeskFrame();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchHref = `/stories/${storyId}/search`;
+  const onSearch = pathname === searchHref;
+  const params = useSearchParams();
+  const urlQuery = onSearch ? (params.get("q") ?? "") : null;
+  const [text, setText] = useState(urlQuery ?? "");
+  const [sent, setSent] = useState(urlQuery);
+  const [seen, setSeen] = useState(urlQuery);
+  const searching = useRef(onSearch);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Back, Forward or a link changed the query: follow it, unless it's the one this box just sent.
+  if (urlQuery !== seen) {
+    setSeen(urlQuery);
+    if (urlQuery !== sent) setText(urlQuery ?? "");
+  }
+
+  useEffect(() => {
+    searching.current = onSearch;
+  }, [onSearch]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const go = (value: string) => {
+    clearTimeout(timer.current);
+    setSent(value);
+    if (!value.trim()) {
+      if (searching.current) {
+        searching.current = false;
+        router.back();
+      }
+      return;
+    }
+    const href = `${searchHref}?q=${encodeURIComponent(value)}`;
+    if (searching.current) {
+      router.replace(href, { scroll: false });
+    } else {
+      searching.current = true;
+      keepOverlay(searchHref);
+      router.push(href);
+    }
+  };
+
+  const change = (value: string) => {
+    setText(value);
+    clearTimeout(timer.current);
+    if (value.trim()) timer.current = setTimeout(() => go(value), DEBOUNCE_MS);
+    else go(value);
+  };
+
+  return (
+    <form
+      role="search"
+      className={`${styles.row} ${styles.searchRow}`}
+      data-current={onSearch || undefined}
+      onSubmit={(e) => {
+        e.preventDefault();
+        go(text);
+        searchRef.current?.blur();
+        close();
+      }}
+    >
+      <SearchIcon />
+      <input
+        ref={searchRef}
+        type="text"
+        value={text}
+        onChange={(e) => change(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape" && text) {
+            // Clearing comes first; the next Escape closes the sidebar overlay.
+            e.stopPropagation();
+            change("");
+          }
+        }}
+        placeholder="Search"
+        aria-label="Search this Story"
+        autoComplete="off"
+        enterKeyHint="search"
+      />
+      {text ? (
+        <button type="button" className={styles.searchClear} onClick={() => change("")} aria-label="Clear search">
+          ✕
+        </button>
+      ) : (
+        <kbd aria-hidden>/</kbd>
+      )}
+    </form>
   );
 }
 
@@ -360,6 +444,15 @@ function BibleIcon() {
   return (
     <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
       <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16v12H5.5A1.5 1.5 0 0 0 4 16.5v-12ZM4 16.5A1.5 1.5 0 0 0 5.5 18H16v-3" />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
+      <circle cx="8.75" cy="8.75" r="5" />
+      <path d="m12.5 12.5 4 4" />
     </svg>
   );
 }

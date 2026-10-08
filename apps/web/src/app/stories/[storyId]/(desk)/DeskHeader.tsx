@@ -7,7 +7,7 @@ import { useLiveStatus } from "@/components/LiveStatus";
 import { useDeskFrame } from "./DeskFrame";
 import styles from "./desk.module.css";
 
-/** Story / current page: a Chapter, an Entry, the Overview or Settings. On phones the current page opens the sidebar sheet. */
+/** Story / current page: a Chapter, an Entry, the Overview, Settings or Search. On phones the current page opens the sidebar sheet. */
 export function Breadcrumb({
   storyId,
   storyTitle,
@@ -30,7 +30,9 @@ export function Breadcrumb({
         ? "Overview"
         : pathname === `/stories/${storyId}/settings`
           ? "Settings"
-          : undefined;
+          : pathname === `/stories/${storyId}/search`
+            ? "Search"
+            : undefined;
 
   return (
     <nav className={styles.crumbs} aria-label="Breadcrumb">

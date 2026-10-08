@@ -1,0 +1,187 @@
+.page {
+  width: 100%;
+  max-width: calc(44rem + 2 * var(--gutter));
+  margin: 0 auto;
+  padding: 32px var(--gutter) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.page mark {
+  border-radius: 2px;
+  background: var(--find-current);
+  color: inherit;
+}
+
+.summary {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.retry {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.groups,
+.entries,
+.snippets {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.groups {
+  gap: 20px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.groupHead {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.groupHead:hover,
+.entryHead:hover,
+.snippet:hover {
+  background: var(--wash);
+}
+
+.num {
+  color: var(--faint);
+  font-family: var(--font-prose), Georgia, serif;
+  font-variant-numeric: oldstyle-nums;
+}
+
+.groupTitle {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.count {
+  color: var(--faint);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.snippets {
+  gap: 2px;
+}
+
+.snippet {
+  display: -webkit-box;
+  padding: 6px 8px 6px calc(1.6rem + 14px);
+  border-radius: 6px;
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  line-height: 1.5;
+  text-decoration: none;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.snippet mark {
+  color: var(--ink);
+}
+
+.more {
+  align-self: flex-start;
+  margin-left: calc(1.6rem + 14px);
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.more:hover {
+  color: var(--ink);
+}
+
+.bible {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair);
+}
+
+.bible > h2 {
+  padding: 0 8px;
+}
+
+.entries {
+  gap: 12px;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+}
+
+.entryHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-decoration: none;
+}
+
+.entryName {
+  font-family: var(--font-prose), Georgia, serif;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.entryMeta {
+  color: var(--faint);
+  font-size: 0.75rem;
+}
+
+.entry .snippet {
+  padding-left: 8px;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding-top: 20px;
+  }
+
+  .snippet {
+    padding-left: 8px;
+  }
+
+  .more {
+    margin-left: 0;
+  }
+}
+
+@media (pointer: coarse) {
+  .more {
+    min-height: 44px;
+  }
+}

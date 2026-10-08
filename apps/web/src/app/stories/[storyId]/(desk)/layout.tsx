@@ -9,6 +9,7 @@ import { AccountMenus } from "@/components/SiteHeader";
 import { LiveStatusProvider } from "@/components/LiveStatus";
 import { SignInLink } from "@/components/SignInLink";
 import { ChatButton } from "@/components/StoryPanel";
+import { StorySearchProvider } from "@/components/StorySearch";
 import { SyncSocketProvider } from "@/components/SyncSocket";
 import { Wordmark } from "@/components/Wordmark";
 import { ChapterMenu } from "./ChapterMenu";
@@ -20,7 +21,7 @@ import { Sidebar } from "./Sidebar";
 import styles from "./desk.module.css";
 
 /**
- * The desk: the Overview, Settings, Chapter and Entry pages beside one sidebar, over one sync connection
+ * The desk: the Overview, Settings, Search, Chapter and Entry pages beside one sidebar, over one sync connection
  * for the Story. Layouts don't re-render between sibling pages, so the socket, sidebar scroll and
  * collapsed state carry over.
  */
@@ -68,71 +69,73 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
     <SyncSocketProvider>
       <LiveStatusProvider>
         <DeskFrame className={styles.desk}>
-          <header className={styles.header}>
-            <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
-              <Wordmark />
-            </Link>
-            <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
-            <div className={styles.end}>
-              <DeskStatus member={!!myRole} />
-              {canManageInvites(myRole) && (
-                <Link href={`/stories/${story.id}/settings#invites`} className={`button button-small ${styles.invite}`}>
-                  Invite
-                </Link>
-              )}
-              {myRole && <ChatButton className="button button-small" />}
-              {viewer?.profile ? (
-                <AccountMenus profile={viewer.profile} />
-              ) : viewer ? (
-                <Link href="/onboarding" className="button button-primary button-small">
-                  Finish sign-up
-                </Link>
-              ) : (
-                <SignInLink className="button button-ghost button-small" />
-              )}
-            </div>
-          </header>
-
-          <div className={styles.body}>
-            <Sidebar
-              storyId={story.id}
-              storyTitle={story.title}
-              chapters={chapters}
-              entries={entries}
-              member={!!myRole}
-              noteCounts={noteCounts}
-              chapterMenus={chapterMenus}
-              entryMenus={entryMenus}
-              newChapter={
-                writable &&
-                canManageChapters(myRole) && (
-                  <ActionForm action={addChapter.bind(null, story.id)}>
-                    <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
-                    <button className={styles.add}>+ New Chapter</button>
-                  </ActionForm>
-                )
-              }
-              newEntry={
-                writable && (
-                  <details className={styles.addEntry}>
-                    <summary className={styles.add}>+ Add Entry</summary>
-                    <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
-                      <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
-                        {ENTRY_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {ENTRY_TYPE_LABEL[t]}
-                          </option>
-                        ))}
-                      </select>
-                      <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
-                      <button className="button button-small">Add</button>
+          <StorySearchProvider storyId={story.id}>
+            <header className={styles.header}>
+              <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
+                <Wordmark />
+              </Link>
+              <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
+              <div className={styles.end}>
+                <DeskStatus member={!!myRole} />
+                {canManageInvites(myRole) && (
+                  <Link href={`/stories/${story.id}/settings#invites`} className={`button button-small ${styles.invite}`}>
+                    Invite
+                  </Link>
+                )}
+                {myRole && <ChatButton className="button button-small" />}
+                {viewer?.profile ? (
+                  <AccountMenus profile={viewer.profile} />
+                ) : viewer ? (
+                  <Link href="/onboarding" className="button button-primary button-small">
+                    Finish sign-up
+                  </Link>
+                ) : (
+                  <SignInLink className="button button-ghost button-small" />
+                )}
+              </div>
+            </header>
+  
+            <div className={styles.body}>
+              <Sidebar
+                storyId={story.id}
+                storyTitle={story.title}
+                chapters={chapters}
+                entries={entries}
+                member={!!myRole}
+                noteCounts={noteCounts}
+                chapterMenus={chapterMenus}
+                entryMenus={entryMenus}
+                newChapter={
+                  writable &&
+                  canManageChapters(myRole) && (
+                    <ActionForm action={addChapter.bind(null, story.id)}>
+                      <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
+                      <button className={styles.add}>+ New Chapter</button>
                     </ActionForm>
-                  </details>
-                )
-              }
-            />
-            <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
-          </div>
+                  )
+                }
+                newEntry={
+                  writable && (
+                    <details className={styles.addEntry}>
+                      <summary className={styles.add}>+ Add Entry</summary>
+                      <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
+                        <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
+                          {ENTRY_TYPES.map((t) => (
+                            <option key={t} value={t}>
+                              {ENTRY_TYPE_LABEL[t]}
+                            </option>
+                          ))}
+                        </select>
+                        <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
+                        <button className="button button-small">Add</button>
+                      </ActionForm>
+                    </details>
+                  )
+                }
+              />
+              <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
+            </div>
+          </StorySearchProvider>
         </DeskFrame>
       </LiveStatusProvider>
     </SyncSocketProvider>
