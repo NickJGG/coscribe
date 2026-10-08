@@ -2,10 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { DeskScrollContext } from "@/components/DeskScroll";
 import { DeskToolbar } from "@/components/DeskToolbar";
+import { FIND_CURRENT } from "@/components/Find";
 import { useLiveStatus } from "@/components/LiveStatus";
 import { useHereNow } from "@/components/StoryPresence";
 import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
@@ -28,30 +29,31 @@ function writeScroll(doc: string, top: number) {
 }
 
 const MENTION_HASH = /^#mention-([0-9a-f-]{36})$/i;
-const MENTION_TRIES = 10;
+const LOOK_TRIES = 10;
 const FLASH_MS = 1600;
 
 /**
- * Scrolls to an Entry's first Mention and briefly highlights it, as a "Mentioned in" link asks. The
- * underlines can land a frame or two after the text, so it looks again for a few frames before giving up.
- * The returned stop function says whether it was still looking.
+ * Scrolls to the first element matching `selector` and briefly highlights it (or, with `all`, every match:
+ * the pieces of one search match), as a "Mentioned in" or Story search link asks. Decorations can land a
+ * frame or two after the text, so it looks again for a few frames before giving up. The returned stop
+ * function says whether it was still looking.
  */
-function showMention(page: HTMLElement, entryId: string, otherwise: () => void) {
+function show(page: HTMLElement, selector: string, all: boolean, otherwise: () => void) {
   let tries = 0;
   let frame = 0;
-  const find = () => {
+  const look = () => {
     frame = 0;
-    const mention = page.querySelector<HTMLElement>(`[data-mention="${entryId}"]`);
-    if (!mention) {
-      if (++tries < MENTION_TRIES) frame = requestAnimationFrame(find);
+    const found = [...page.querySelectorAll<HTMLElement>(selector)].slice(0, all ? undefined : 1);
+    if (!found.length) {
+      if (++tries < LOOK_TRIES) frame = requestAnimationFrame(look);
       else otherwise();
       return;
     }
-    mention.scrollIntoView({ block: "center" });
-    mention.setAttribute("data-flash", "");
-    setTimeout(() => mention.removeAttribute("data-flash"), FLASH_MS);
+    found[0]!.scrollIntoView({ block: "center" });
+    for (const el of found) el.setAttribute("data-flash", "");
+    setTimeout(() => found.forEach((el) => el.removeAttribute("data-flash")), FLASH_MS);
   };
-  find();
+  look();
   return () => {
     cancelAnimationFrame(frame);
     return frame !== 0;
@@ -62,11 +64,14 @@ function showMention(page: HTMLElement, entryId: string, otherwise: () => void) 
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
  * the right panel over all three. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
- * A `#mention-<entryId>` link opens at that Entry's first Mention instead, and a `?note=` link leaves it to the Note.
+ * A `#mention-<entryId>` link opens at that Entry's first Mention instead, a `?find=…&n=` link at that
+ * search match (again on every step), and a `?note=` link leaves it to the Note.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
   const { doc, ready } = useLiveStatus();
+  const params = useSearchParams();
+  const finding = params.has("find") && params.has("n") ? `${params.get("n")} ${params.get("find")}` : null;
   const scroller = useRef<HTMLDivElement>(null);
   const restored = useRef<string | null>(null);
 
@@ -80,14 +85,22 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     if (!doc || !ready || restored.current === doc || !page) return;
     restored.current = doc;
     // The Notes on the page scroll to a linked Note themselves.
-    if (new URLSearchParams(location.search).has("note")) return;
+    const search = new URLSearchParams(location.search);
+    if (search.has("note") || (search.has("find") && search.has("n"))) return;
     const entryId = MENTION_HASH.exec(location.hash)?.[1];
     if (!entryId) return page.scrollTo(0, readScroll(doc));
-    const stop = showMention(page, entryId, () => page.scrollTo(0, readScroll(doc)));
+    const stop = show(page, `[data-mention="${entryId}"]`, false, () => page.scrollTo(0, readScroll(doc)));
     return () => {
       if (stop()) restored.current = null;
     };
   }, [doc, ready]);
+
+  useEffect(() => {
+    const page = scroller.current;
+    if (!doc || !ready || !finding || !page) return;
+    const stop = show(page, `[${FIND_CURRENT}]`, true, () => page.scrollTo(0, readScroll(doc)));
+    return () => void stop();
+  }, [doc, ready, finding]);
 
   return (
     <DeskToolbar.Provider>

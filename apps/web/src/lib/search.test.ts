@@ -63,11 +63,11 @@ describe("snippet", () => {
 describe("countMatches", () => {
   it("counts body matches per document in Story order", () => {
     expect(countMatches(index, "lamp")).toEqual([
-      { kind: "chapter", id: "c1", count: 3 },
-      { kind: "chapter", id: "c2", count: 0 },
-      { kind: "chapter", id: "c3", count: 0 },
-      { kind: "entry", id: "e1", count: 1 },
-      { kind: "entry", id: "e2", count: 0 },
+      { kind: "chapter", id: "c1", label: "Ch. 1", count: 3 },
+      { kind: "chapter", id: "c2", label: "Ch. 2", count: 0 },
+      { kind: "chapter", id: "c3", label: "Ch. 3", count: 0 },
+      { kind: "entry", id: "e1", label: "Wren", count: 1 },
+      { kind: "entry", id: "e2", label: "Gull Point", count: 0 },
     ]);
   });
 });

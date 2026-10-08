@@ -1,0 +1,54 @@
+.match {
+  background: var(--find);
+  border-radius: 2px;
+  transition: background-color 0.6s;
+}
+
+.current {
+  background: var(--find-current);
+  box-shadow: 0 0 0 1.5px var(--find-ring);
+}
+
+/* The match a search result or a step landed on. */
+.current[data-flash] {
+  background: var(--accent-wash);
+  transition: none;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.query {
+  max-width: 12em;
+  overflow: hidden;
+  padding-right: 8px;
+  border-right: 1px solid var(--rule);
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position {
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bar a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}

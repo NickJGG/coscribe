@@ -9,6 +9,7 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { findMentions } from "@coscribe/editor";
 import { ENTRY_TYPE_LABEL, type MentionEntry } from "@/lib/entries";
 import { getEntryPreview } from "@/lib/actions/entries";
+import { touchedTextblocks } from "@/lib/touched-textblocks";
 import styles from "./Mentions.module.css";
 
 /** Which Entries to underline, and whether Mentions take keyboard focus (only when the text isn't editable). */
@@ -43,21 +44,7 @@ export const Mentions = Extension.create<MentionConfig>({
             if (!tr.docChanged) return prev;
 
             let set = prev.set.map(tr.mapping, tr.doc);
-            const size = tr.doc.content.size;
-            const touched = new Set<number>();
-            tr.mapping.maps.forEach((map, i) => {
-              const rest = tr.mapping.slice(i + 1);
-              map.forEach((_oldFrom, _oldTo, from, to) => {
-                const start = Math.min(rest.map(from, -1), size);
-                const end = Math.min(Math.max(rest.map(to, 1), start + 1), size);
-                tr.doc.nodesBetween(start, end, (node, pos) => {
-                  if (!node.isTextblock) return true;
-                  touched.add(pos);
-                  return false;
-                });
-              });
-            });
-            for (const pos of touched) {
+            for (const pos of touchedTextblocks(tr)) {
               const node = tr.doc.nodeAt(pos)!;
               set = set.remove(set.find(pos, pos + node.nodeSize)).add(tr.doc, decorateBlock(node, pos, prev));
             }

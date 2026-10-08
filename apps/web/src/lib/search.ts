@@ -117,14 +117,20 @@ export function searchStory(index: SearchIndex, rawQuery: string): SearchResults
   return { total, chapters, entries };
 }
 
-export type DocumentCount = { kind: "chapter" | "entry"; id: string; count: number };
+/** `label` names the document briefly: "Ch. 4", or the Entry's name. */
+export type DocumentCount = { kind: "chapter" | "entry"; id: string; label: string; count: number };
 
 /** Body matches in every document, in Story order: Chapters, then Entries. */
 export function countMatches(index: SearchIndex, rawQuery: string): DocumentCount[] {
   const query = foldQuery(rawQuery);
   const count = (blocks: IndexedBlock[]) => blocks.reduce((sum, b) => sum + findFolded(b.folded, query).length, 0);
   return [
-    ...index.chapters.map((c) => ({ kind: "chapter" as const, id: c.id, count: count(c.blocks) })),
-    ...index.entries.map((e) => ({ kind: "entry" as const, id: e.id, count: count(e.blocks) })),
+    ...index.chapters.map((c, i) => ({
+      kind: "chapter" as const,
+      id: c.id,
+      label: `Ch. ${i + 1}`,
+      count: count(c.blocks),
+    })),
+    ...index.entries.map((e) => ({ kind: "entry" as const, id: e.id, label: e.name, count: count(e.blocks) })),
   ];
 }

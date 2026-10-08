@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
+import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
@@ -24,6 +25,8 @@ import { paragraphShares, type AuthorRun } from "@/lib/contribution";
 import { useMeasure } from "@/lib/use-measure";
 import type { MentionEntry } from "@/lib/entries";
 import { DeskToolbar } from "./DeskToolbar";
+import { Find, findKey, type FindConfig } from "./Find";
+import { FindBar } from "./FindBar";
 import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { Switch } from "./Switch";
@@ -61,7 +64,8 @@ const SLOW_MS = 1000;
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
- * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes.
+ * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A `?find=` link from Story
+ * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  */
 export function LiveDocument({
   kind,
@@ -87,6 +91,9 @@ export function LiveDocument({
   const [readOnly, setReadOnly] = useState(true);
   const [showAuthors, setShowAuthors] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const params = useSearchParams();
+  const findQuery = params.get("find")?.trim() ?? "";
+  const findCurrent = occurrence(params.get("n"));
   const notes = useNotes();
   const attachNotes = notes?.setEditor;
   const onActivateNote = notes?.setActive;
@@ -178,6 +185,7 @@ export function LiveDocument({
             <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
           )}
           <div className={styles.toolAside}>
+            {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
             {tools}
             {notes && <NotesButton />}
             {notes && (
@@ -205,6 +213,7 @@ export function LiveDocument({
               editable={!readOnly}
               mentions={mentions?.entries}
               notes={noteOptions}
+              find={{ query: findQuery, current: findCurrent }}
               onEditor={setEditor}
             />
           </Authorship>
@@ -218,6 +227,11 @@ export function LiveDocument({
       )}
     </div>
   );
+}
+
+function occurrence(param: string | null): number | null {
+  const n = Number(param);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 const LOADING_LINES = ["100%", "96%", "100%", "88%", "100%", "93%", "62%"];
@@ -240,6 +254,7 @@ function LiveEditor({
   editable,
   mentions = NO_MENTIONS,
   notes,
+  find,
   onEditor,
 }: {
   kind: DocumentKind;
@@ -248,6 +263,7 @@ function LiveEditor({
   editable: boolean;
   mentions?: MentionEntry[];
   notes?: NoteHighlightOptions;
+  find: FindConfig;
   onEditor: (editor: Editor | null) => void;
 }) {
   const report = useLiveReport();
@@ -267,6 +283,7 @@ function LiveEditor({
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
       Mentions.configure({ entries: mentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
+      Find.configure(find),
     ],
     editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
@@ -282,6 +299,15 @@ function LiveEditor({
     const config: MentionConfig = { entries: mentions, focusable: !editable };
     editor.view.dispatch(editor.state.tr.setMeta(mentionKey, config));
   }, [editor, mentions, editable]);
+
+  const { query, current } = find;
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    const state = findKey.getState(editor.state);
+    if (state?.query === query && state.current === current) return;
+    const config: FindConfig = { query, current };
+    editor.view.dispatch(editor.state.tr.setMeta(findKey, config));
+  }, [editor, query, current]);
 
   useEffect(() => {
     onEditor(editor);
