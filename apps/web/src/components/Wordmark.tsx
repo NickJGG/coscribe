@@ -1,0 +1,20 @@
+import styles from "./Wordmark.module.css";
+
+/** The ribbon-c mark and "coscribe" in Literata. Follows the theme; size it with font-size. */
+export function Wordmark() {
+  return (
+    <span className={styles.wordmark}>
+      <svg className={styles.mark} viewBox="0 0 100 100" aria-hidden>
+        <rect className={styles.tile} x="4" y="4" width="92" height="92" rx="22" />
+        <path className={styles.ribbon} d="M64 4H80V40L72 33L64 40Z" />
+        <path
+          className={styles.c}
+          d="M45.34 74.9Q40.67 74.9 37.25 72.91Q33.82 70.93 31.9 67.22Q29.98 63.5 29.98 58.19Q29.98 52.75 32.06 48.69Q34.14 44.62 37.92 42.38Q41.7 40.14 46.82 40.14Q50.46 40.14 53.09 41.33Q55.71 42.51 57.12 44.4Q58.53 46.29 58.53 48.53Q58.53 49.81 58.05 50.86Q57.57 51.92 56.58 52.56Q55.58 53.2 54.05 53.2Q52 53.2 50.94 52.27Q49.89 51.34 49.89 49.81Q49.89 48.78 50.53 47.47Q51.17 46.16 52.58 43.79Q51.42 42.9 50.05 42.45Q48.67 42 46.94 42Q44.58 42 42.72 43.44Q40.86 44.88 39.84 47.95Q38.82 51.02 38.82 55.82Q38.82 62.35 41.34 65.74Q43.87 69.14 48.48 69.14Q51.42 69.14 53.7 68.18Q55.97 67.22 57.82 65.62L58.85 66.64Q56.61 70.67 53.28 72.78Q49.95 74.9 45.34 74.9Z"
+        />
+      </svg>
+      <span>
+        <em className={styles.co}>co</em>scribe
+      </span>
+    </span>
+  );
+}

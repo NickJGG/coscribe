@@ -10,6 +10,7 @@ import { LiveStatusProvider } from "@/components/LiveStatus";
 import { SignInLink } from "@/components/SignInLink";
 import { ChatButton } from "@/components/StoryPanel";
 import { SyncSocketProvider } from "@/components/SyncSocket";
+import { Wordmark } from "@/components/Wordmark";
 import { ChapterMenu } from "./ChapterMenu";
 import { DeskFrame } from "./DeskFrame";
 import { Breadcrumb, DeskStatus } from "./DeskHeader";
@@ -65,7 +66,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
         <DeskFrame className={styles.desk}>
           <header className={styles.header}>
             <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
-              Coscribe
+              <Wordmark />
             </Link>
             <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
             <div className={styles.end}>

@@ -13,6 +13,7 @@ import { NavLink } from "./NavLink";
 import { NotificationsMenu } from "./NotificationsMenu";
 import { OnlineFriends } from "./OnlineFriends";
 import { ThemeSwitch } from "./ThemeSwitch";
+import { Wordmark } from "./Wordmark";
 import styles from "./SiteHeader.module.css";
 
 const FRIENDS_SHOWN = 8;
@@ -24,7 +25,7 @@ export async function SiteHeader() {
   return (
     <header className={styles.header}>
       <Link href={profile ? "/stories" : "/"} className={styles.wordmark}>
-        Coscribe
+        <Wordmark />
       </Link>
       {profile ? (
         <nav className={styles.nav} aria-label="Main">

@@ -8,7 +8,7 @@ import { NotificationsProvider } from "@/components/Notifications";
 import "./globals.css";
 
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
-const prose = Literata({ subsets: ["latin"], variable: "--font-prose" });
+const prose = Literata({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-prose" });
 
 export const metadata: Metadata = {
   title: { default: "Coscribe", template: "%s · Coscribe" },
