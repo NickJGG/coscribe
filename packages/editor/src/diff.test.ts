@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core"
 import { describe, expect, it } from "vitest"
-import { diffChapters, type DiffBlock } from "./diff"
+import { diffChapters, foldRows, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
 
 type Text = string | { text: string; marks: JSONContent["marks"] }
 
@@ -21,9 +21,13 @@ const mia = { type: "author", attrs: { userId: "mia", at: 1 } }
 const ben = { type: "author", attrs: { userId: "ben", at: 2 } }
 const bold = { type: "bold" }
 
-/** A block's segments as `text`, `[-removed-]` and `{+added+}`. */
+/** Segments as `text`, `[-removed-]` and `{+added+}`. */
+function showSegments(segments: DiffSegment[]): string {
+  return segments.map((s) => (s.op === "del" ? `[-${s.text}-]` : s.op === "ins" ? `{+${s.text}+}` : s.text)).join("")
+}
+
 function show(block: DiffBlock): string {
-  return block.segments.map((s) => (s.op === "del" ? `[-${s.text}-]` : s.op === "ins" ? `{+${s.text}+}` : s.text)).join("")
+  return showSegments(block.segments)
 }
 
 describe("diffChapters", () => {
@@ -38,7 +42,7 @@ describe("diffChapters", () => {
 
   it("diffs a word changed mid-sentence", () => {
     const diff = diffChapters(doc(p("The quick fox ran.")), doc(p("The slow fox ran.")))
-    expect(diff.rows).toEqual([{ kind: "changed", left: 0, right: 0 }])
+    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0 }])
     expect(show(diff.left[0]!)).toBe("The [-quick-] fox ran.")
     expect(show(diff.right[0]!)).toBe("The {+slow+} fox ran.")
     expect(diff.additions).toBe(1)
@@ -72,7 +76,7 @@ describe("diffChapters", () => {
       doc(p("She walked down to the harbour at dawn."), p("Gulls.")),
       doc(p("She walked slowly down to the harbour at dawn."), p("Nothing alike here at all."))
     )
-    expect(diff.rows).toEqual([
+    expect(diff.rows).toMatchObject([
       { kind: "changed", left: 0, right: 0 },
       { kind: "removed", left: 1 },
       { kind: "added", right: 1 },
@@ -131,5 +135,69 @@ describe("diffChapters", () => {
     const diff = diffChapters(doc(p()), doc(p("First words.")))
     expect(diff.rows.map((r) => r.kind)).toEqual(["removed", "added"])
     expect(show(diff.right[0]!)).toBe("{+First words.+}")
+  })
+
+  it("interleaves both sides of a changed row in reading order", () => {
+    const diff = diffChapters(
+      doc(p({ text: "The quick fox ", marks: [mia] }, { text: "ran.", marks: [mia, bold] })),
+      doc(p({ text: "The ", marks: [ben] }, { text: "slow fox ran.", marks: [mia] }))
+    )
+    const row = diff.rows[0]!
+    expect(row.kind).toBe("changed")
+    const merged = row.kind === "changed" ? row.merged : []
+    expect(showSegments(merged)).toBe("The [-quick-]{+slow+} fox ran.")
+    expect(merged[0]).toEqual({ text: "The ", marks: [ben], op: "same" })
+    expect(merged[1]).toEqual({ text: "quick", marks: [mia], op: "del" })
+    expect(merged.at(-1)).toEqual({ text: " fox ran.", marks: [mia], op: "same" })
+  })
+})
+
+describe("foldRows", () => {
+  const same = (n: number): DiffRow => ({ kind: "same", left: n, right: n })
+  const added = (n: number): DiffRow => ({ kind: "added", right: n })
+
+  it("folds every row when nothing changed", () => {
+    expect(foldRows([same(0), same(1), same(2)])).toEqual([{ kind: "fold", from: 0, to: 3 }])
+  })
+
+  it("keeps one row of context on each side of a change", () => {
+    const rows = [same(0), same(1), same(2), added(3), same(3), same(4), same(5)]
+    expect(foldRows(rows)).toEqual([
+      { kind: "fold", from: 0, to: 2 },
+      { kind: "row", row: 2 },
+      { kind: "row", row: 3 },
+      { kind: "row", row: 4 },
+      { kind: "fold", from: 5, to: 7 },
+    ])
+  })
+
+  it("folds the unchanged run between two changes, and leaves out folds at the edges", () => {
+    const rows = [added(0), same(0), same(1), same(2), same(3), added(5)]
+    expect(foldRows(rows)).toEqual([
+      { kind: "row", row: 0 },
+      { kind: "row", row: 1 },
+      { kind: "fold", from: 2, to: 4 },
+      { kind: "row", row: 4 },
+      { kind: "row", row: 5 },
+    ])
+  })
+
+  it("merges context that touches into one shown run", () => {
+    const rows = [added(0), same(0), same(1), added(3)]
+    expect(foldRows(rows).every((item) => item.kind === "row")).toBe(true)
+  })
+
+  it("takes a wider context", () => {
+    const rows = [same(0), same(1), same(2), added(3)]
+    expect(foldRows(rows, 2)).toEqual([
+      { kind: "fold", from: 0, to: 1 },
+      { kind: "row", row: 1 },
+      { kind: "row", row: 2 },
+      { kind: "row", row: 3 },
+    ])
+  })
+
+  it("handles no rows", () => {
+    expect(foldRows([])).toEqual([])
   })
 })

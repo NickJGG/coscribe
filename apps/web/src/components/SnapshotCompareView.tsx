@@ -1,17 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import type { JSONContent } from "@tiptap/react";
 import type { Transaction } from "@tiptap/pm/state";
 import { DOMSerializer, Node as PMNode } from "@tiptap/pm/model";
-import { chapterSchema, diffChapters, type ChapterDiff, type DiffBlock, type DiffRow } from "@coscribe/editor";
+import {
+  chapterSchema,
+  diffChapters,
+  foldRows,
+  type ChapterDiff,
+  type DiffBlock,
+  type DiffRow,
+  type DiffSegment,
+  type Fold,
+  type FoldItem,
+} from "@coscribe/editor";
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
 import { authorColorCss } from "@/lib/profile-rules";
 import { DeskToolbar } from "./DeskToolbar";
 import { Authorship, type StoryAuthor } from "./LiveDocument";
 import { Text } from "./ProseView";
-import { useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
-import { usePanelOpen } from "./StoryPanel";
+import { usePhone, useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
+import { usePanelOpen, useStoryPanel } from "./StoryPanel";
+import { Switch } from "./Switch";
 import liveStyles from "./LiveDocument.module.css";
 import styles from "./SnapshotCompare.module.css";
 
@@ -24,6 +35,8 @@ const timeOnly = new Intl.DateTimeFormat("en", { timeStyle: "short" });
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
 /** How long after a Restore the live Chapter's changes count as the Restore landing, not as new writing. */
 const RESTORE_MS = 5000;
+const FLASH_MS = 1600;
+const NO_FOLDS = new Set<number>();
 
 function label(side: Side) {
   if (side.kind === "current") return "the current text";
@@ -40,10 +53,31 @@ function plural(n: number, word: string) {
   return `${n.toLocaleString("en-US")} ${word}${n === 1 ? "" : "s"}`;
 }
 
+function option(s: Snapshot) {
+  return (
+    <option key={s.id} value={s.id}>
+      {s.name ? `“${s.name}” · ` : ""}
+      {takenAt.format(new Date(s.taken_at))}
+    </option>
+  );
+}
+
+/** The rows on show: with `changesOnly`, `rows` folded down to its changes, less the folds opened. */
+function shownItems(rows: DiffRow[], changesOnly: boolean, opened: Set<number>): FoldItem[] {
+  if (!changesOnly) return rows.map((_, row) => ({ kind: "row", row }));
+  return foldRows(rows).flatMap((item): FoldItem[] =>
+    item.kind === "fold" && opened.has(item.from)
+      ? Array.from({ length: item.to - item.from }, (_, n) => ({ kind: "row", row: item.from + n }))
+      : [item]
+  );
+}
+
 /**
  * The Snapshot comparison open over the Chapter, in place of the hidden live document: two aligned
- * columns, older on the left, with removals struck through and additions tinted by their writer. The
- * current text is frozen when the comparison opens; later edits only raise a notice to refresh it.
+ * columns, older on the left, with removals struck through and additions tinted by their writer (on a
+ * phone, one column with both inline). By default only the changes show, with a row of context around
+ * each and the rest folded. The current text is frozen when the comparison opens; later edits only raise
+ * a notice to refresh it.
  */
 export function SnapshotCompareView({
   authors,
@@ -68,8 +102,14 @@ function Comparison({
   canRestore: boolean;
   canName: boolean;
 }) {
-  const { editor, snapshots, listError, loadList, compare, to, setTo, exit } = useSnapshotCompare()!;
+  const { editor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit } = useSnapshotCompare()!;
   const panelOpen = usePanelOpen("history");
+  const showPanel = useStoryPanel()?.show;
+  const phone = usePhone();
+  const section = useRef<HTMLElement>(null);
+  const [changesOnly, setChangesOnly] = useState(true);
+  const [opened, setOpened] = useState<{ pair: string; folds: Set<number> } | null>(null);
+  const [stepped, setStepped] = useState<{ diff: ChapterDiff; at: number } | null>(null);
   const [contents, setContents] = useState<Record<string, SnapshotPreview>>({});
   const requested = useRef(new Set<string>());
   const [frozen, setFrozen] = useState<Frozen | null>(null);
@@ -131,6 +171,41 @@ function Comparison({
   );
   const errors = [compare, to].flatMap((id) => (id && contents[id]?.error ? [contents[id].error] : []));
   const showsCurrent = sides?.some((s) => s.kind === "current") ?? false;
+  const same = diff ? diff.additions + diff.removals === 0 : false;
+
+  const openFolds = opened?.pair === pair ? opened.folds : null;
+  const items = useMemo(
+    () => (diff ? shownItems(diff.rows, changesOnly, openFolds ?? NO_FOLDS) : []),
+    [diff, changesOnly, openFolds]
+  );
+  const openFold = (from: number) => setOpened({ pair, folds: new Set(openFolds).add(from) });
+
+  const stops = useMemo(
+    () => diff?.rows.flatMap((row, r) => (row.kind === "same" ? [] : [r])) ?? [],
+    [diff]
+  );
+  const at = stepped && stepped.diff === diff ? stepped.at : null;
+
+  /** Moves to the next or previous change, wrapping around, and flashes it. Changes are never folded. */
+  const step = (dir: 1 | -1) => {
+    if (!diff || !stops.length) return;
+    const next = at === null ? (dir > 0 ? 0 : stops.length - 1) : (at + dir + stops.length) % stops.length;
+    setStepped({ diff, at: next });
+    const cells = [...(section.current?.querySelectorAll<HTMLElement>(`[data-row="${stops[next]}"]`) ?? [])];
+    cells[0]?.scrollIntoView({ block: "center" });
+    for (const cell of cells) cell.setAttribute("data-flash", "");
+    setTimeout(() => cells.forEach((cell) => cell.removeAttribute("data-flash")), FLASH_MS);
+  };
+
+  const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key.toLowerCase() !== "g" || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+    e.preventDefault();
+    step(e.shiftKey ? -1 : 1);
+  });
+  useEffect(() => {
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const restore = async (snapshot: Snapshot): Promise<Notice | null> => {
     restoring.current = Infinity;
@@ -146,15 +221,77 @@ function Comparison({
     return null;
   };
 
+  /** The other side's picker; on a phone, where the panel is closed, the compared Snapshot's too. */
+  const picker = (side: Side) => {
+    if (!snapshots) return null;
+    if (side.kind === "current" || side.snapshot.id === to) {
+      return (
+        <select
+          className={styles.picker}
+          aria-label="Compare with"
+          value={to ?? ""}
+          onChange={(e) => setTo(e.target.value || null)}
+        >
+          <option value="">Current text</option>
+          {snapshots.filter((s) => s.id !== compare).map(option)}
+        </select>
+      );
+    }
+    if (!phone) return null;
+    return (
+      <select
+        className={styles.picker}
+        aria-label="Snapshot"
+        value={compare ?? ""}
+        onChange={(e) => openCompare(e.target.value)}
+      >
+        {snapshots.filter((s) => s.id !== to).map(option)}
+      </select>
+    );
+  };
+
+  /** A side's heading, with its Snapshot's actions; Copy reads the selection in `columnRef`, if given. */
+  const heading = (side: Side, column: number, columnRef: React.RefObject<HTMLDivElement | null> | null) => (
+    <Heading side={side} frozenAt={frozen?.at ?? null} picker={picker(side)}>
+      {side.kind === "snapshot" && (
+        <SnapshotActions
+          key={side.snapshot.id}
+          snapshot={side.snapshot}
+          json={(column ? rightJson : leftJson)!}
+          column={columnRef}
+          canRestore={canRestore}
+          canName={canName}
+          replacesOther={!showsCurrent}
+          onRestore={restore}
+          onRenamed={loadList}
+        />
+      )}
+    </Heading>
+  );
+
   return (
     <section
+      ref={section}
       className={styles.compare}
       data-compare=""
       data-panel-open={panelOpen || undefined}
       aria-label="Snapshot comparison"
     >
       <DeskToolbar.Fill>
-        <div className={liveStyles.toolRow}>{diff && <Summary diff={diff} authors={authors} />}</div>
+        <div className={liveStyles.toolRow}>
+          {diff && (
+            <Summary diff={diff} authors={authors}>
+              {!same && (
+                <>
+                  <Stepper at={at} count={stops.length} onStep={step} />
+                  <Switch checked={changesOnly} onChange={setChangesOnly}>
+                    Changes only
+                  </Switch>
+                </>
+              )}
+            </Summary>
+          )}
+        </div>
       </DeskToolbar.Fill>
 
       <div className={styles.banner}>
@@ -167,8 +304,13 @@ function Comparison({
             "Comparing Snapshots"
           )}
         </p>
+        {phone && (
+          <button type="button" className="button button-small" onClick={() => showPanel?.("history")}>
+            Snapshots
+          </button>
+        )}
         <button type="button" className="button button-small" onClick={exit}>
-          Back to live Chapter
+          {phone ? "Back" : "Back to live Chapter"}
         </button>
         {stale && showsCurrent && (
           <p className={styles.notice} role="status">
@@ -194,64 +336,63 @@ function Comparison({
 
       {sides && diff ? (
         <Authorship authors={authors} show bars={false}>
-          <div className={`${liveStyles.prose} ${styles.grid}`} data-compare="">
-            {sides.map((side, column) => (
-              <Column
-                key={column}
-                column={column}
-                side={side}
-                json={(column ? rightJson : leftJson)!}
-                blocks={column ? diff.right : diff.left}
-                rows={diff.rows}
-                same={diff.additions + diff.removals === 0}
-                heading={(columnRef) => (
-                  <Heading
-                    side={side}
-                    frozenAt={frozen?.at ?? null}
-                    picker={
-                      (side.kind === "current" || side.snapshot.id === to) && snapshots ? (
-                        <select
-                          className={styles.picker}
-                          aria-label="Compare with"
-                          value={to ?? ""}
-                          onChange={(e) => setTo(e.target.value || null)}
-                        >
-                          <option value="">Current text</option>
-                          {snapshots
-                            .filter((s) => s.id !== compare)
-                            .map((s) => (
-                              <option key={s.id} value={s.id}>
-                                {s.name ? `“${s.name}” · ` : ""}
-                                {takenAt.format(new Date(s.taken_at))}
-                              </option>
-                            ))}
-                        </select>
-                      ) : null
-                    }
-                  >
-                    {side.kind === "snapshot" && (
-                      <SnapshotActions
-                        key={side.snapshot.id}
-                        snapshot={side.snapshot}
-                        json={(column ? rightJson : leftJson)!}
-                        column={columnRef}
-                        canRestore={canRestore}
-                        canName={canName}
-                        replacesOther={!showsCurrent}
-                        onRestore={restore}
-                        onRenamed={loadList}
+          {phone ? (
+            <>
+              <div className={styles.heads}>
+                {sides.map((side, column) => (
+                  <div key={column} className={styles.side}>
+                    <span className={styles.sideLabel}>{column ? "To" : "From"}</span>
+                    {heading(side, column, null)}
+                  </div>
+                ))}
+              </div>
+              <div className={`${liveStyles.prose} ${styles.body} ${styles.inline}`} data-compare="">
+                {same ? (
+                  <NoDifferences />
+                ) : (
+                  items.map((item) =>
+                    item.kind === "fold" ? (
+                      <FoldButton key={`fold${item.from}`} fold={item} onOpen={openFold} />
+                    ) : (
+                      <InlineRow
+                        key={item.row}
+                        r={item.row}
+                        row={diff.rows[item.row]!}
+                        diff={diff}
+                        faded={changesOnly}
                       />
-                    )}
-                  </Heading>
+                    )
+                  )
                 )}
-              />
-            ))}
-            {diff.additions + diff.removals === 0 && (
-              <p className={styles.same} role="status">
-                No differences.
-              </p>
-            )}
-          </div>
+              </div>
+            </>
+          ) : (
+            <div className={`${liveStyles.prose} ${styles.body} ${styles.grid}`} data-compare="">
+              {sides.map((side, column) => (
+                <Column
+                  key={column}
+                  column={column}
+                  side={side}
+                  json={(column ? rightJson : leftJson)!}
+                  blocks={column ? diff.right : diff.left}
+                  rows={diff.rows}
+                  items={same ? [] : items}
+                  faded={changesOnly}
+                  heading={(columnRef) => heading(side, column, columnRef)}
+                />
+              ))}
+              {same ? (
+                <NoDifferences />
+              ) : (
+                items.map(
+                  (item, i) =>
+                    item.kind === "fold" && (
+                      <FoldButton key={`fold${item.from}`} fold={item} onOpen={openFold} gridRow={i + 2} />
+                    )
+                )
+              )}
+            </div>
+          )}
         </Authorship>
       ) : (
         !errors.length && !listError && <p className="muted">Loading…</p>
@@ -260,8 +401,16 @@ function Comparison({
   );
 }
 
-/** "+N additions · −N removals" and who the additions are by. */
-function Summary({ diff, authors }: { diff: ChapterDiff; authors: StoryAuthor[] }) {
+/** "+N additions · −N removals", then `children`, then who the additions are by. */
+function Summary({
+  diff,
+  authors,
+  children,
+}: {
+  diff: ChapterDiff;
+  authors: StoryAuthor[];
+  children?: React.ReactNode;
+}) {
   const writers = useMemo(() => {
     const ids = new Set<string>();
     for (const block of diff.right) {
@@ -281,6 +430,7 @@ function Summary({ diff, authors }: { diff: ChapterDiff; authors: StoryAuthor[] 
       <span className={styles.counts}>
         +{plural(diff.additions, "addition")} &middot; &minus;{plural(diff.removals, "removal")}
       </span>
+      {children}
       <span className={styles.legend}>
         {writers.length > 0 && (
           <span className={styles.legendItem}>
@@ -305,6 +455,80 @@ function Summary({ diff, authors }: { diff: ChapterDiff; authors: StoryAuthor[] 
   );
 }
 
+/** "Change X of N ‹ ›": each changed, removed or added row is a stop. */
+function Stepper({ at, count, onStep }: { at: number | null; count: number; onStep: (dir: 1 | -1) => void }) {
+  const title = (dir: 1 | -1) => (dir > 0 ? "Next change (Ctrl+G)" : "Previous change (Shift+Ctrl+G)");
+  return (
+    <span className={styles.stepper}>
+      <span className={styles.position} role="status">
+        {at === null ? plural(count, "change") : `Change ${at + 1} of ${count.toLocaleString("en-US")}`}
+      </span>
+      {([-1, 1] as const).map((dir) => (
+        <button
+          key={dir}
+          type="button"
+          className={liveStyles.tool}
+          onClick={() => onStep(dir)}
+          title={title(dir)}
+          aria-label={title(dir)}
+        >
+          {dir > 0 ? <>&rsaquo;</> : <>&lsaquo;</>}
+        </button>
+      ))}
+    </span>
+  );
+}
+
+function NoDifferences() {
+  return (
+    <p className={styles.same} role="status">
+      No differences.
+    </p>
+  );
+}
+
+function FoldButton({ fold, onOpen, gridRow }: { fold: Fold; onOpen: (from: number) => void; gridRow?: number }) {
+  const count = fold.to - fold.from;
+  return (
+    <button type="button" className={styles.fold} style={{ gridRow }} onClick={() => onOpen(fold.from)}>
+      &#8943; {count.toLocaleString("en-US")} unchanged paragraph{count === 1 ? "" : "s"} &#8943;
+    </button>
+  );
+}
+
+function Segments({ segments }: { segments: DiffSegment[] }) {
+  return segments.map((segment, s) => {
+    const text = <Text node={{ type: "text", text: segment.text, marks: segment.marks }} />;
+    if (segment.op === "del") return <del key={s}>{text}</del>;
+    if (segment.op === "ins") return <ins key={s}>{text}</ins>;
+    return <span key={s}>{text}</span>;
+  });
+}
+
+function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSegment[] }) {
+  if (block.type === "sceneBreak") return <hr data-scene-break="" />;
+  return (
+    <p>
+      <Segments segments={segments ?? block.segments} />
+    </p>
+  );
+}
+
+/** A row on a phone's one column: the newer block, with the older one's removals inline. */
+function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: ChapterDiff; faded: boolean }) {
+  const block = row.kind === "removed" ? diff.left[row.left]! : diff.right[row.right]!;
+  return (
+    <div
+      className={styles.cell}
+      data-row={r}
+      data-change={row.kind}
+      data-faded={(faded && row.kind === "same") || undefined}
+    >
+      <BlockContent block={block} segments={row.kind === "changed" ? row.merged : undefined} />
+    </div>
+  );
+}
+
 /**
  * One side's heading and cells. Cells are placed on the shared grid by row, so each column is one run
  * of the DOM and a selection stays within it. The wrapper is `display: contents`.
@@ -315,7 +539,8 @@ function Column({
   json,
   blocks,
   rows,
-  same,
+  items,
+  faded,
   heading,
 }: {
   column: number;
@@ -323,7 +548,9 @@ function Column({
   json: JSONContent;
   blocks: DiffBlock[];
   rows: DiffRow[];
-  same: boolean;
+  /** The rows on show; a Fold's place is left for the full-width row the grid puts there. */
+  items: FoldItem[];
+  faded: boolean;
   heading: (column: React.RefObject<HTMLDivElement | null>) => React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -346,29 +573,29 @@ function Column({
       <div className={styles.head} style={{ gridColumn, gridRow: 1 }}>
         {heading(ref)}
       </div>
-      {!same &&
-        rows.map((row, r) => {
-          const index = column ? row.right : row.left;
-          const style = { gridColumn, gridRow: r + 2 };
-          if (index === undefined) return <div key={r} className={styles.gap} style={style} aria-hidden />;
-          const block = blocks[index]!;
-          return (
-            <div key={r} className={styles.cell} style={style} data-block={index} data-change={row.kind}>
-              {block.type === "sceneBreak" ? (
-                <hr data-scene-break="" />
-              ) : (
-                <p>
-                  {block.segments.map((segment, s) => {
-                    const text = <Text node={{ type: "text", text: segment.text, marks: segment.marks }} />;
-                    if (segment.op === "del") return <del key={s}>{text}</del>;
-                    if (segment.op === "ins") return <ins key={s}>{text}</ins>;
-                    return <span key={s}>{text}</span>;
-                  })}
-                </p>
-              )}
-            </div>
-          );
-        })}
+      {items.map((item, i) => {
+        if (item.kind === "fold") return null;
+        const r = item.row;
+        const row = rows[r]!;
+        const index = column ? row.right : row.left;
+        const style = { gridColumn, gridRow: i + 2 };
+        if (index === undefined) {
+          return <div key={r} className={styles.gap} style={style} data-row={r} aria-hidden />;
+        }
+        return (
+          <div
+            key={r}
+            className={styles.cell}
+            style={style}
+            data-row={r}
+            data-block={index}
+            data-change={row.kind}
+            data-faded={(faded && row.kind === "same") || undefined}
+          >
+            <BlockContent block={blocks[index]!} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -416,7 +643,8 @@ function SnapshotActions({
 }: {
   snapshot: Snapshot;
   json: JSONContent;
-  column: React.RefObject<HTMLDivElement | null>;
+  /** Where Copy looks for a selection; without one it copies the whole Snapshot. */
+  column: React.RefObject<HTMLDivElement | null> | null;
   canRestore: boolean;
   canName: boolean;
   /** Neither side is the current text, so a Restore replaces text that isn't on screen. */
@@ -440,7 +668,7 @@ function SnapshotActions({
 
   const copy = () =>
     run(async () => {
-      const { html, text, whole } = clipboardContent(json, column.current, false)!;
+      const { html, text, whole } = clipboardContent(json, column?.current ?? null, false)!;
       try {
         await navigator.clipboard.write([
           new ClipboardItem({
@@ -488,7 +716,11 @@ function SnapshotActions({
           // Keep the selection in the column, which the copy reads.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => void copy()}
-          title="Copies the text selected in this column, or the whole Snapshot if nothing is selected"
+          title={
+            column
+              ? "Copies the text selected in this column, or the whole Snapshot if nothing is selected"
+              : "Copies the whole Snapshot"
+          }
         >
           Copy from this Snapshot
         </button>

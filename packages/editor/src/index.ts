@@ -12,7 +12,17 @@ import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
 export { countAuthorCharacters, type ContentJSON } from "./credits"
-export { diffChapters, type ChapterDiff, type DiffBlock, type DiffOp, type DiffRow, type DiffSegment } from "./diff"
+export {
+  diffChapters,
+  foldRows,
+  type ChapterDiff,
+  type DiffBlock,
+  type DiffOp,
+  type DiffRow,
+  type DiffSegment,
+  type Fold,
+  type FoldItem,
+} from "./diff"
 export { findFolded, findText, foldQuery, foldText, MIN_QUERY, type FindMatch, type FoldedText } from "./find"
 export { blockTexts, countMentions, findMentions, type Mention, type MentionTarget } from "./mentions"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"

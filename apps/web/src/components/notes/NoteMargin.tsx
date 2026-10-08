@@ -26,7 +26,7 @@ const NOT_ANCHORED: { top: number; left: number } | null = null;
 const POPOVER_GAP = 6;
 
 /**
- * Laid over the Authorship box: the "Add Note" button over a selection, and with Show Notes on, the margin
+ * Laid over the Authorship box: the "Add Note" button over a selection, and with Show notes on, the margin
  * of cards beside the text, one per open Note whose passage is in the Chapter, plus the one being written.
  * Collapsed, the active Note (or the one being written) opens in a popover instead.
  */

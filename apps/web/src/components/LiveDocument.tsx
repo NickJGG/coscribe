@@ -202,7 +202,7 @@ export function LiveDocument({
               {notes && <NotesButton />}
               {notes && (
                 <Switch checked={notes.show} onChange={notes.setShow}>
-                  Show Notes
+                  Show notes
                 </Switch>
               )}
               <Switch checked={showAuthors} onChange={setShowAuthors}>

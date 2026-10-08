@@ -8,7 +8,7 @@ import styles from "./notes.module.css";
 export type NoteRange = { from: number; to: number };
 
 /**
- * Which Notes to highlight, which is active, whether Show Notes is on, and whether the Desk is too narrow
+ * Which Notes to highlight, which is active, whether Show notes is on, and whether the Desk is too narrow
  * for the margin, so each paragraph gets a count marker instead.
  */
 export type NoteHighlightConfig = {

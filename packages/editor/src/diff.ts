@@ -9,9 +9,13 @@ export type DiffSegment = { text: string; marks?: JSONContent["marks"]; op: Diff
 /** A top-level block of one side, cut into segments. A Scene Break has none. */
 export type DiffBlock = { type: "paragraph" | "sceneBreak"; segments: DiffSegment[] }
 
-/** One aligned row: a block index on each side it has a block on. */
+/**
+ * One aligned row: a block index on each side it has a block on. A changed row also has `merged`, both
+ * sides' segments interleaved in reading order (the right side's for unchanged text), for one inline column.
+ */
 export type DiffRow =
-  | { kind: "same" | "changed"; left: number; right: number }
+  | { kind: "same"; left: number; right: number }
+  | { kind: "changed"; left: number; right: number; merged: DiffSegment[] }
   | { kind: "removed"; left: number; right?: never }
   | { kind: "added"; right: number; left?: never }
 
@@ -49,17 +53,22 @@ function similarity(a: Block, b: Block): number {
   return shared / longer
 }
 
-/** Cuts `runs` at the range boundaries, so every segment keeps the marks of the node it came from. */
-function segment(runs: Run[], ranges: Range[]): DiffSegment[] {
-  const out: DiffSegment[] = []
+/**
+ * Cuts `runs` at the range boundaries, so every segment keeps the marks of the node it came from. One
+ * list of segments per range.
+ */
+function segment(runs: Run[], ranges: Range[]): DiffSegment[][] {
+  const out: DiffSegment[][] = []
   let r = 0
   let used = 0
   for (const range of ranges) {
+    const pieces: DiffSegment[] = []
+    out.push(pieces)
     let left = range.length
     while (left > 0 && r < runs.length) {
       const run = runs[r]!
       const take = Math.min(left, run.text.length - used)
-      out.push({ text: run.text.slice(used, used + take), marks: run.marks, op: range.op })
+      pieces.push({ text: run.text.slice(used, used + take), marks: run.marks, op: range.op })
       used += take
       left -= take
       if (used === run.text.length) {
@@ -107,16 +116,30 @@ export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff
     diff.additions++
   }
   const changed = (i: number, j: number) => {
+    const parts = diffWordsWithSpace(a[i]!.text, b[j]!.text)
     const leftRanges: Range[] = []
     const rightRanges: Range[] = []
-    for (const part of diffWordsWithSpace(a[i]!.text, b[j]!.text)) {
+    for (const part of parts) {
       const length = part.value.length
       if (!part.added) leftRanges.push({ length, op: part.removed ? "del" : "same" })
       if (!part.removed) rightRanges.push({ length, op: part.added ? "ins" : "same" })
     }
-    diff.rows.push({ kind: "changed", left: i, right: j })
-    diff.left[i] = { type: "paragraph", segments: segment(a[i]!.runs, leftRanges) }
-    diff.right[j] = { type: "paragraph", segments: segment(b[j]!.runs, rightRanges) }
+    const lefts = segment(a[i]!.runs, leftRanges)
+    const rights = segment(b[j]!.runs, rightRanges)
+    const merged: DiffSegment[] = []
+    let l = 0
+    let r = 0
+    for (const part of parts) {
+      if (part.removed) {
+        merged.push(...lefts[l++]!)
+        continue
+      }
+      if (!part.added) l++
+      merged.push(...rights[r++]!)
+    }
+    diff.rows.push({ kind: "changed", left: i, right: j, merged })
+    diff.left[i] = { type: "paragraph", segments: lefts.flat() }
+    diff.right[j] = { type: "paragraph", segments: rights.flat() }
     diff.removals += changeRuns(leftRanges, "del")
     diff.additions += changeRuns(rightRanges, "ins")
   }
@@ -162,4 +185,28 @@ export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff
   }
   align(lefts, rights)
   return diff
+}
+
+/** A run of unchanged rows, `from` up to but not including `to`, folded away. */
+export type Fold = { kind: "fold"; from: number; to: number }
+export type FoldItem = { kind: "row"; row: number } | Fold
+
+/**
+ * `rows` with only the changes showing: every changed row, `context` unchanged rows on each side of one,
+ * and each other run of unchanged rows as a single Fold.
+ */
+export function foldRows(rows: DiffRow[], context = 1): FoldItem[] {
+  const shown = rows.map(() => false)
+  rows.forEach((row, r) => {
+    if (row.kind === "same") return
+    for (let n = Math.max(0, r - context); n <= Math.min(rows.length - 1, r + context); n++) shown[n] = true
+  })
+  const items: FoldItem[] = []
+  shown.forEach((show, r) => {
+    const last = items.at(-1)
+    if (show) items.push({ kind: "row", row: r })
+    else if (last?.kind === "fold") last.to = r + 1
+    else items.push({ kind: "fold", from: r, to: r + 1 })
+  })
+  return items
 }

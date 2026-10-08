@@ -28,7 +28,7 @@ type NotesValue = {
   narrow: boolean;
   /** No margin: too narrow, or a panel is open. Each paragraph's Notes are behind a marker instead. */
   collapsed: boolean;
-  /** Turns Show Notes on, activates the Note and scrolls to its passage. */
+  /** Turns Show notes on, activates the Note and scrolls to its passage. */
   reveal: (id: string) => void;
   /** On a Finished story, Notes can be read but nothing else. */
   readOnly: boolean;

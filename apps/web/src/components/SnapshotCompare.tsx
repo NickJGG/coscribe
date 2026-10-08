@@ -10,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Editor } from "@tiptap/react";
@@ -47,6 +48,17 @@ const LIMIT = 100;
 const DESKTOP = "(min-width: 601px)";
 
 const desktop = () => window.matchMedia(DESKTOP).matches;
+
+function onWidthChange(change: () => void) {
+  const query = window.matchMedia(DESKTOP);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+}
+
+/** Whether the desk is phone-sized (600px or narrower), where the History panel covers the screen. */
+export function usePhone() {
+  return useSyncExternalStore(onWidthChange, () => !desktop(), () => false);
+}
 
 /**
  * A Chapter's Snapshot list and the comparison open over it, for Co-hosts and up. The comparison lives
