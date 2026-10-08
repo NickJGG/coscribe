@@ -1,0 +1,90 @@
+.more {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--faint);
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.more:hover,
+.more[aria-expanded="true"] {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+@media (pointer: coarse) {
+  .more {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .menuItem,
+  .renameForm :global(.input) {
+    min-height: 44px;
+  }
+}
+
+.menu {
+  width: 15rem;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  list-style: none;
+}
+
+.menuItem::-webkit-details-marker {
+  display: none;
+}
+
+.menuItem:hover {
+  background: var(--wash);
+}
+
+.danger {
+  color: var(--danger);
+}
+
+.divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
+}
+
+.renameForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 6px 8px;
+}
+
+.renameForm :global(.input) {
+  flex: 1;
+  min-width: 0;
+  min-height: 32px;
+}
+
+.renameForm [role="alert"] {
+  flex-basis: 100%;
+  margin-top: 0;
+}

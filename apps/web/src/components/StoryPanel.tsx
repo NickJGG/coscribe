@@ -24,7 +24,7 @@ const Slot = createSlot();
 
 /**
  * The right-hand panel inside a Story: Chat or History, one at a time. It lives in the Story layout so
- * Chat's unread count and subscription survive moving between pages; each shell places a PanelSlot
+ * Chat's unread count and subscription survive moving between pages; the Desk places a PanelSlot
  * where the panel should appear.
  */
 export function StoryPanelProvider({ children }: { children: React.ReactNode }) {
@@ -64,9 +64,9 @@ export function usePanelOpen(name: PanelName) {
   return panel?.open === name && target !== null;
 }
 
-/** Where this shell shows the panel: over the desk's main column, or fixed to the window's edge. */
-export function PanelSlot({ variant }: { variant: "desk" | "site" }) {
-  return <Slot.Target className={styles.slot} data-variant={variant} />;
+/** Where the panel shows: over the desk's main column. */
+export function PanelSlot() {
+  return <Slot.Target className={styles.slot} />;
 }
 
 export function Panel({

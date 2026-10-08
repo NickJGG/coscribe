@@ -17,8 +17,9 @@ import { Sidebar } from "./Sidebar";
 import styles from "./desk.module.css";
 
 /**
- * The desk: Chapter and Entry pages beside one sidebar, over one sync connection for the Story. Layouts
- * don't re-render between sibling pages, so the socket, sidebar scroll and collapsed state carry over.
+ * The desk: the Overview, Settings, Chapter and Entry pages beside one sidebar, over one sync connection
+ * for the Story. Layouts don't re-render between sibling pages, so the socket, sidebar scroll and
+ * collapsed state carry over.
  */
 export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]">) {
   const { storyId } = await props.params;
@@ -29,6 +30,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   const { story, myRole, viewer } = data;
   const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
   const writable = myRole && story.status !== "finished";
+  const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
 
   return (
     <SyncSocketProvider>
@@ -65,6 +67,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               storyTitle={story.title}
               chapters={chapters}
               entries={entries}
+              member={!!myRole}
               newChapter={
                 writable &&
                 canManageChapters(myRole) && (
@@ -93,7 +96,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 )
               }
             />
-            <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} />}>{props.children}</DeskMain>
+            <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
           </div>
         </DeskFrame>
       </LiveStatusProvider>

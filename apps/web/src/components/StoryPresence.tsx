@@ -3,7 +3,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { joinNames, presentWriters, type PresenceRow, type PresentWriter } from "@/lib/presence";
-import { AvatarStack, type AvatarPerson } from "./Avatar";
+import { authorColorCss } from "@/lib/profile-rules";
+import type { AvatarPerson } from "./Avatar";
+import styles from "./StoryPresence.module.css";
 
 export type HereNow = PresentWriter & { person: AvatarPerson };
 
@@ -13,7 +15,7 @@ const COLUMNS = "id, user_id, kind, document_id, connected_at";
 
 /**
  * The Story's Writers who are here right now, except me, live from `story_presence`. It sits in the
- * Story layout so one subscription serves the overview and the desk. Writers who joined after the page
+ * Story layout so one subscription serves the whole Desk. Writers who joined after the page
  * loaded show up once it reloads.
  */
 export function StoryPresenceProvider({
@@ -73,17 +75,26 @@ export function useHereNow() {
   return useContext(PresenceContext);
 }
 
-/** Who's in one Chapter right now, for its row on the overview. */
+/** Who's in one Chapter right now, as a dot each, for its row on the Overview. */
 export function ChapterPresence({ chapterId, className }: { chapterId: string; className?: string }) {
-  const people = useHereNow()
-    .filter((h) => h.documentId === chapterId)
-    .map((h) => h.person);
-  if (!people.length) return null;
+  const here = useHereNow().filter((h) => h.documentId === chapterId);
+  if (!here.length) return null;
+  return <PresenceDots here={here} className={className} />;
+}
 
+export function PresenceDots({ here, className }: { here: HereNow[]; className?: string }) {
   return (
-    <span className={className}>
-      <AvatarStack people={people} size="sm" />
-      {joinNames(people.map((p) => p.name))} {people.length === 1 ? "is" : "are"} here now
+    <span className={`${styles.dots} ${className ?? ""}`}>
+      {here.map((h) => (
+        <span
+          key={h.userId}
+          className={styles.dot}
+          style={{ "--c": authorColorCss(h.person.color) } as React.CSSProperties}
+          title={h.person.name}
+          aria-hidden
+        />
+      ))}
+      <span className="sr-only">{joinNames(here.map((h) => h.person.name))} here now</span>
     </span>
   );
 }

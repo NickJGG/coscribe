@@ -35,12 +35,7 @@ export default async function StorySettingsPage(props: PageProps<"/stories/[stor
 
   return (
     <div className="page">
-      <div>
-        <Link href={`/stories/${story.id}`} className="muted">
-          &larr; {story.title}
-        </Link>
-        <h1>Settings</h1>
-      </div>
+      <h1>Settings</h1>
 
       {myRole === "host" && (
         <section className="section">

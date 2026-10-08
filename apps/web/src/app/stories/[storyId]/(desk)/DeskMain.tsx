@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { DeskToolbar } from "@/components/DeskToolbar";
 import { useLiveStatus } from "@/components/LiveStatus";
+import { useHereNow } from "@/components/StoryPresence";
 import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
 import styles from "./desk.module.css";
 
@@ -99,18 +100,30 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
           {children}
         </div>
         {footer}
-        <PanelSlot variant="desk" />
+        <PanelSlot />
       </div>
     </DeskToolbar.Provider>
   );
 }
 
 /**
- * Word count for everyone. Members also see how many Writers are here; Co-hosts and up, on a Chapter,
- * when it was last Snapshotted and the way into History. Signed-out Viewers get one quiet way in.
+ * Word count for everyone: the open document's once it's synced, else the Story's. Members also see how
+ * many Writers are here; Co-hosts and up, on a Chapter, when it was last Snapshotted and the way into
+ * History. Signed-out Viewers get one quiet way in.
  */
-export function DeskFooter({ member, signedOut }: { member: boolean; signedOut: boolean }) {
-  const { ready, words, writers } = useLiveStatus();
+export function DeskFooter({
+  member,
+  signedOut,
+  storyWords,
+}: {
+  member: boolean;
+  signedOut: boolean;
+  storyWords: number;
+}) {
+  const live = useLiveStatus();
+  const hereNow = useHereNow();
+  const shown = live.doc ? (live.ready ? live.words : null) : storyWords;
+  const here = live.doc ? live.writers.length : hereNow.length;
   const panel = useStoryPanel();
   const historyOpen = usePanelOpen("history");
   const history = panel?.history;
@@ -118,8 +131,8 @@ export function DeskFooter({ member, signedOut }: { member: boolean; signedOut: 
   return (
     <footer className={styles.footer}>
       <span className={styles.tnum}>
-        {ready && `${words.toLocaleString("en-US")} ${words === 1 ? "word" : "words"}`}
-        {ready && member && writers.length > 0 && ` · ${writers.length} here`}
+        {shown !== null && `${shown.toLocaleString("en-US")} ${shown === 1 ? "word" : "words"}`}
+        {shown !== null && member && here > 0 && ` · ${here} here`}
       </span>
       {history && (
         <span className={styles.footerEnd}>

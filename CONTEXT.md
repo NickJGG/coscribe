@@ -10,6 +10,10 @@ A web app where invited friends write one story together live, all editing the s
 A collaboratively written work made up of ordered **Chapters** plus one **Story Bible**.
 _Avoid_: Document, project, room
 
+**Blurb**:
+A short description of a **Story**, written by its **Host**, shown under its title.
+_Avoid_: Description, summary, tagline
+
 **Chapter**:
 One live-edited section of a **Story**'s prose.
 _Avoid_: Page, section, part
@@ -21,6 +25,14 @@ _Avoid_: Wiki, notes, lore doc
 **Entry**:
 One typed card in the **Story Bible** (Character, Place, Item, or Lore), with a name, a short description, and a body.
 _Avoid_: Card, note, article
+
+**Desk**:
+The screen where a **Story** is written and watched: a sidebar of **Chapters** and **Entries** beside the open one.
+_Avoid_: Editor, workspace
+
+**Overview**:
+A **Story**'s home page inside the **Desk**, showing its title, **Writers**, **Chapters** and **Story Bible** at a glance.
+_Avoid_: Home, story page, dashboard
 
 **Scene Break**:
 The centered `* * *` divider between scenes inside a **Chapter**.

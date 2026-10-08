@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { AvatarStack } from "@/components/Avatar";
 import { useLiveStatus } from "@/components/LiveStatus";
 import { useDeskFrame } from "./DeskFrame";
 import styles from "./desk.module.css";
 
-/** Story / current Chapter or Entry. On phones the current title opens the sidebar sheet. */
+/** Story / current page: a Chapter, an Entry, the Overview or Settings. On phones the current page opens the sidebar sheet. */
 export function Breadcrumb({
   storyId,
   storyTitle,
@@ -21,9 +21,16 @@ export function Breadcrumb({
 }) {
   const { open } = useDeskFrame();
   const { chapterId, entryId } = useParams<{ chapterId?: string; entryId?: string }>();
+  const pathname = usePathname();
   const current = chapterId
     ? chapters.find((c) => c.id === chapterId)?.title
-    : entries.find((e) => e.id === entryId)?.name;
+    : entryId
+      ? entries.find((e) => e.id === entryId)?.name
+      : pathname === `/stories/${storyId}`
+        ? "Overview"
+        : pathname === `/stories/${storyId}/settings`
+          ? "Settings"
+          : undefined;
 
   return (
     <nav className={styles.crumbs} aria-label="Breadcrumb">

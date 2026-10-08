@@ -2,13 +2,12 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { ENTRY_GROUP_LABEL, ENTRY_TYPES, filterEntries, type EntryType } from "@/lib/entries";
 import { joinNames } from "@/lib/presence";
-import { authorColorCss } from "@/lib/profile-rules";
 import { shortWords } from "@/lib/words";
 import { Avatar } from "@/components/Avatar";
-import { useHereNow, type HereNow } from "@/components/StoryPresence";
+import { PresenceDots, useHereNow, type HereNow } from "@/components/StoryPresence";
 import { useDeskFrame, type SidebarTab } from "./DeskFrame";
 import styles from "./desk.module.css";
 
@@ -21,14 +20,15 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 ];
 
 /**
- * Navigation through a Story: Chapters and Story Bible tabs, each keeping its own scroll position.
- * Managing Chapters stays on the overview; `newChapter` and `newEntry` are the only writing tools here.
+ * Navigation through a Story: the Overview and (for members) Settings, then Chapters and Story Bible
+ * tabs, each keeping its own scroll position. `newChapter` and `newEntry` are the only writing tools here.
  */
 export function Sidebar({
   storyId,
   storyTitle,
   chapters,
   entries,
+  member,
   newChapter,
   newEntry,
 }: {
@@ -36,6 +36,7 @@ export function Sidebar({
   storyTitle: string;
   chapters: Chapter[];
   entries: Entry[];
+  member: boolean;
   newChapter: React.ReactNode;
   newEntry: React.ReactNode;
 }) {
@@ -46,6 +47,10 @@ export function Sidebar({
   const scrollTops = useRef<Record<SidebarTab, number>>({ chapters: 0, bible: 0 });
   const tabRefs = useRef<Record<SidebarTab, HTMLButtonElement | null>>({ chapters: null, bible: null });
   const here = useHereNow();
+  const pathname = usePathname();
+  const overviewHref = `/stories/${storyId}`;
+  const settingsHref = `/stories/${storyId}/settings`;
+  const currentIf = (href: string) => (pathname === href ? "page" : undefined);
 
   // A pane that was hidden comes back where it was left.
   useLayoutEffect(() => {
@@ -78,6 +83,10 @@ export function Sidebar({
             <PanelIcon />
             <span className="sr-only">Show the sidebar</span>
           </button>
+          <Link href={overviewHref} className={styles.stripButton} aria-current={currentIf(overviewHref)} title="Overview">
+            <HomeIcon />
+            <span className="sr-only">Overview</span>
+          </Link>
           <button type="button" className={styles.stripButton} onClick={() => open("chapters")} title="Chapters">
             <ChaptersIcon />
             <span className="sr-only">Chapters</span>
@@ -91,20 +100,45 @@ export function Sidebar({
               <span className="sr-only">{here.length} here now</span>
             </span>
           )}
+          {member && (
+            <Link
+              href={settingsHref}
+              className={`${styles.stripButton} ${styles.stripEnd}`}
+              aria-current={currentIf(settingsHref)}
+              title="Settings"
+            >
+              <SettingsIcon />
+              <span className="sr-only">Settings</span>
+            </Link>
+          )}
         </div>
 
         <div className={styles.full}>
           <span className={styles.grab} aria-hidden />
           <div className={styles.top}>
             <div className={styles.titleRow}>
-              <Link href={`/stories/${storyId}`} className={styles.storyTitle}>
-                {storyTitle}
-              </Link>
+              <span className={styles.storyTitle}>{storyTitle}</span>
               <button type="button" className={styles.stripButton} onClick={toggle} title="Hide the sidebar (Ctrl+\)">
                 <PanelIcon />
                 <span className="sr-only">Hide the sidebar</span>
               </button>
             </div>
+            <nav aria-label="Story pages" className={styles.list}>
+              <Link href={overviewHref} className={`${styles.row} ${styles.pageRow}`} aria-current={currentIf(overviewHref)}>
+                <HomeIcon />
+                <span className={styles.name}>Overview</span>
+              </Link>
+              {member && (
+                <Link
+                  href={settingsHref}
+                  className={`${styles.row} ${styles.pageRow}`}
+                  aria-current={currentIf(settingsHref)}
+                >
+                  <SettingsIcon />
+                  <span className={styles.name}>Settings</span>
+                </Link>
+              )}
+            </nav>
             <div role="tablist" aria-label="Sidebar" className={styles.tabs}>
               {TABS.map(({ tab: t, label }) => (
                 <button
@@ -263,23 +297,6 @@ export function Sidebar({
   );
 }
 
-function PresenceDots({ here }: { here: HereNow[] }) {
-  return (
-    <span className={styles.dots}>
-      {here.map((h) => (
-        <span
-          key={h.userId}
-          className={styles.dot}
-          style={{ "--c": authorColorCss(h.person.color) } as React.CSSProperties}
-          title={h.person.name}
-          aria-hidden
-        />
-      ))}
-      <span className="sr-only">{joinNames(here.map((h) => h.person.name))} here now</span>
-    </span>
-  );
-}
-
 function whereIs(h: HereNow, chapters: Chapter[], entries: Entry[]): string | null {
   if (h.kind === "chapter") {
     const i = chapters.findIndex((c) => c.id === h.documentId);
@@ -293,6 +310,23 @@ function PanelIcon() {
     <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
       <rect x="3" y="4" width="14" height="12" rx="2" />
       <path d="M8 4v12" />
+    </svg>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
+      <path d="M3.5 9 10 3.5 16.5 9v7a1 1 0 0 1-1 1h-3v-5h-5v5h-3a1 1 0 0 1-1-1z" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
+      <circle cx="10" cy="10" r="2.5" />
+      <path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4" />
     </svg>
   );
 }
