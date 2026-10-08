@@ -84,7 +84,7 @@
   }
 }
 
-/* Phones: Chat and History take the whole screen. */
+/* Phones: the panel takes the whole screen. */
 @media (max-width: 600px) {
   .slot > .panel {
     position: fixed;

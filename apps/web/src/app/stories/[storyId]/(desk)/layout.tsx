@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getChapters, getEntries, getStory } from "@/lib/story";
+import { getChapters, getEntries, getOpenNoteCounts, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
 import { addChapter } from "@/lib/actions/chapters";
@@ -31,7 +31,11 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   if (!data) return props.children;
 
   const { story, myRole, viewer } = data;
-  const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
+  const [chapters, entries, noteCounts] = await Promise.all([
+    getChapters(story.id),
+    getEntries(story.id),
+    myRole ? getOpenNoteCounts(story.id) : undefined,
+  ]);
   const writable = myRole && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
   // Rendered here so the menus' Server Actions are bound on the server.
@@ -96,6 +100,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               chapters={chapters}
               entries={entries}
               member={!!myRole}
+              noteCounts={noteCounts}
               chapterMenus={chapterMenus}
               entryMenus={entryMenus}
               newChapter={

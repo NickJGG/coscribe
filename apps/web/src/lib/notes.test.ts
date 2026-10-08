@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { groupNotes, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
+import { getSchema } from "@tiptap/core";
+import { chapterExtensions } from "@coscribe/editor";
+import { groupNotes, markerGroups, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
 
 function note(id: string, created_at: string, resolved_at: string | null = null): Note {
   return {
@@ -73,5 +75,33 @@ describe("stackCards", () => {
 
   it("handles no cards", () => {
     expect(stackCards([], [], 0, 10)).toEqual([]);
+  });
+});
+
+describe("markerGroups", () => {
+  const schema = getSchema(chapterExtensions);
+  const text = (t: string, ...ids: string[]) => ({
+    type: "text",
+    text: t,
+    ...(ids.length && { marks: ids.map((id) => ({ type: "note", attrs: { id } })) }),
+  });
+  // "Ab cd ef" is 1..9, "Gh ij" is 11..16.
+  const doc = schema.nodeFromJSON({
+    type: "doc",
+    content: [
+      { type: "paragraph", content: [text("Ab ", "a"), text("cd", "a", "b"), text(" ef")] },
+      { type: "paragraph", content: [text("Gh", "c"), text(" ij", "gone")] },
+    ],
+  });
+
+  it("groups open Notes by the paragraph they start in, marked after the last passage", () => {
+    expect(markerGroups(doc, new Set(["a", "b", "c"]))).toEqual([
+      { ids: ["a", "b"], at: 6 },
+      { ids: ["c"], at: 13 },
+    ]);
+  });
+
+  it("leaves out Notes that aren't open", () => {
+    expect(markerGroups(doc, new Set(["b"]))).toEqual([{ ids: ["b"], at: 6 }]);
   });
 });

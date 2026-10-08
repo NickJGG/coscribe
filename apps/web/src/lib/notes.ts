@@ -1,3 +1,5 @@
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
+import { noteRanges } from "@coscribe/editor";
 import type { Database } from "@/lib/supabase/database.types";
 
 // Notes: threads pinned to a passage of a Chapter by a `note` mark (supabase/migrations/0018_notes.sql).
@@ -51,4 +53,22 @@ export function stackCards(wants: readonly number[], heights: readonly number[],
   for (let i = pivot + 1; i < tops.length; i++) tops[i] = Math.max(wants[i]!, tops[i - 1]! + heights[i - 1]! + gap);
   for (let i = pivot - 1; i >= 0; i--) tops[i] = Math.min(wants[i]!, tops[i + 1]! - heights[i]! - gap);
   return tops;
+}
+
+/** Open Notes grouped by the paragraph their passage starts in, in document order, each with where its marker goes. */
+export function markerGroups(doc: ProseMirrorNode, openIds: ReadonlySet<string>): { ids: string[]; at: number }[] {
+  const groups = new Map<number, { ids: string[]; at: number }>();
+  const ranges = [...noteRanges(doc)].filter(([id]) => openIds.has(id)).sort(([, a], [, b]) => a.from - b.from);
+  for (const [id, { from, to }] of ranges) {
+    const $from = doc.resolve(from);
+    const at = Math.min(to, $from.end());
+    const group = groups.get($from.start());
+    if (group) {
+      group.ids.push(id);
+      group.at = Math.max(group.at, at);
+    } else {
+      groups.set($from.start(), { ids: [id], at });
+    }
+  }
+  return [...groups.values()];
 }

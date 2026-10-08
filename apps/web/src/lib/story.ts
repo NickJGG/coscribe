@@ -53,6 +53,15 @@ export const getChapters = cache(async (storyId: string) => {
   return data ?? [];
 });
 
+/** How many open Notes each Chapter has, by Chapter id; Chapters with none are left out. Members only. */
+export async function getOpenNoteCounts(storyId: string): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("notes").select("chapter_id").eq("story_id", storyId).is("resolved_at", null);
+  const counts: Record<string, number> = {};
+  for (const { chapter_id } of data ?? []) counts[chapter_id] = (counts[chapter_id] ?? 0) + 1;
+  return counts;
+}
+
 /** The Story Bible, alphabetical (empty if the viewer can't see the story). */
 export const getEntries = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return [];

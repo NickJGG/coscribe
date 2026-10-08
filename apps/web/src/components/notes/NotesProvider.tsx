@@ -9,7 +9,9 @@ import { errorText, type ActionResult } from "@/lib/action-result";
 import { useLocalSetting } from "@/lib/local-setting";
 import { canDeleteNote, type MemberRole } from "@/lib/story-roles";
 import { NOTE_COLUMNS, noteQuote, REPLY_COLUMNS, type Note, type NoteReply } from "@/lib/notes";
+import { useDeskScroll } from "../DeskScroll";
 import type { StoryAuthor } from "../LiveDocument";
+import { useStoryPanel } from "../StoryPanel";
 import { canAddNote, noteClass, noteDraft, noteHighlightKey, type NoteHighlightMeta } from "./NoteHighlights";
 
 type Person = { name: string; color: string };
@@ -22,6 +24,12 @@ type NotesValue = {
   setActive: (id: string | null) => void;
   show: boolean;
   setShow: (show: boolean) => void;
+  /** The Desk is too narrow for the margin beside the text. */
+  narrow: boolean;
+  /** No margin: too narrow, or a panel is open. Each paragraph's Notes are behind a marker instead. */
+  collapsed: boolean;
+  /** Turns Show Notes on, activates the Note and scrolls to its passage. */
+  reveal: (id: string) => void;
   /** On a Finished story, Notes can be read but nothing else. */
   readOnly: boolean;
   editor: Editor | null;
@@ -49,6 +57,9 @@ export function useNotes() {
 const SHOW_KEY = "coscribe:show-notes";
 const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
 const REVEAL_TRIES = 10;
+/** The page with its margin (chapter.module.css): the text, the gap, the card column, and both gutters. */
+const MARGIN_PAGE_REM = 40 + 18;
+const MARGIN_PAGE_PX = 32 + 2 * 16;
 
 function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
   const byId = new Map(current.map((x) => [x.id, x]));
@@ -87,6 +98,9 @@ export function NotesProvider({
   const known = useRef({ notes: new Set<string>(), replies: new Set<string>() });
   const linked = useSearchParams().get("note");
   const revealed = useRef<string | null>(null);
+  const narrow = useNarrowDesk();
+  const panelOpen = !!useStoryPanel()?.open;
+  const collapsed = narrow || panelOpen;
 
   useEffect(() => {
     known.current = { notes: new Set(notes.map((n) => n.id)), replies: new Set(replies.map((r) => r.id)) };
@@ -147,9 +161,9 @@ export function NotesProvider({
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    const meta: NoteHighlightMeta = { openIds, activeId: shownActive, show };
+    const meta: NoteHighlightMeta = { openIds, activeId: shownActive, show, collapsed };
     editor.view.dispatch(editor.state.tr.setMeta(noteHighlightKey, meta));
-  }, [editor, openIds, shownActive, show]);
+  }, [editor, openIds, shownActive, show, collapsed]);
 
   const setEditor = useCallback((next: Editor | null) => {
     editorRef.current = next;
@@ -157,6 +171,7 @@ export function NotesProvider({
   }, []);
 
   const reveal = useCallback((id: string) => {
+    setShow(true);
     setActive(id);
     let tries = 0;
     const find = () => {
@@ -165,18 +180,17 @@ export function NotesProvider({
       else if (++tries < REVEAL_TRIES) requestAnimationFrame(find);
     };
     requestAnimationFrame(find);
-  }, []);
+  }, [setShow]);
 
   useEffect(() => {
     if (!linked || !editor || !loaded || revealed.current === linked) return;
     if (!openIds.has(linked) || !noteRanges(editor.state.doc).has(linked)) return;
     const frame = requestAnimationFrame(() => {
       revealed.current = linked;
-      setShow(true);
       reveal(linked);
     });
     return () => cancelAnimationFrame(frame);
-  }, [linked, editor, loaded, openIds, setShow, reveal]);
+  }, [linked, editor, loaded, openIds, reveal]);
 
   const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
   const person = useCallback((id: string | null) => (id && byId.get(id)) || FORMER_WRITER, [byId]);
@@ -322,6 +336,9 @@ export function NotesProvider({
       setActive,
       show,
       setShow,
+      narrow,
+      collapsed,
+      reveal,
       readOnly: finished,
       editor,
       setEditor,
@@ -342,6 +359,9 @@ export function NotesProvider({
       shownActive,
       show,
       setShow,
+      narrow,
+      collapsed,
+      reveal,
       finished,
       editor,
       setEditor,
@@ -359,4 +379,24 @@ export function NotesProvider({
   );
 
   return <NotesContext value={value}>{children}</NotesContext>;
+}
+
+/** Whether the desk's page is narrower than the text and its margin of cards, as the sidebar and window change. */
+function useNarrowDesk() {
+  const scroll = useDeskScroll();
+  const [narrow, setNarrow] = useState(false);
+
+  useEffect(() => {
+    const el = scroll?.current;
+    if (!el) return;
+    const measure = () => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      setNarrow(el.clientWidth < MARGIN_PAGE_REM * rem + MARGIN_PAGE_PX);
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [scroll]);
+
+  return narrow;
 }

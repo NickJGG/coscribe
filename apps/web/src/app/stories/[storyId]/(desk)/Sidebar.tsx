@@ -21,7 +21,7 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 
 /**
  * Navigation through a Story: the Overview and (for members) Settings, then Chapters and Story Bible
- * tabs, each keeping its own scroll position. Management lives here too: `newChapter` and `newEntry`, and
+ * tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and
  * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id.
  */
 export function Sidebar({
@@ -30,6 +30,7 @@ export function Sidebar({
   chapters,
   entries,
   member,
+  noteCounts,
   chapterMenus,
   entryMenus,
   newChapter,
@@ -40,6 +41,7 @@ export function Sidebar({
   chapters: Chapter[];
   entries: Entry[];
   member: boolean;
+  noteCounts?: Record<string, number>;
   chapterMenus?: Record<string, React.ReactNode>;
   entryMenus?: Record<string, React.ReactNode>;
   newChapter: React.ReactNode;
@@ -180,6 +182,7 @@ export function Sidebar({
             <ol className={styles.list}>
               {chapters.map((chapter, i) => {
                 const inside = here.filter((h) => h.documentId === chapter.id);
+                const openNotes = noteCounts?.[chapter.id] ?? 0;
                 return (
                 <li key={chapter.id} className={styles.item}>
                   <Link
@@ -191,6 +194,13 @@ export function Sidebar({
                     <span className={styles.num}>{i + 1}</span>
                     <span className={styles.name}>{chapter.title}</span>
                     <span className={styles.meta}>
+                      {openNotes > 0 && (
+                        <span className={styles.noteCount} title={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
+                          <NoteIcon />
+                          {openNotes}
+                          <span className="sr-only"> open {openNotes === 1 ? "Note" : "Notes"},</span>
+                        </span>
+                      )}
                       {chapter.locked && (
                         <>
                           <LockIcon />
@@ -350,6 +360,14 @@ function BibleIcon() {
   return (
     <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
       <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H16v12H5.5A1.5 1.5 0 0 0 4 16.5v-12ZM4 16.5A1.5 1.5 0 0 0 5.5 18H16v-3" />
+    </svg>
+  );
+}
+
+function NoteIcon() {
+  return (
+    <svg className={styles.noteIcon} viewBox="0 0 20 20" aria-hidden>
+      <path d="M4 4.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9l-3.5 3v-3H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" />
     </svg>
   );
 }

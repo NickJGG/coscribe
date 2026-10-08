@@ -2,12 +2,21 @@ import { Extension, type Editor } from "@tiptap/core";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey, type EditorState } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
+import { markerGroups } from "@/lib/notes";
 import styles from "./notes.module.css";
 
 export type NoteRange = { from: number; to: number };
 
-/** Which Notes to highlight, which is active, and whether Show Notes is on. */
-export type NoteHighlightConfig = { openIds: ReadonlySet<string>; activeId: string | null; show: boolean };
+/**
+ * Which Notes to highlight, which is active, whether Show Notes is on, and whether the Desk is too narrow
+ * for the margin, so each paragraph gets a count marker instead.
+ */
+export type NoteHighlightConfig = {
+  openIds: ReadonlySet<string>;
+  activeId: string | null;
+  show: boolean;
+  collapsed: boolean;
+};
 
 type NoteHighlightState = NoteHighlightConfig & { draft: NoteRange | null; set: DecorationSet };
 
@@ -29,7 +38,8 @@ export function noteClass(id: string) {
  * Highlights open Notes' passages, and the passage of a Note being written, with decorations. The draft
  * range maps through every edit, so others typing meanwhile don't shift it; it's dropped if its text is
  * deleted. Clicking a highlight activates its Note (the next one, over overlapping Notes); clicking
- * plain text deactivates. Mod-Alt-M adds a Note on the selection.
+ * plain text deactivates. Collapsed, each paragraph with open Notes also gets a count marker after its
+ * last noted passage, which steps through them. Mod-Alt-M adds a Note on the selection.
  */
 export const NoteHighlights = Extension.create<NoteHighlightOptions>({
   name: "noteHighlights",
@@ -54,7 +64,14 @@ export const NoteHighlights = Extension.create<NoteHighlightOptions>({
       new Plugin<NoteHighlightState>({
         key: noteHighlightKey,
         state: {
-          init: () => ({ openIds: new Set(), activeId: null, show: true, draft: null, set: DecorationSet.empty }),
+          init: () => ({
+            openIds: new Set(),
+            activeId: null,
+            show: true,
+            collapsed: false,
+            draft: null,
+            set: DecorationSet.empty,
+          }),
           apply(tr, prev) {
             const meta = tr.getMeta(noteHighlightKey) as NoteHighlightMeta | undefined;
             if (!meta && !tr.docChanged) return prev;
@@ -65,11 +82,15 @@ export const NoteHighlights = Extension.create<NoteHighlightOptions>({
               draft = from < to ? { from, to } : null;
             }
             const next = { ...prev, ...meta, draft };
-            return { ...next, set: decorate(tr.doc, next) };
+            return { ...next, set: decorate(tr.doc, next, onActivate) };
           },
         },
         props: {
           decorations: (state) => noteHighlightKey.getState(state)?.set,
+          attributes: (state): Record<string, string> => {
+            const s = noteHighlightKey.getState(state);
+            return s?.show && s.collapsed ? { class: styles.markers } : {};
+          },
           // A DOM handler rather than handleClick, which read-only views (a Finished story) never call.
           handleDOMEvents: {
             click(view, event) {
@@ -94,7 +115,11 @@ export const NoteHighlights = Extension.create<NoteHighlightOptions>({
   },
 });
 
-function decorate(doc: ProseMirrorNode, { openIds, activeId, show, draft }: Omit<NoteHighlightState, "set">) {
+function decorate(
+  doc: ProseMirrorNode,
+  { openIds, activeId, show, collapsed, draft }: Omit<NoteHighlightState, "set">,
+  onActivate: (id: string | null) => void
+) {
   const decorations: Decoration[] = [];
   if (show && openIds.size) {
     doc.descendants((node, pos) => {
@@ -108,8 +133,38 @@ function decorate(doc: ProseMirrorNode, { openIds, activeId, show, draft }: Omit
       }
     });
   }
-  if (draft) decorations.push(Decoration.inline(draft.from, draft.to, { class: `${styles.highlight} ${styles.active}` }));
+  if (show && collapsed) {
+    for (const { ids, at } of markerGroups(doc, openIds)) decorations.push(marker(at, ids, activeId, onActivate));
+  }
+  if (draft) {
+    const attrs = { class: `${styles.highlight} ${styles.active} ${styles.draft}` };
+    decorations.push(Decoration.inline(draft.from, draft.to, attrs));
+  }
   return DecorationSet.create(doc, decorations);
+}
+
+/** Each click activates the paragraph's next Note; past the last, it closes. */
+function marker(at: number, ids: string[], activeId: string | null, onActivate: (id: string | null) => void) {
+  const current = ids.indexOf(activeId ?? "");
+  const toDOM = () => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = current < 0 ? styles.marker : `${styles.marker} ${styles.markerActive}`;
+    button.dataset.noteMarker = ids.join(" ");
+    button.textContent = String(ids.length);
+    button.setAttribute("aria-label", ids.length === 1 ? "1 Note" : `${ids.length} Notes`);
+    button.addEventListener("mousedown", (e) => e.preventDefault());
+    button.addEventListener("click", () => onActivate(ids[current + 1] ?? null));
+    return button;
+  };
+  // No marks, or the marker would land inside an author run and count toward its length.
+  return Decoration.widget(at, toDOM, {
+    side: 1,
+    marks: [],
+    key: `note-marker:${ids.join(",")}:${current}`,
+    stopEvent: () => true,
+    ignoreSelection: true,
+  });
 }
 
 export function noteDraft(state: EditorState): NoteRange | null {

@@ -10,6 +10,7 @@ import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { NotesProvider } from "@/components/notes/NotesProvider";
+import { NotesPanel } from "@/components/notes/NotesPanel";
 import { ChapterTitle } from "./ChapterTitle";
 import styles from "./chapter.module.css";
 
@@ -87,6 +88,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
           finished={story.status === "finished"}
         >
           {live}
+          <NotesPanel />
         </NotesProvider>
       ) : (
         live

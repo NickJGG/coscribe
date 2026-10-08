@@ -104,8 +104,16 @@ The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
 
 **Note**:
-A remark pinned to a passage of a **Chapter**'s text that others can reply to, open until it is Resolved.
+A remark pinned to a passage of a **Chapter**'s text that others can reply to, open until it is **Resolved**.
 _Avoid_: Comment, annotation, margin note
+
+**Resolved**:
+A **Note** that is settled and leaves the margin. Any **Writer** can Resolve one or Reopen it.
+_Avoid_: Closed, done, archived
+
+**Detached**:
+An open **Note** whose passage is gone from the **Chapter**, through deletion or a **Restore**. It can still be replied to and **Resolved**, and comes back if the passage does.
+_Avoid_: Orphaned, broken
 
 **Alias**:
 Another name an **Entry** goes by in the prose, such as "Aldous" for "Keeper Aldous".

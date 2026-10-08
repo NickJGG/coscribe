@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import { noteRanges } from "@coscribe/editor";
 import { relativeTime } from "@/lib/relative-time";
 import { useMeasure } from "@/lib/use-measure";
-import { NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
+import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
 import type { ActionResult } from "@/lib/action-result";
 import { Avatar } from "../Avatar";
 import { Dropdown } from "../Dropdown";
-import { canAddNote, noteDraft } from "./NoteHighlights";
+import { canAddNote, noteClass, noteDraft } from "./NoteHighlights";
 import { useNotes } from "./NotesProvider";
 import styles from "./notes.module.css";
 
@@ -22,10 +22,13 @@ const LIFT = 10;
 type Placement = { tops: Record<string, number>; bottom: number };
 const NOT_PLACED: Placement = { tops: {}, bottom: 0 };
 const NO_BUTTON: { top: number; left: number } | null = null;
+const NOT_ANCHORED: { top: number; left: number } | null = null;
+const POPOVER_GAP = 6;
 
 /**
  * Laid over the Authorship box: the "Add Note" button over a selection, and with Show Notes on, the margin
  * of cards beside the text, one per open Note whose passage is in the Chapter, plus the one being written.
+ * Collapsed, the active Note (or the one being written) opens in a popover instead.
  */
 export function NoteLayer({ editor }: { editor: Editor }) {
   const notes = useNotes()!;
@@ -57,7 +60,7 @@ export function NoteLayer({ editor }: { editor: Editor }) {
           + Add Note
         </button>
       )}
-      {notes.show && <NoteMargin editor={editor} />}
+      {notes.show && (notes.collapsed ? <NotePopover editor={editor} layer={layer} /> : <NoteMargin editor={editor} />)}
     </div>
   );
 }
@@ -129,6 +132,7 @@ function NoteMargin({ editor }: { editor: Editor }) {
             replies={replies.filter((r) => r.note_id === id)}
             active={active === id}
             onActivate={() => active !== id && setActive(id)}
+            onDeactivate={() => setActive(null)}
           />
         );
       })}
@@ -136,7 +140,143 @@ function NoteMargin({ editor }: { editor: Editor }) {
   );
 }
 
-function DraftCard({ ref, style, quote }: { ref: React.Ref<HTMLDivElement>; style: React.CSSProperties; quote: string }) {
+/**
+ * The active Note's thread, or the Note being written, under its marker (or passage); a bottom sheet on
+ * phones. Several Notes in one paragraph share a marker, so it steps between them. A click outside or
+ * Escape closes it, except while writing a Note, which only Cancel ends.
+ */
+function NotePopover({ editor, layer }: { editor: Editor; layer: React.RefObject<HTMLDivElement | null> }) {
+  const { notes, replies, active, setActive } = useNotes()!;
+  const panel = useRef<HTMLDivElement>(null);
+  const prose = useMemo(() => ({ current: editor.view.dom }), [editor]);
+  const roots = useMemo(() => [prose, layer], [prose, layer]);
+  const openIds = useMemo(() => new Set(notes.filter((n) => !n.resolved_at).map((n) => n.id)), [notes]);
+
+  const view = useEditorState({
+    editor,
+    selector: ({ editor }) => {
+      const { doc } = editor.state;
+      const quote = ({ from, to }: { from: number; to: number }) => noteQuote(doc.textBetween(from, to, " ", " "));
+      const draft = noteDraft(editor.state);
+      if (draft) return { key: DRAFT, quote: quote(draft), siblings: [] };
+      const range = active ? noteRanges(doc).get(active) : undefined;
+      if (!active || !range) return null;
+      const siblings = markerGroups(doc, openIds).find((g) => g.ids.includes(active))?.ids ?? [active];
+      return { key: active, quote: quote(range), siblings };
+    },
+  });
+  const key = view?.key ?? null;
+  const writing = key === DRAFT;
+
+  const measure = useCallback(() => {
+    const origin = layer.current!.getBoundingClientRect();
+    const dom = editor.view.dom;
+    const anchor =
+      key === DRAFT
+        ? [...dom.querySelectorAll(`.${styles.draft}`)].at(-1)
+        : (dom.querySelector(`[data-note-marker~="${key}"]`) ?? dom.querySelector(`.${noteClass(key!)}`));
+    const at = anchor && [...anchor.getClientRects()].at(-1);
+    if (!at) return null;
+    const width = panel.current?.offsetWidth ?? 0;
+    const left = Math.min(at.right - origin.left - width, origin.width - width);
+    return { top: Math.round(at.bottom - origin.top + POPOVER_GAP), left: Math.round(Math.max(0, left)) };
+  }, [editor, layer, key]);
+  const place = useMeasure(roots, key ? measure : null, NOT_ANCHORED);
+
+  useEffect(() => {
+    if (!key || writing) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      // The editor's own click handling moves between Notes, or closes on plain text.
+      if (!panel.current?.contains(target) && !editor.view.dom.contains(target)) setActive(null);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) setActive(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [editor, key, writing, setActive]);
+
+  if (!view) return null;
+  const note = writing ? null : notes.find((n) => n.id === view.key);
+  if (!writing && !note) return null;
+  const at = view.siblings.indexOf(view.key);
+
+  return (
+    <div
+      ref={panel}
+      className={styles.popover}
+      role="dialog"
+      aria-label={writing ? "New Note" : "Note"}
+      data-unplaced={place ? undefined : ""}
+      style={place ? ({ "--at-top": `${place.top}px`, "--at-left": `${place.left}px` } as React.CSSProperties) : undefined}
+    >
+      {note && (
+        <div className={styles.popoverHead}>
+          {view.siblings.length > 1 && (
+            <>
+              <button
+                type="button"
+                className={styles.step}
+                disabled={at <= 0}
+                onClick={() => setActive(view.siblings[at - 1]!)}
+                aria-label="Previous Note"
+              >
+                &lsaquo;
+              </button>
+              <span className={styles.stepCount}>
+                {at + 1} of {view.siblings.length}
+              </span>
+              <button
+                type="button"
+                className={styles.step}
+                disabled={at >= view.siblings.length - 1}
+                onClick={() => setActive(view.siblings[at + 1]!)}
+                aria-label="Next Note"
+              >
+                &rsaquo;
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className={`${styles.step} ${styles.popoverClose}`}
+            onClick={() => setActive(null)}
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+      {note ? (
+        <NoteCard
+          note={note}
+          quote={view.quote}
+          replies={replies.filter((r) => r.note_id === note.id)}
+          active
+          onActivate={() => {}}
+          onDeactivate={() => setActive(null)}
+        />
+      ) : (
+        <DraftCard quote={view.quote} />
+      )}
+    </div>
+  );
+}
+
+function DraftCard({
+  ref,
+  style,
+  quote,
+}: {
+  ref?: React.Ref<HTMLDivElement>;
+  style?: React.CSSProperties;
+  quote: string;
+}) {
   const { addNote, cancelDraft } = useNotes()!;
 
   return (
@@ -147,6 +287,10 @@ function DraftCard({ ref, style, quote }: { ref: React.Ref<HTMLDivElement>; styl
   );
 }
 
+/**
+ * A Note's thread. Active, it can be replied to and Resolved; a Resolved one can only be Reopened. A
+ * `detached` Note's passage is gone from the Chapter, so it shows the quote it was written on, struck out.
+ */
 export function NoteCard({
   ref,
   style,
@@ -154,7 +298,9 @@ export function NoteCard({
   quote,
   replies,
   active,
+  detached = false,
   onActivate,
+  onDeactivate,
 }: {
   ref?: React.Ref<HTMLDivElement>;
   style?: React.CSSProperties;
@@ -162,10 +308,13 @@ export function NoteCard({
   quote: string;
   replies: NoteReply[];
   active: boolean;
+  detached?: boolean;
   onActivate: () => void;
+  onDeactivate: () => void;
 }) {
-  const { readOnly, reply, setResolved, setActive } = useNotes()!;
+  const { readOnly, reply, setResolved, person } = useNotes()!;
   const [error, setError] = useState<string | null>(null);
+  const resolved = !!note.resolved_at;
 
   return (
     <div
@@ -173,24 +322,49 @@ export function NoteCard({
       className={styles.card}
       data-active={active || undefined}
       style={style}
+      role={active ? undefined : "button"}
+      tabIndex={active ? undefined : 0}
       onClick={onActivate}
-      onFocus={onActivate}
       onKeyDown={(e) => {
-        if (e.key === "Escape" && active && !e.defaultPrevented) setActive(null);
+        if (e.defaultPrevented) return;
+        if (e.key === "Escape" && active) {
+          e.preventDefault();
+          onDeactivate();
+        } else if ((e.key === "Enter" || e.key === " ") && !active && e.target === e.currentTarget) {
+          e.preventDefault();
+          onActivate();
+        }
       }}
     >
-      <blockquote className={styles.quote}>{quote}</blockquote>
-      <Message kind="note" message={note} active={active} />
+      {detached && <span className={styles.detached}>Passage removed</span>}
+      <blockquote className={styles.quote} data-detached={detached || undefined}>
+        {quote}
+      </blockquote>
+      <Message kind="note" message={note} active={active && !resolved} />
       {replies.length > 0 && (
         <ol className={styles.replies}>
           {replies.map((r) => (
             <li key={r.id}>
-              <Message kind="reply" message={r} active={active} />
+              <Message kind="reply" message={r} active={active && !resolved} />
             </li>
           ))}
         </ol>
       )}
-      {active && !readOnly && (
+      {resolved && (
+        <p className={styles.resolvedBy}>
+          Resolved by {person(note.resolved_by).name}, {relativeTime(Date.parse(note.resolved_at!))}
+        </p>
+      )}
+      {active && !readOnly && resolved && (
+        <button
+          type="button"
+          className={`button button-ghost button-tiny ${styles.reopen}`}
+          onClick={async () => setError(await setResolved(note.id, false))}
+        >
+          Reopen
+        </button>
+      )}
+      {active && !readOnly && !resolved && (
         <div className={styles.actions}>
           <Compose placeholder="Reply…" submit="Reply" onSubmit={(body) => reply(note.id, body)} />
           <button

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useMemo, useR
 import { createSlot } from "./Slot";
 import styles from "./StoryPanel.module.css";
 
-export type PanelName = "chat" | "history";
+export type PanelName = "chat" | "history" | "notes";
 
 /** The open Chapter's Snapshot history, as its footer shows it. Set while a Co-host+ has a Chapter open. */
 export type HistoryInfo = { latestAt: string | null };
@@ -23,7 +23,7 @@ const PanelContext = createContext<StoryPanel | null>(null);
 const Slot = createSlot();
 
 /**
- * The right-hand panel inside a Story: Chat or History, one at a time. It lives in the Story layout so
+ * The right-hand panel inside a Story: Chat, History or a Chapter's Notes, one at a time. It lives in the Story layout so
  * Chat's unread count and subscription survive moving between pages; the Desk places a PanelSlot
  * where the panel should appear.
  */

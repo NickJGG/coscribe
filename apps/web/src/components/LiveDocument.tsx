@@ -30,6 +30,7 @@ import { Switch } from "./Switch";
 import { useLiveDocuments, type LiveSession } from "./SyncSocket";
 import { canAddNote, NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
 import { NoteLayer } from "./notes/NoteMargin";
+import { NotesButton } from "./notes/NotesPanel";
 import { useNotes } from "./notes/NotesProvider";
 import styles from "./LiveDocument.module.css";
 
@@ -178,6 +179,7 @@ export function LiveDocument({
           )}
           <div className={styles.toolAside}>
             {tools}
+            {notes && <NotesButton />}
             {notes && (
               <Switch checked={notes.show} onChange={notes.setShow}>
                 Show Notes

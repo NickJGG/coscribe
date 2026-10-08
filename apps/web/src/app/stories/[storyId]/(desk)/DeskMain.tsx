@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { relativeTime } from "@/lib/relative-time";
+import { DeskScrollContext } from "@/components/DeskScroll";
 import { DeskToolbar } from "@/components/DeskToolbar";
 import { useLiveStatus } from "@/components/LiveStatus";
 import { useHereNow } from "@/components/StoryPresence";
@@ -99,7 +100,7 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
             if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
           }}
         >
-          {children}
+          <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
         </div>
         {footer}
         <PanelSlot />
