@@ -4,6 +4,7 @@ import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { storyRibbon } from "@/lib/contribution";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
+import { readingTime } from "@/lib/words";
 import styles from "./reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read">): Promise<Metadata> {
@@ -19,6 +20,7 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
   const { storyId } = await props.params;
   const { story, chapters, credits, members } = await requireReader(storyId, `/stories/${storyId}/read`);
   const first = chapters[0];
+  const storyTime = readingTime(chapters.reduce((sum, c) => sum + c.word_count, 0));
 
   // Credits order (most written first), falling back to members if the text couldn't be loaded.
   const names = credits?.flatMap((c) => (c.person && c.chapters + c.bible > 0 ? [c.person.username] : [])) ?? [];
@@ -50,7 +52,10 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
           </span>
         )}
         {story.finished_at && (
-          <p className="muted">Finished {finishedOn.format(new Date(story.finished_at))}</p>
+          <p className="muted">
+            Finished {finishedOn.format(new Date(story.finished_at))}
+            {storyTime && ` · ${storyTime} read`}
+          </p>
         )}
         {first && (
           <Link href={`/stories/${story.id}/read/${first.id}`} className="button button-primary">
@@ -62,11 +67,15 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
       <section className="section" aria-labelledby="contents-heading">
         <h2 id="contents-heading">Contents</h2>
         <ol className={styles.contents}>
-          {chapters.map((chapter) => (
-            <li key={chapter.id}>
-              <Link href={`/stories/${story.id}/read/${chapter.id}`}>{chapter.title}</Link>
-            </li>
-          ))}
+          {chapters.map((chapter) => {
+            const time = readingTime(chapter.word_count);
+            return (
+              <li key={chapter.id}>
+                <Link href={`/stories/${story.id}/read/${chapter.id}`}>{chapter.title}</Link>
+                {time && <span className={styles.time}>{time}</span>}
+              </li>
+            );
+          })}
         </ol>
       </section>
     </div>

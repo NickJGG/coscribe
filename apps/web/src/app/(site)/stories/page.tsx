@@ -15,6 +15,7 @@ import { AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { StoryFields } from "@/components/StoryFields";
 import { PublicStories } from "./PublicStories";
+import { readingTime } from "@/lib/words";
 import styles from "./stories.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -68,13 +69,15 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         return member ? [{ name: member.name, chapter }] : [];
       })
     );
+    const words = story.chapters.reduce((sum, c) => sum + c.word_count, 0);
     return {
       ...story,
       role,
       members,
       writing,
       editedAt,
-      words: story.chapters.reduce((sum, c) => sum + c.word_count, 0),
+      words,
+      readingTime: readingTime(words),
       chars: story.chapters.map((c) => readAuthorChars(c.author_chars)),
     };
   });
@@ -125,6 +128,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
                       <span>
                         {story.chapters.length} {story.chapters.length === 1 ? "Chapter" : "Chapters"} ·{" "}
                         {story.words.toLocaleString("en-US")} words
+                        {story.readingTime && ` · ${story.readingTime} read`}
                       </span>
                     </>
                   ) : (

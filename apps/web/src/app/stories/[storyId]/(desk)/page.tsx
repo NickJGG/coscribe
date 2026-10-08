@@ -14,6 +14,7 @@ import { Avatar, AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { ChapterPresence } from "@/components/StoryPresence";
 import { BrowseButton, HereDot, WritingNow } from "./Overview";
+import { readingTime } from "@/lib/words";
 import styles from "./overview.module.css";
 
 const YOU: Record<MemberRole, string> = { host: "You host", cohost: "You co-host", writer: "You write" };
@@ -66,6 +67,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
   const ribbon = storyRibbon(members, authorChars, formerNames);
 
   const words = chapters.reduce((sum, c) => sum + c.word_count, 0);
+  const time = finished && readingTime(words);
   const meta = [
     story.visibility === "public" ? "Public story" : "Private story",
     myRole && YOU[myRole],
@@ -113,6 +115,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
               </span>
             ))}{" "}
             · <span className={styles.tnum}>{words.toLocaleString("en-US")}</span> {words === 1 ? "word" : "words"}
+            {time && ` · ${time} read`}
           </span>
         </span>
         {(primary || finished) && (

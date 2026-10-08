@@ -5,6 +5,7 @@ import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { relativeTime } from "@/lib/relative-time";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { LiveCounts } from "@/components/LiveCounts";
+import { readingTime } from "@/lib/words";
 import styles from "./stories.module.css";
 
 /** Public Stories for signed-out visitors: the target of "Watch live stories". */
@@ -37,11 +38,13 @@ export async function PublicStories() {
       }))
       .sort(byJoinOrder);
     const chapters = detail?.chapters ?? [];
+    const words = chapters.reduce((sum, c) => sum + c.word_count, 0);
     return {
       ...story,
       members,
       chapterCount: chapters.length,
-      words: chapters.reduce((sum, c) => sum + c.word_count, 0),
+      words,
+      readingTime: readingTime(words),
       chars: chapters.map((c) => readAuthorChars(c.author_chars)),
     };
   });
@@ -78,6 +81,7 @@ export async function PublicStories() {
                       <span>
                         {story.chapterCount} {story.chapterCount === 1 ? "Chapter" : "Chapters"} ·{" "}
                         {story.words.toLocaleString("en-US")} words
+                        {story.readingTime && ` · ${story.readingTime} read`}
                       </span>
                     </>
                   ) : story.writers > 0 ? (

@@ -5,6 +5,7 @@ import { getChapters, getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
+import { readingTime } from "@/lib/words";
 import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
 
@@ -28,11 +29,15 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
   const next = chapters[index + 1];
   const text = content?.chapter[chapter.id];
   const base = `/stories/${story.id}/read`;
+  const time = readingTime(chapter.word_count);
 
   return (
     <div className={styles.page}>
       <header className={styles.chapterHead}>
-        <p className={styles.eyebrow}>Chapter {index + 1}</p>
+        <p className={styles.eyebrow}>
+          Chapter {index + 1}
+          {time && ` · ${time} read`}
+        </p>
         <h1 className={styles.chapterTitle}>{chapter.title}</h1>
       </header>
 
