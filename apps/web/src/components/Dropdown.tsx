@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./Dropdown.module.css";
 
 const OpenContext = createContext(false);
+const GAP = 8;
 
 /** Whether the Dropdown around this content is open, for content that loads only when shown. */
 export function useDropdownOpen() {
@@ -14,6 +15,8 @@ export function useDropdownOpen() {
 /**
  * A button that opens a panel beneath it. Escape, a click outside, following a link inside, or navigating
  * closes it; Escape also returns focus to the button. Not an ARIA menu: panels hold forms and links.
+ * `fixed` pins the panel to the viewport, flipping above the button near the bottom, so a scrolling
+ * container can't clip it; any scroll or resize closes it.
  */
 export function Dropdown({
   label,
@@ -22,6 +25,7 @@ export function Dropdown({
   triggerClassName,
   panelClassName,
   align = "end",
+  fixed = false,
   children,
 }: {
   label: string;
@@ -30,6 +34,7 @@ export function Dropdown({
   triggerClassName?: string;
   panelClassName?: string;
   align?: "start" | "end";
+  fixed?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -38,6 +43,7 @@ export function Dropdown({
   const open = openOn === pathname;
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
   useEffect(() => {
@@ -57,6 +63,38 @@ export function Dropdown({
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
+
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    const button = buttonRef.current;
+    if (!open || !fixed || !panel || !button) return;
+    // Phones get the bottom sheet, and their keyboard opening fires resize.
+    const sheet = () => matchMedia("(max-width: 600px)").matches;
+    const place = () => {
+      const at = button.getBoundingClientRect();
+      const { offsetWidth: width, offsetHeight: height } = panel;
+      const below = innerHeight - at.bottom - GAP;
+      const up = height > below && at.top - GAP > below;
+      const top = up ? Math.max(GAP, at.top - GAP - height) : at.bottom + GAP;
+      const left = align === "end" ? at.right - width : at.left;
+      panel.style.setProperty("--fixed-top", `${top}px`);
+      panel.style.setProperty("--fixed-left", `${Math.max(GAP, Math.min(left, innerWidth - width - GAP))}px`);
+    };
+    place();
+    const resized = new ResizeObserver(place);
+    resized.observe(panel);
+    const onMove = (e: Event) => {
+      if (sheet() || (e.target instanceof Node && panel.contains(e.target))) return;
+      setOpenOn(null);
+    };
+    addEventListener("scroll", onMove, true);
+    addEventListener("resize", onMove);
+    return () => {
+      resized.disconnect();
+      removeEventListener("scroll", onMove, true);
+      removeEventListener("resize", onMove);
+    };
+  }, [open, fixed, align]);
 
   return (
     <div
@@ -79,9 +117,11 @@ export function Dropdown({
         {trigger}
       </button>
       <div
+        ref={panelRef}
         id={panelId}
         className={`${styles.panel} ${panelClassName ?? ""}`}
         data-align={align}
+        data-fixed={fixed || undefined}
         role="region"
         aria-label={label}
         hidden={!open}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getChapters, getEntries, getStory } from "@/lib/story";
-import { canManageChapters, canManageInvites } from "@/lib/story-roles";
+import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
 import { addChapter } from "@/lib/actions/chapters";
 import { addEntry } from "@/lib/actions/entries";
@@ -10,9 +10,11 @@ import { LiveStatusProvider } from "@/components/LiveStatus";
 import { SignInLink } from "@/components/SignInLink";
 import { ChatButton } from "@/components/StoryPanel";
 import { SyncSocketProvider } from "@/components/SyncSocket";
+import { ChapterMenu } from "./ChapterMenu";
 import { DeskFrame } from "./DeskFrame";
 import { Breadcrumb, DeskStatus } from "./DeskHeader";
 import { DeskFooter, DeskMain } from "./DeskMain";
+import { EntryMenu } from "./EntryMenu";
 import { Sidebar } from "./Sidebar";
 import styles from "./desk.module.css";
 
@@ -31,6 +33,31 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
   const writable = myRole && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
+  // Rendered here so the menus' Server Actions are bound on the server.
+  const chapterMenus =
+    writable && canManageChapters(myRole)
+      ? Object.fromEntries(
+          chapters.map((chapter, i) => [
+            chapter.id,
+            <ChapterMenu
+              key={chapter.id}
+              storyId={story.id}
+              chapter={chapter}
+              first={i === 0}
+              last={i === chapters.length - 1}
+              only={chapters.length === 1}
+            />,
+          ])
+        )
+      : undefined;
+  const entryMenus = writable
+    ? Object.fromEntries(
+        entries.map((entry) => [
+          entry.id,
+          <EntryMenu key={entry.id} storyId={story.id} entry={entry} deletable={canDeleteEntries(myRole)} />,
+        ])
+      )
+    : undefined;
 
   return (
     <SyncSocketProvider>
@@ -68,6 +95,8 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               chapters={chapters}
               entries={entries}
               member={!!myRole}
+              chapterMenus={chapterMenus}
+              entryMenus={entryMenus}
               newChapter={
                 writable &&
                 canManageChapters(myRole) && (

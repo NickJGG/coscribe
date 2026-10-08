@@ -48,6 +48,15 @@ export async function editEntry(storyId: string, entryId: string, patch: EntryPa
   return null;
 }
 
+export async function renameEntry(
+  storyId: string,
+  entryId: string,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  return editEntry(storyId, entryId, { name: String(formData.get("name") ?? "") });
+}
+
 const PREVIEW_CHARS = 240;
 
 /** The opening of an Entry's body for a Mention's card. Null if it's empty, unreadable, or out of reach. */

@@ -24,6 +24,7 @@ export function ChapterMenu({
       label={`${chapter.title} options`}
       trigger={<span aria-hidden>&middot;&middot;&middot;</span>}
       triggerClassName={styles.more}
+      fixed
       panelClassName={styles.menu}
     >
       <details>

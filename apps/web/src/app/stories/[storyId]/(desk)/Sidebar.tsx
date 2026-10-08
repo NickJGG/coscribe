@@ -21,7 +21,8 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 
 /**
  * Navigation through a Story: the Overview and (for members) Settings, then Chapters and Story Bible
- * tabs, each keeping its own scroll position. `newChapter` and `newEntry` are the only writing tools here.
+ * tabs, each keeping its own scroll position. Management lives here too: `newChapter` and `newEntry`, and
+ * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id.
  */
 export function Sidebar({
   storyId,
@@ -29,6 +30,8 @@ export function Sidebar({
   chapters,
   entries,
   member,
+  chapterMenus,
+  entryMenus,
   newChapter,
   newEntry,
 }: {
@@ -37,6 +40,8 @@ export function Sidebar({
   chapters: Chapter[];
   entries: Entry[];
   member: boolean;
+  chapterMenus?: Record<string, React.ReactNode>;
+  entryMenus?: Record<string, React.ReactNode>;
   newChapter: React.ReactNode;
   newEntry: React.ReactNode;
 }) {
@@ -176,7 +181,7 @@ export function Sidebar({
               {chapters.map((chapter, i) => {
                 const inside = here.filter((h) => h.documentId === chapter.id);
                 return (
-                <li key={chapter.id}>
+                <li key={chapter.id} className={styles.item}>
                   <Link
                     href={`/stories/${storyId}/chapters/${chapter.id}`}
                     scroll={false}
@@ -202,6 +207,7 @@ export function Sidebar({
                       )}
                     </span>
                   </Link>
+                  {chapterMenus && <span className={styles.itemMenu}>{chapterMenus[chapter.id]}</span>}
                 </li>
                 );
               })}
@@ -242,7 +248,7 @@ export function Sidebar({
                   <h3 className="smallcaps">{ENTRY_GROUP_LABEL[type]}</h3>
                   <ul className={styles.list}>
                     {group.map((entry) => (
-                      <li key={entry.id}>
+                      <li key={entry.id} className={styles.item}>
                         <Link
                           href={`/stories/${storyId}/bible/${entry.id}`}
                           scroll={false}
@@ -251,6 +257,7 @@ export function Sidebar({
                         >
                           <span className={styles.name}>{entry.name}</span>
                         </Link>
+                        {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
                       </li>
                     ))}
                   </ul>

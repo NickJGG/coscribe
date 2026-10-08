@@ -23,6 +23,13 @@
   left: 0;
 }
 
+.panel[data-fixed] {
+  position: fixed;
+  top: var(--fixed-top);
+  right: auto;
+  left: var(--fixed-left);
+}
+
 /* Outranks a caller's panelClassName that sets display. */
 .panel[hidden] {
   display: none;

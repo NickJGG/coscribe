@@ -88,3 +88,12 @@
   flex-basis: 100%;
   margin-top: 0;
 }
+
+.menuHeading {
+  padding: 8px 10px 2px;
+}
+
+.check {
+  margin-left: auto;
+  color: var(--ink-muted);
+}

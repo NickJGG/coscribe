@@ -327,6 +327,47 @@
   font-weight: 500;
 }
 
+/* A row with a "···" menu: the highlight spans both, and the menu shows on hover, focus or the current row. */
+.item {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.item > .row {
+  flex: 1;
+  min-width: 0;
+}
+
+.item:hover,
+.item:has(> .row[aria-current="page"]) {
+  background: color-mix(in srgb, var(--paper-raised) 60%, transparent);
+}
+
+.item:has(> .row[aria-current="page"]) {
+  background: var(--paper-raised);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+
+.item > .row:hover,
+.item > .row[aria-current="page"] {
+  background: none;
+  box-shadow: none;
+}
+
+.itemMenu {
+  display: flex;
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.item:hover .itemMenu,
+.item:focus-within .itemMenu,
+.item:has(> .row[aria-current="page"]) .itemMenu,
+.itemMenu:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+
 .pageRow {
   grid-template-columns: 1.4rem minmax(0, 1fr);
 }
@@ -665,6 +706,10 @@
 }
 
 @media (pointer: coarse) {
+  .itemMenu {
+    opacity: 1;
+  }
+
   .row,
   .hereRow {
     min-height: 44px;
