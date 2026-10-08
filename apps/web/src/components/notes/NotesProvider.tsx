@@ -57,9 +57,12 @@ export function useNotes() {
 const SHOW_KEY = "coscribe:show-notes";
 const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
 const REVEAL_TRIES = 10;
-/** The page with its margin (chapter.module.css): the text, the gap, the card column, and both gutters. */
-const MARGIN_PAGE_REM = 40 + 18;
-const MARGIN_PAGE_PX = 32 + 2 * 16;
+/**
+ * The narrowest page with its margin (chapter.module.css): the text centered between two columns of a gap
+ * and the narrowest cards, plus both gutters. Narrower, the text would have to move over to fit them.
+ */
+const MARGIN_PAGE_REM = 40 + 2 * 15;
+const MARGIN_PAGE_PX = 2 * 32 + 2 * 16;
 
 function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
   const byId = new Map(current.map((x) => [x.id, x]));

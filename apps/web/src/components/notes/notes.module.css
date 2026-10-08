@@ -26,12 +26,12 @@
   pointer-events: auto;
 }
 
-/* Beside the text, in the page's second column (chapter.module.css). */
+/* Beside the text, filling the page's right-hand column (chapter.module.css), between 15rem and 18rem. */
 .margin {
   position: absolute;
   top: 0;
   left: calc(100% + 32px);
-  width: 18rem;
+  width: min(18rem, (100cqi - var(--measure)) / 2 - 32px);
 }
 
 .margin > .card {

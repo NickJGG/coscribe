@@ -8,18 +8,19 @@
   gap: 24px;
 }
 
-/* With Show notes on, a second column for the Note cards, which sit beside the text (notes.module.css). */
+/* With Show notes on, room on the right for the Note cards, which sit beside the text and size themselves
+   from this container (notes.module.css). An equal empty column on the left keeps the text where it was. The
+   margin only appears once both sides fit (NotesProvider), so the text never moves. */
 .page:has([data-note-margin]) {
-  max-width: calc(var(--measure) + 32px + 18rem + 2 * var(--gutter));
+  container-type: inline-size;
+  max-width: calc(var(--measure) + 2 * (18rem + 32px) + 2 * var(--gutter));
   display: grid;
-  grid-template-columns: minmax(0, var(--measure)) 18rem;
-  justify-content: center;
-  column-gap: 32px;
+  grid-template-columns: 1fr minmax(0, var(--measure)) 1fr;
   row-gap: 24px;
 }
 
 .page:has([data-note-margin]) > * {
-  grid-column: 1;
+  grid-column: 2;
 }
 
 /* A Snapshot comparison's two columns, kept clear of the History panel laid over the desk on desktop. */
