@@ -255,6 +255,8 @@
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  flex-shrink: 0;
+  margin: 10px 10px 0 12px;
   padding: 3px;
   border-radius: var(--radius);
   background: var(--hair);

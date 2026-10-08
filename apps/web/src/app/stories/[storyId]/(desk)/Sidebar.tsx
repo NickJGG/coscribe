@@ -152,26 +152,26 @@ export function Sidebar({
               )}
               <SearchRow storyId={storyId} />
             </nav>
-            <div role="tablist" aria-label="Sidebar" className={styles.tabs}>
-              {TABS.map(({ tab: t, label }) => (
-                <button
-                  key={t}
-                  ref={(el) => {
-                    tabRefs.current[t] = el;
-                  }}
-                  type="button"
-                  role="tab"
-                  id={`sidebar-tab-${t}`}
-                  aria-selected={tab === t}
-                  aria-controls={`sidebar-pane-${t}`}
-                  tabIndex={tab === t ? 0 : -1}
-                  onClick={() => setTab(t)}
-                  onKeyDown={onTabKey}
-                >
-                  {label} <span className={styles.count}>{t === "chapters" ? chapters.length : entries.length}</span>
-                </button>
-              ))}
-            </div>
+          </div>
+          <div role="tablist" aria-label="Sidebar" className={styles.tabs}>
+            {TABS.map(({ tab: t, label }) => (
+              <button
+                key={t}
+                ref={(el) => {
+                  tabRefs.current[t] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`sidebar-tab-${t}`}
+                aria-selected={tab === t}
+                aria-controls={`sidebar-pane-${t}`}
+                tabIndex={tab === t ? 0 : -1}
+                onClick={() => setTab(t)}
+                onKeyDown={onTabKey}
+              >
+                {label} <span className={styles.count}>{t === "chapters" ? chapters.length : entries.length}</span>
+              </button>
+            ))}
           </div>
 
           <div
