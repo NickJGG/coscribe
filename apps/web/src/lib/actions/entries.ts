@@ -4,9 +4,10 @@ import { redirect } from "next/navigation";
 import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
-import { blockTexts, type ContentJSON } from "@coscribe/editor";
+import { blockTexts, entryNamed, type ContentJSON } from "@coscribe/editor";
 import { fetchStoryContent, refreshSyncAccess } from "@/lib/sync";
-import { readEntryFields, readEntryPatch, type EntryPatch } from "@/lib/entries";
+import { getEntries } from "@/lib/story";
+import { mentionEntries, readEntryFields, readEntryPatch, type EntryPatch, type EntryType } from "@/lib/entries";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 
 const INVALID = "Something went wrong. Try again.";
@@ -30,6 +31,30 @@ export async function addEntry(storyId: string, _prev: ActionResult, formData: F
   // The desk sidebar lives in a layout the redirect would otherwise keep.
   revalidatePath(`/stories/${storyId}`, "layout");
   redirect(`/stories/${storyId}/bible/${data.id}`);
+}
+
+/**
+ * Adds an Entry named from selected prose, leaving the Writer where they are. Refuses a name that's already
+ * an Entry's name or Alias, so this path doesn't make duplicates; the sidebar form still can.
+ */
+export async function addEntryFromText(storyId: string, name: string, type: EntryType): Promise<ActionResult> {
+  if (!isUuid(storyId)) return INVALID;
+  await requireProfile(`/stories/${storyId}`);
+  const read = readEntryPatch({ name, type });
+  if ("error" in read) return read.error;
+  if (!read.columns.name || !read.columns.type) return INVALID;
+
+  const existing = entryNamed(read.columns.name, mentionEntries(await getEntries(storyId)));
+  if (existing) return `“${existing.name}” is already in the Story Bible.`;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("entries")
+    .insert({ story_id: storyId, type: read.columns.type, name: read.columns.name });
+  if (error) return NOT_ALLOWED;
+
+  refresh();
+  return null;
 }
 
 /** Saves Entry fields edited in place: name, type, description, Aliases, or the Mentions switch. */

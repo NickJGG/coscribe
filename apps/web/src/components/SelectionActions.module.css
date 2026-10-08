@@ -1,0 +1,99 @@
+/* Over the Authorship box; only its own controls take clicks. */
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layer > * {
+  pointer-events: auto;
+}
+
+.pill {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  transform: translateY(calc(-100% - 6px));
+  border-radius: 6px;
+  background: var(--ink);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.pill > * {
+  padding: 4px 10px;
+  border: 0;
+  background: none;
+  color: var(--paper);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pill > * + * {
+  border-left: 1px solid color-mix(in srgb, var(--paper) 25%, transparent);
+}
+
+@media (pointer: coarse) {
+  .pill > * {
+    min-height: 36px;
+    padding: 0 14px;
+  }
+}
+
+.popover {
+  position: absolute;
+  top: var(--at-top, 0);
+  left: var(--at-left, 0);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 20rem;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+}
+
+.types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.existing {
+  font-size: 0.875rem;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 601px) {
+  .popover[data-unplaced] {
+    visibility: hidden;
+  }
+}
+
+/* The spread shadow is the scrim, so a tap on it lands outside the popover and closes it. */
+@media (max-width: 600px) {
+  .popover {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: auto;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    border: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 0 0 100vmax var(--scrim);
+  }
+}

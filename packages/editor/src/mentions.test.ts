@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { blockTexts, countMentions, findMentions, type MentionTarget } from "./mentions"
+import { blockTexts, countMentions, entryNameAt, entryNamed, findMentions, type MentionTarget } from "./mentions"
 
 const entry = (id: string, name: string, aliases: string[] = [], linkMentions = true): MentionTarget => ({
   id,
@@ -101,5 +101,44 @@ describe("countMentions", () => {
   it("skips Entries that don't link their Mentions", () => {
     const doc = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Wren met Aldous" }] }] }
     expect(Object.fromEntries(countMentions(doc, [entry("wren", "Wren", [], false), keeper]))).toEqual({ keeper: 1 })
+  })
+})
+
+describe("entryNameAt", () => {
+  const at = (text: string, selected: string, max = 80) => {
+    const from = text.indexOf(selected)
+    return entryNameAt(text, from, from + selected.length, max)
+  }
+
+  it("snaps a partial selection out to whole words", () => {
+    expect(at("Then Wren left.", "re")).toBe("Wren")
+    expect(at("Gull Point Light", "ll Poi")).toBe("Gull Point")
+  })
+
+  it("drops edge punctuation and a possessive", () => {
+    expect(at("by Wren's, boat", "Wren's,")).toBe("Wren")
+    expect(at("by Wren’s boat", "Wren’s")).toBe("Wren")
+    expect(at("“Keeper Aldous!”", "“Keeper Aldous!”")).toBe("Keeper Aldous")
+  })
+
+  it("trims and collapses whitespace", () => {
+    expect(at("at   Gull  Point  now", "  Gull  Point ")).toBe("Gull Point")
+  })
+
+  it("refuses selections without a letter or past the limit", () => {
+    expect(at("Wait... 1984", "... 1984")).toBeNull()
+    expect(at("The Tide Bells", "The Tide Bells", 8)).toBeNull()
+  })
+})
+
+describe("entryNamed", () => {
+  it("matches a name or Alias, ignoring case and spacing", () => {
+    expect(entryNamed("wren", ENTRIES)).toBe(wren)
+    expect(entryNamed("The  Old Keeper", ENTRIES)).toBe(keeper)
+  })
+
+  it("doesn't match part of a longer name", () => {
+    expect(entryNamed("Gull Point", [light])).toBeUndefined()
+    expect(entryNamed("Gull", ENTRIES)).toBeUndefined()
   })
 })

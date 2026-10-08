@@ -24,7 +24,15 @@ export {
   type FoldItem,
 } from "./diff"
 export { findFolded, findText, foldQuery, foldText, MIN_QUERY, type FindMatch, type FoldedText } from "./find"
-export { blockTexts, countMentions, findMentions, type Mention, type MentionTarget } from "./mentions"
+export {
+  blockTexts,
+  countMentions,
+  entryNameAt,
+  entryNamed,
+  findMentions,
+  type Mention,
+  type MentionTarget,
+} from "./mentions"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 

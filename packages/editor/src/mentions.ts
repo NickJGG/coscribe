@@ -51,6 +51,37 @@ function termPatterns(entries: readonly MentionTarget[]) {
   return list
 }
 
+const WORD_CHAR = new RegExp(`^${WORD}$`, "u")
+const EDGES = /^[^\p{L}\p{M}\p{N}]+|[^\p{L}\p{M}\p{N}]+$/gu
+
+/**
+ * The Entry name a selection of `text` (one block) stands for: snapped outward to whole words, trimmed of
+ * edge punctuation and a possessive 's, with whitespace collapsed. Null if no letter is left or it runs
+ * past `max` characters.
+ */
+export function entryNameAt(text: string, from: number, to: number, max: number): string | null {
+  const word = (i: number) => WORD_CHAR.test(text[i] ?? "")
+  while (from > 0 && word(from - 1) && word(from)) from--
+  while (to < text.length && word(to - 1) && word(to)) to++
+  const name = text
+    .slice(from, to)
+    .replace(EDGES, "")
+    .replace(/['’]s$/iu, "")
+    .replace(EDGES, "")
+    .replace(/\s+/gu, " ")
+  return /\p{L}/u.test(name) && name.length <= max ? name : null
+}
+
+/** The Entry whose name or an Alias is `name`, ignoring case and spacing. */
+export function entryNamed<T extends MentionTarget>(name: string, entries: readonly T[]): T | undefined {
+  const key = nameKey(name)
+  return entries.find((e) => [e.name, ...e.aliases].some((term) => nameKey(term) === key))
+}
+
+function nameKey(name: string): string {
+  return name.trim().replace(/\s+/gu, " ").toLowerCase()
+}
+
 function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&")
 }

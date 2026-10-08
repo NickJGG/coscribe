@@ -31,6 +31,7 @@ import { FindBar } from "./FindBar";
 import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
+import { SelectionActions } from "./SelectionActions";
 import { Switch } from "./Switch";
 import { useLiveDocuments, type LiveSession } from "./SyncSocket";
 import { canAddNote, NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
@@ -66,7 +67,7 @@ const SLOW_MS = 1000;
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
- * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A `?find=` link from Story
+ * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
  */
@@ -222,7 +223,14 @@ export function LiveDocument({
           <Authorship
             authors={authors}
             show={showAuthors}
-            aside={notes && editor && <NoteLayer editor={editor} />}
+            aside={
+              editor && (
+                <>
+                  {notes && <NoteLayer editor={editor} />}
+                  <SelectionActions editor={editor} mentions={mentions} onAddNote={notes?.startDraft} />
+                </>
+              )
+            }
           >
             <LiveEditor
               kind={kind}

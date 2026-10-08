@@ -10,7 +10,7 @@ import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type Not
 import type { ActionResult } from "@/lib/action-result";
 import { Avatar } from "../Avatar";
 import { Dropdown } from "../Dropdown";
-import { canAddNote, noteClass, noteDraft } from "./NoteHighlights";
+import { noteClass, noteDraft } from "./NoteHighlights";
 import { useNotes } from "./NotesProvider";
 import styles from "./notes.module.css";
 
@@ -21,45 +21,20 @@ const LIFT = 10;
 
 type Placement = { tops: Record<string, number>; bottom: number };
 const NOT_PLACED: Placement = { tops: {}, bottom: 0 };
-const NO_BUTTON: { top: number; left: number } | null = null;
 const NOT_ANCHORED: { top: number; left: number } | null = null;
 const POPOVER_GAP = 6;
 
 /**
- * Laid over the Authorship box: the "Add Note" button over a selection, and with Show notes on, the margin
- * of cards beside the text, one per open Note whose passage is in the Chapter, plus the one being written.
- * Collapsed, the active Note (or the one being written) opens in a popover instead.
+ * Laid over the Authorship box: with Show notes on, the margin of cards beside the text, one per open Note
+ * whose passage is in the Chapter, plus the one being written. Collapsed, the active Note (or the one being
+ * written) opens in a popover instead. The "+ Note" button lives in SelectionActions.
  */
 export function NoteLayer({ editor }: { editor: Editor }) {
   const notes = useNotes()!;
   const layer = useRef<HTMLDivElement>(null);
-  const roots = useMemo(() => [layer], []);
-  const selection = useEditorState({
-    editor,
-    selector: ({ editor }) =>
-      editor.isFocused && canAddNote(editor) && !noteDraft(editor.state) ? editor.state.selection.from : null,
-  });
-
-  const measure = useCallback(() => {
-    const origin = layer.current!.getBoundingClientRect();
-    const at = editor.view.coordsAtPos(selection!);
-    return { top: at.top - origin.top, left: at.left - origin.left };
-  }, [editor, selection]);
-  const button = useMeasure(roots, selection === null ? null : measure, NO_BUTTON);
 
   return (
     <div ref={layer} className={styles.layer}>
-      {button && selection !== null && (
-        <button
-          type="button"
-          className={styles.addButton}
-          style={{ top: button.top, left: button.left }}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={notes.startDraft}
-        >
-          + Add Note
-        </button>
-      )}
       {notes.show && (notes.collapsed ? <NotePopover editor={editor} layer={layer} /> : <NoteMargin editor={editor} />)}
     </div>
   );

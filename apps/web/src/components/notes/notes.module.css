@@ -26,23 +26,6 @@
   pointer-events: auto;
 }
 
-.addButton {
-  position: absolute;
-  z-index: 3;
-  transform: translateY(calc(-100% - 6px));
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--ink);
-  color: var(--paper);
-  box-shadow: var(--shadow);
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
 /* Beside the text, in the page's second column (chapter.module.css). */
 .margin {
   position: absolute;
