@@ -67,7 +67,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
         id={entry.id}
         writer={liveWriter(data)}
         authors={storyAuthors(data)}
-        mentions={{ storyId: story.id, entries: entries.filter((e) => e.id !== entry.id) }}
+        mentions={{ storyId: story.id, entries: entries.map((e) => (e.id === entry.id ? { ...e, linkMentions: false } : e)) }}
       />
 
       <section className={styles.mentioned} aria-labelledby="mentioned-in">

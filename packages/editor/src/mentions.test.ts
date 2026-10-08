@@ -54,8 +54,18 @@ describe("findMentions", () => {
     expect(found("Éwren and wrené")).toEqual([])
   })
 
-  it("skips Entries that don't link their Mentions", () => {
-    expect(found("Wren and Aldous", [entry("wren", "Wren", [], false), keeper])).toEqual([["keeper", "Aldous"]])
+  it("marks Mentions of Entries that don't link them", () => {
+    const unlinked = [entry("wren", "Wren", [], false), keeper]
+    expect(findMentions("Wren and Aldous", unlinked).map((m) => [m.entryId, m.linked])).toEqual([
+      ["wren", false],
+      ["keeper", true],
+    ])
+  })
+
+  it("lets a longer unlinked match win over a shorter linked one", () => {
+    expect(found("Gull Point Light", [point, entry("light", "Gull Point Light", [], false)])).toEqual([
+      ["light", "Gull Point Light"],
+    ])
   })
 
   it("treats names as literal text", () => {
@@ -68,7 +78,7 @@ describe("findMentions", () => {
 
   it("reports UTF-16 offsets", () => {
     const text = "😀 Wren"
-    expect(findMentions(text, ENTRIES)).toEqual([{ entryId: "wren", from: 3, to: 7 }])
+    expect(findMentions(text, ENTRIES)).toEqual([{ entryId: "wren", from: 3, to: 7, linked: true }])
   })
 })
 
@@ -86,5 +96,10 @@ describe("countMentions", () => {
     }
     expect(blockTexts(doc)).toEqual(["Wren met Aldous", "Gull", "Point. Wren's turn."])
     expect(Object.fromEntries(countMentions(doc, ENTRIES))).toEqual({ wren: 2, keeper: 1 })
+  })
+
+  it("skips Entries that don't link their Mentions", () => {
+    const doc = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Wren met Aldous" }] }] }
+    expect(Object.fromEntries(countMentions(doc, [entry("wren", "Wren", [], false), keeper]))).toEqual({ keeper: 1 })
   })
 })

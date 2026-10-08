@@ -17,6 +17,7 @@ export function InlineEdit({
   maxLength,
   placeholder,
   editable,
+  spellCheck,
   onSave,
 }: {
   as: "h1" | "p";
@@ -26,6 +27,7 @@ export function InlineEdit({
   maxLength: number;
   placeholder?: string;
   editable: boolean;
+  spellCheck?: boolean;
   onSave: (next: string) => Promise<ActionResult>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -59,6 +61,7 @@ export function InlineEdit({
             aria-label={label}
             placeholder={placeholder}
             maxLength={maxLength}
+            spellCheck={spellCheck}
             disabled={pending}
             autoFocus
             onFocus={(e) => e.currentTarget.select()}

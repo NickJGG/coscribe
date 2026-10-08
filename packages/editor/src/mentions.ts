@@ -3,8 +3,11 @@ import type { ContentJSON } from "./credits"
 /** What the matcher needs of an Entry. */
 export type MentionTarget = { id: string; name: string; aliases: readonly string[]; linkMentions: boolean }
 
-/** A Mention in one block of text, as UTF-16 offsets (the same units as ProseMirror positions). */
-export type Mention = { entryId: string; from: number; to: number }
+/**
+ * A Mention in one block of text, as UTF-16 offsets (the same units as ProseMirror positions). `linked` is
+ * false for an Entry that doesn't link its Mentions; those still matter for spellcheck.
+ */
+export type Mention = { entryId: string; from: number; to: number; linked: boolean }
 
 const WORD = "[\\p{L}\\p{M}\\p{N}_]"
 
@@ -15,9 +18,9 @@ const WORD = "[\\p{L}\\p{M}\\p{N}_]"
  */
 export function findMentions(text: string, entries: readonly MentionTarget[]): Mention[] {
   const candidates: Mention[] = []
-  for (const { pattern, entryId } of termPatterns(entries)) {
+  for (const { pattern, entryId, linked } of termPatterns(entries)) {
     for (const match of text.matchAll(pattern)) {
-      candidates.push({ entryId, from: match.index, to: match.index + match[0].length })
+      candidates.push({ entryId, from: match.index, to: match.index + match[0].length, linked })
     }
   }
   candidates.sort((a, b) => b.to - b.from - (a.to - a.from) || a.from - b.from)
@@ -29,20 +32,19 @@ export function findMentions(text: string, entries: readonly MentionTarget[]): M
   return chosen.sort((a, b) => a.from - b.from)
 }
 
-const patterns = new WeakMap<readonly MentionTarget[], { pattern: RegExp; entryId: string }[]>()
+const patterns = new WeakMap<readonly MentionTarget[], { pattern: RegExp; entryId: string; linked: boolean }[]>()
 
 function termPatterns(entries: readonly MentionTarget[]) {
   let list = patterns.get(entries)
   if (list) return list
   list = []
   for (const entry of entries) {
-    if (!entry.linkMentions) continue
     for (const term of [entry.name, ...entry.aliases]) {
       const words = term.trim().split(/\s+/u).filter(Boolean)
       if (!words.length) continue
       // A trailing apostrophe isn't a word character, so "Wren's" already ends "Wren" on a boundary.
       const body = words.map(escape).join("\\s+")
-      list.push({ pattern: new RegExp(`(?<!${WORD})${body}(?!${WORD})`, "giu"), entryId: entry.id })
+      list.push({ pattern: new RegExp(`(?<!${WORD})${body}(?!${WORD})`, "giu"), entryId: entry.id, linked: entry.linkMentions })
     }
   }
   patterns.set(entries, list)
@@ -64,11 +66,13 @@ export function blockTexts(node: ContentJSON, into: string[] = []): string[] {
   return into
 }
 
-/** How many times each Entry is mentioned in a document. */
+/** How many times each Entry that links its Mentions is mentioned in a document. */
 export function countMentions(doc: ContentJSON, entries: readonly MentionTarget[]): Map<string, number> {
   const counts = new Map<string, number>()
   for (const text of blockTexts(doc)) {
-    for (const { entryId } of findMentions(text, entries)) counts.set(entryId, (counts.get(entryId) ?? 0) + 1)
+    for (const { entryId, linked } of findMentions(text, entries)) {
+      if (linked) counts.set(entryId, (counts.get(entryId) ?? 0) + 1)
+    }
   }
   return counts
 }

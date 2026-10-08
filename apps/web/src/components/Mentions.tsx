@@ -20,9 +20,9 @@ type MentionState = MentionConfig & { set: DecorationSet };
 export const mentionKey = new PluginKey<MentionState>("mentions");
 
 /**
- * Underlines Mentions with decorations, so the document schema (and apps/sync) never sees them. Edits
- * re-match only the text blocks they touch; a transaction with a `MentionConfig` under `mentionKey`
- * re-matches everything.
+ * Underlines Mentions with decorations, so the document schema (and apps/sync) never sees them, and turns
+ * spellcheck off over every name and Alias, linked or not. Edits re-match only the text blocks they touch;
+ * a transaction with a `MentionConfig` under `mentionKey` re-matches everything.
  */
 export const Mentions = Extension.create<MentionConfig>({
   name: "mentions",
@@ -73,11 +73,13 @@ function decorateAll(doc: ProseMirrorNode, config: MentionConfig): DecorationSet
 function decorateBlock(node: ProseMirrorNode, pos: number, { entries, focusable }: MentionConfig): Decoration[] {
   if (!entries.length) return [];
   return findMentions(node.textContent, entries).map((m) =>
-    Decoration.inline(pos + 1 + m.from, pos + 1 + m.to, {
-      class: styles.mention,
-      "data-mention": m.entryId,
-      ...(focusable && { tabindex: "0" }),
-    })
+    Decoration.inline(
+      pos + 1 + m.from,
+      pos + 1 + m.to,
+      m.linked
+        ? { class: styles.mention, "data-mention": m.entryId, spellcheck: "false", ...(focusable && { tabindex: "0" }) }
+        : { spellcheck: "false" }
+    )
   );
 }
 

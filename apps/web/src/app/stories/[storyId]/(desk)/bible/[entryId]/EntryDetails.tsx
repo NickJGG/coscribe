@@ -64,6 +64,7 @@ export function EntryDetails({
         label="Name"
         maxLength={NAME_MAX}
         editable={editable}
+        spellCheck={false}
         onSave={(name) => save({ name })}
       />
       <InlineEdit
@@ -141,6 +142,7 @@ function Aliases({ aliases, onSave }: { aliases: string[]; onSave: (aliases: str
           {adding ? (
             <input
               className={`input ${styles.aliasInput}`}
+              spellCheck={false}
               aria-label="New Alias"
               placeholder="Another name"
               maxLength={NAME_MAX}
