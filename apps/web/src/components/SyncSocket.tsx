@@ -3,8 +3,10 @@
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import { HocuspocusProvider, HocuspocusProviderWebsocket } from "@hocuspocus/provider";
 import * as Y from "yjs";
+import type { SnapshotMessage, SyncMessage } from "@coscribe/editor";
 
-export type LiveSession = { provider: HocuspocusProvider; ydoc: Y.Doc };
+/** `snapshot` is the latest SnapshotMessage, kept for a session reused after its message arrived. */
+export type LiveSession = { provider: HocuspocusProvider; ydoc: Y.Doc; snapshot: SnapshotMessage | null };
 
 type LiveDocuments = {
   /** The document's session, created on first open. Every open needs a matching close. */
@@ -53,7 +55,12 @@ export function SyncSocketProvider({ children }: { children: React.ReactNode }) 
           });
           // A provider on a shared socket doesn't attach itself.
           provider.attach();
-          entry = { provider, ydoc, holders: 0, answered };
+          const created: Entry = { provider, ydoc, snapshot: null, holders: 0, answered };
+          provider.on("stateless", ({ payload }: { payload: string }) => {
+            const message = JSON.parse(payload) as SyncMessage;
+            if (message.type === "snapshot") created.snapshot = message;
+          });
+          entry = created;
           entries.current.set(name, entry);
         }
         entry.holders++;

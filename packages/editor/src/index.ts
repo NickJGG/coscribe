@@ -74,3 +74,8 @@ export const ACCESS_REVOKED = "access-revoked"
 
 /** Stateless message apps/sync sends when a connection's edit rights change (lock, unlock). */
 export type AccessMessage = { type: "access"; readOnly: boolean }
+
+/** Stateless message apps/sync sends Chapter connections when taking a Snapshot would (or wouldn't) save anything. */
+export type SnapshotMessage = { type: "snapshot"; changed: boolean; empty: boolean }
+
+export type SyncMessage = AccessMessage | SnapshotMessage

@@ -9,7 +9,8 @@ export type PresentWriter = { id: string; name: string; color: string };
 
 /**
  * The open live document as the desk around it shows it. `slow` turns true once connecting has taken
- * about a second; `ready` once its text is synced and on screen.
+ * about a second; `ready` once its text is synced and on screen. `snapshotChanged` (Chapters only) says
+ * whether taking a Snapshot would save anything, null until apps/sync says; `snapshotEmpty` why not.
  */
 export type LiveStatus = {
   doc: string | null;
@@ -20,6 +21,8 @@ export type LiveStatus = {
   writers: PresentWriter[];
   viewers: number;
   words: number;
+  snapshotChanged: boolean | null;
+  snapshotEmpty: boolean;
 };
 
 export const NO_DOCUMENT: LiveStatus = {
@@ -31,6 +34,8 @@ export const NO_DOCUMENT: LiveStatus = {
   writers: [],
   viewers: 0,
   words: 0,
+  snapshotChanged: null,
+  snapshotEmpty: false,
 };
 
 type Report = (patch: Partial<LiveStatus>) => void;

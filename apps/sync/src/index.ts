@@ -5,7 +5,8 @@
  *   per-author characters; on startup, Chapters stored before those columns existed are backfilled.
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
  *   story's membership, Visibility, status, and (for Chapters) lock state.
- * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts).
+ * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts), and open Chapters
+ *   tell their connections whether taking one would save anything.
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
  *   cleared before the server starts listening.
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
@@ -15,6 +16,8 @@
  *     Reader View and Credits.
  *   - `GET /snapshots/<id>` returns a Snapshot's content as ProseMirror JSON.
  *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
+ *   - `POST /chapters/<id>/snapshot` takes a Snapshot of the live Chapter, with body `{ name: string | null }`:
+ *     201 when taken, 409 when nothing changed since the last one, 404 when the Chapter is gone.
  */
 import { createHash, timingSafeEqual } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
@@ -32,12 +35,20 @@ import {
   type DocumentRef,
 } from "./documents"
 import { arrive, clearPresence, depart, setMember } from "./presence"
-import { chapterStored, chapterUnloading, restoreSnapshot, snapshotPreview } from "./snapshots"
+import {
+  chapterLoaded,
+  chapterStored,
+  chapterUnloading,
+  restoreSnapshot,
+  snapshotMessage,
+  snapshotPreview,
+  takeSnapshotNow,
+} from "./snapshots"
 
 type Context = { userId: string | null; storyId: string; document: DocumentRef; member: boolean; socketId: string }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots)/(${UUID})(?:/(refresh|restore|content))?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot))?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -68,8 +79,16 @@ const server = new Server<Context>({
     return { userId, storyId, document: doc, member, socketId } satisfies Context
   },
 
-  async connected({ context }) {
+  async afterLoadDocument({ documentName, document }) {
+    const doc = parseDocumentName(documentName)
+    if (doc?.kind === "chapter") await snapshotting(chapterLoaded(doc.id, document))
+  },
+
+  async connected({ context, connection }) {
     arrive(context, context)
+    // Unknown until the Chapter finishes loading; chapterLoaded broadcasts it then.
+    const message = context.document.kind === "chapter" ? snapshotMessage(context.document.id) : undefined
+    if (message) connection.sendStateless(message)
   },
 
   async onDisconnect({ context }) {
@@ -93,7 +112,7 @@ const server = new Server<Context>({
     if (!authorized(request)) {
       response.writeHead(401).end()
     } else {
-      await route(instance, request.method, match[1]!, match[2]!, match[3], response)
+      await route(instance, request, match[1]!, match[2]!, match[3], response)
     }
     // Hocuspocus treats an empty rejection as "handled": it skips the default response.
     throw null
@@ -102,12 +121,13 @@ const server = new Server<Context>({
 
 async function route(
   instance: Hocuspocus<Context>,
-  method: string | undefined,
+  request: IncomingMessage,
   resource: string,
   id: string,
   action: string | undefined,
   response: ServerResponse
 ) {
+  const { method } = request
   if (method === "POST" && resource === "stories" && action === "refresh") {
     await refreshStory(instance, id)
     response.writeHead(204).end()
@@ -119,21 +139,35 @@ async function route(
     if (!content) return response.writeHead(404).end()
     response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ content }))
   } else if (method === "POST" && resource === "snapshots" && action === "restore") {
-    const restored = await restoreSnapshot(instance, id, (chapterId, storyId) => ({
-      userId: null,
-      storyId,
-      document: { kind: "chapter" as const, id: chapterId },
-      member: false,
-      socketId: "server",
-    }))
+    const restored = await restoreSnapshot(instance, id, serverContext)
     response.writeHead(restored ? 204 : 404).end()
+  } else if (method === "POST" && resource === "chapters" && action === "snapshot") {
+    const body = await readJson(request)
+    const name = typeof body?.name === "string" ? body.name.trim() || null : null
+    const result = await takeSnapshotNow(instance, id, name, (storyId) => serverContext(id, storyId))
+    response.writeHead({ taken: 201, unchanged: 409, gone: 404 }[result]).end()
   } else {
     response.writeHead(404).end()
   }
 }
 
+function serverContext(chapterId: string, storyId: string): Context {
+  return { userId: null, storyId, document: { kind: "chapter", id: chapterId }, member: false, socketId: "server" }
+}
+
+async function readJson(request: IncomingMessage): Promise<Record<string, unknown> | null> {
+  const chunks: Buffer[] = []
+  for await (const chunk of request) chunks.push(chunk as Buffer)
+  try {
+    const body: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
+    return body && typeof body === "object" ? (body as Record<string, unknown>) : null
+  } catch {
+    return null
+  }
+}
+
 /** A failed Snapshot must not block storing or unloading the document. */
-async function snapshotting(task: Promise<void>) {
+async function snapshotting(task: Promise<unknown>) {
   try {
     await task
   } catch (error) {

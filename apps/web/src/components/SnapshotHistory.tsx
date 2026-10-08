@@ -52,7 +52,7 @@ export function SnapshotHistory({ chapterId, chapterTitle }: { chapterId: string
         {snapshots?.length === 0 && (
           <p className="muted">
             No Snapshots yet. One is taken after about 10 minutes of writing, and when everyone leaves the
-            Chapter.
+            Chapter, or take one any time with Snapshot in the toolbar.
           </p>
         )}
         <ol className={styles.list}>

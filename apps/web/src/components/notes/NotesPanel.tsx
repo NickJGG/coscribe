@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import { noteRanges } from "@coscribe/editor";
 import { groupNotes, noteQuote, type Note } from "@/lib/notes";
+import { NoteIcon } from "../icons";
 import { Panel, usePanelOpen, useStoryPanel } from "../StoryPanel";
 import { NoteCard } from "./NoteMargin";
 import { useNotes } from "./NotesProvider";
@@ -100,11 +101,13 @@ export function NotesButton() {
   return (
     <button
       type="button"
-      className="button button-ghost button-tiny"
+      className="button button-ghost button-tiny with-icon"
+      title="Notes"
       aria-expanded={open}
       onClick={() => panel.toggle("notes")}
     >
-      Notes
+      <NoteIcon />
+      <span className="with-icon-label">Notes</span>
       {count > 0 && (
         <span className={styles.groupCount}>
           {count}

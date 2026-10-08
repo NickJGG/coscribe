@@ -443,6 +443,9 @@ isOneToOne: false
 "authorize_restore":
 { Args: { "p_snapshot": string }; Returns: string
                            },
+"authorize_snapshot":
+{ Args: { "p_chapter": string }; Returns: string
+                           },
 "befriend":
 { Args: { "a": string,"b": string }; Returns: undefined
                            },

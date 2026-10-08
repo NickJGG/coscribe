@@ -81,7 +81,7 @@ _Avoid_: Share link, join link
 ### History and lifecycle
 
 **Snapshot**:
-An automatically saved past state of a **Chapter**, which can be named.
+A saved past state of a **Chapter**, taken automatically or on demand by a **Co-host** or **Host**, which can be named.
 _Avoid_: Version, revision, backup
 
 **Restore**:

@@ -28,6 +28,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { afterId } from "@/lib/chapter-order";
 import { shortWords } from "@/lib/words";
 import { PresenceDots, type HereNow } from "@/components/StoryPresence";
+import { LockIcon, NoteIcon } from "@/components/icons";
 import formStyles from "@/components/ActionForm.module.css";
 import styles from "./desk.module.css";
 
@@ -233,14 +234,14 @@ function ChapterRowBody({
       <span className={styles.meta}>
         {openNotes > 0 && (
           <span className={styles.noteCount} title={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
-            <NoteIcon />
+            <NoteIcon className={styles.noteIcon} />
             {openNotes}
             <span className="sr-only"> open {openNotes === 1 ? "Note" : "Notes"},</span>
           </span>
         )}
         {chapter.locked && (
           <>
-            <LockIcon />
+            <LockIcon className={styles.lock} />
             <span className="sr-only">Locked,</span>
           </>
         )}
@@ -266,23 +267,6 @@ function GripIcon() {
           <circle cx="10.5" cy={y} r="1.3" />
         </g>
       ))}
-    </svg>
-  );
-}
-
-function NoteIcon() {
-  return (
-    <svg className={styles.noteIcon} viewBox="0 0 20 20" aria-hidden>
-      <path d="M4 4.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9l-3.5 3v-3H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg className={styles.lock} viewBox="0 0 20 20" aria-hidden>
-      <rect x="4.5" y="9" width="11" height="8" rx="1.5" />
-      <path d="M7 9V6.5a3 3 0 0 1 6 0V9" />
     </svg>
   );
 }

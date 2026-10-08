@@ -26,7 +26,15 @@ export function contentHash(content: ChapterContent): string {
   return createHash("sha256").update(JSON.stringify(content.toJSON())).digest("hex")
 }
 
-export type ChapterStats = { words: number; authorChars: Record<string, number> }
+export type SnapshotState = { changed: boolean; empty: boolean }
+
+/** Whether taking a Snapshot would save anything: never for empty text, else when it differs from the latest. */
+export function snapshotState(content: ChapterContent, latestHash: string | null): SnapshotState {
+  const empty = content.textContent === ""
+  return { empty, changed: !empty && contentHash(content) !== latestHash }
+}
+
+export type ChapterStats ={ words: number; authorChars: Record<string, number> }
 
 /** Word count, plus surviving characters per author (the tally Credits uses). */
 export function chapterStats(content: ChapterContent): ChapterStats {

@@ -43,6 +43,18 @@ export async function restoreSnapshotLive(snapshotId: string): Promise<boolean> 
   return true;
 }
 
+/** Snapshots the live Chapter now, unless nothing changed since the last Snapshot. */
+export async function takeSnapshotLive(chapterId: string, name: string | null): Promise<"taken" | "unchanged" | "gone"> {
+  const response = await syncFetch(`/chapters/${chapterId}/snapshot`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  if (response.status === 404) return "gone";
+  if (response.status === 409) return "unchanged";
+  if (!response.ok) throw new Error(`snapshot failed: ${response.status}`);
+  return "taken";
+}
+
 export type StoryContent = Record<DocumentKind, Record<string, JSONContent>>;
 
 /** Every Chapter and Entry body in a story, keyed by id. Null if the sync server can't be reached. */

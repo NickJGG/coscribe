@@ -15,7 +15,8 @@ import {
   documentName,
   DOCUMENT_FIELD,
   entryExtensions,
-  type AccessMessage,
+  type SnapshotMessage,
+  type SyncMessage,
   type DocumentKind,
 } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
@@ -138,9 +139,12 @@ export function LiveDocument({
     const onStatus = ({ status }: { status: string }) => {
       if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
     };
+    const reportSnapshot = ({ changed, empty }: SnapshotMessage) =>
+      report({ snapshotChanged: changed, snapshotEmpty: empty });
     const onStateless = ({ payload }: { payload: string }) => {
-      const message = JSON.parse(payload) as AccessMessage;
+      const message = JSON.parse(payload) as SyncMessage;
       if (message.type === "access") setReadOnly(message.readOnly);
+      else if (message.type === "snapshot") reportSnapshot(message);
     };
     const onClose = ({ event }: { event: CloseEvent }) => {
       if (event.reason === ACCESS_REVOKED) setConnection("denied");
@@ -157,6 +161,7 @@ export function LiveDocument({
     /* eslint-disable react-hooks/set-state-in-effect */
     if (provider.isAuthenticated) setReadOnly(provider.authorizedScope !== "read-write");
     if (provider.isSynced) onSynced({ state: true });
+    if (live.snapshot) reportSnapshot(live.snapshot);
     setSession(live);
     /* eslint-enable react-hooks/set-state-in-effect */
     const slowTimer = setTimeout(() => setSlow(true), SLOW_MS);

@@ -7,9 +7,11 @@ import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
+import { LockIcon } from "@/components/icons";
 import { LiveDocument } from "@/components/LiveDocument";
 import { SnapshotCompareProvider } from "@/components/SnapshotCompare";
 import { SnapshotCompareView } from "@/components/SnapshotCompareView";
+import { SnapshotButton } from "@/components/SnapshotButton";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { NotesProvider } from "@/components/notes/NotesProvider";
 import { NotesPanel } from "@/components/notes/NotesPanel";
@@ -57,9 +59,18 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       mentions={{ storyId: story.id, entries: mentionEntries(entries) }}
       tools={
         manage && (
-          <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
-            <button className="button button-ghost button-tiny">{chapter.locked ? "Unlock" : "Lock"}</button>
-          </ActionForm>
+          <>
+            <SnapshotButton chapterId={chapter.id} />
+            <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
+              <button
+                className="button button-ghost button-tiny with-icon"
+                title={chapter.locked ? "Unlock this Chapter" : "Lock this Chapter"}
+              >
+                <LockIcon open={chapter.locked} />
+                <span className="with-icon-label">{chapter.locked ? "Unlock" : "Lock"}</span>
+              </button>
+            </ActionForm>
+          </>
         )
       }
     />
@@ -100,7 +111,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       {canManageChapters(myRole) ? (
         <SnapshotCompareProvider key={chapter.id} chapterId={chapter.id}>
           {text}
-          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName={myRole === "host"} />
+          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName={canManageChapters(myRole)} />
           <SnapshotHistory chapterId={chapter.id} chapterTitle={chapter.title} />
         </SnapshotCompareProvider>
       ) : (

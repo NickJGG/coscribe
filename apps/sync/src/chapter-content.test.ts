@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest"
 import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
 import { chapterSchema, DOCUMENT_FIELD, entrySchema } from "@coscribe/editor"
-import { chapterContent, chapterStats, contentHash, decodeChapter, replaceChapterContent } from "./chapter-content"
+import {
+  chapterContent,
+  chapterStats,
+  contentHash,
+  decodeChapter,
+  replaceChapterContent,
+  snapshotState,
+} from "./chapter-content"
 
 const mia = { userId: "mia", at: 1 }
 const jordan = { userId: "jordan", at: 2 }
@@ -91,5 +98,33 @@ describe("chapterStats", () => {
 
   it("is empty for an empty Chapter", () => {
     expect(chapterStats(chapterContent(new Y.Doc()))).toEqual({ words: 0, authorChars: {} })
+  })
+})
+
+describe("snapshotState", () => {
+  it("has nothing to save for an empty Chapter, even with no Snapshot yet", () => {
+    expect(snapshotState(chapterContent(new Y.Doc()), null)).toEqual({ changed: false, empty: true })
+  })
+
+  it("is changed with text and no Snapshot yet", () => {
+    const doc = chapterDoc(para(["Once.", mia]))
+    expect(snapshotState(chapterContent(doc), null)).toEqual({ changed: true, empty: false })
+  })
+
+  it("is unchanged when the text matches the latest Snapshot", () => {
+    const doc = chapterDoc(para(["Once.", mia]))
+    expect(snapshotState(chapterContent(doc), contentHash(chapterContent(doc))).changed).toBe(false)
+  })
+
+  it("is changed after an edit, and unchanged again once it's reverted", () => {
+    const original = chapterContent(chapterDoc(para(["Once.", mia])))
+    const latest = contentHash(original)
+    const live = chapterDoc(para(["Once.", mia]))
+
+    replaceChapterContent(live, chapterContent(chapterDoc(para(["Once.", mia], [" Twice.", jordan]))))
+    expect(snapshotState(chapterContent(live), latest).changed).toBe(true)
+
+    replaceChapterContent(live, original)
+    expect(snapshotState(chapterContent(live), latest).changed).toBe(false)
   })
 })
