@@ -4,7 +4,7 @@ import { requireReader } from "@/lib/reader";
 import { authorColorCss } from "@/lib/profile-rules";
 import { ROLE_LABEL } from "@/lib/story-roles";
 import { PersonLink } from "@/components/PersonLink";
-import { ReaderNav, Unavailable } from "../ReaderNav";
+import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read/credits">): Promise<Metadata> {
@@ -18,14 +18,12 @@ const percent = new Intl.NumberFormat("en-US", { style: "percent", maximumFracti
 /** Each Writer's share of the Chapters, by characters carrying their `author` mark. */
 export default async function ReaderCreditsPage(props: PageProps<"/stories/[storyId]/read/credits">) {
   const { storyId } = await props.params;
-  const { story, chapters, entries, credits, members } = await requireReader(storyId, `/stories/${storyId}/read/credits`);
+  const { chapters, credits, members } = await requireReader(storyId, `/stories/${storyId}/read/credits`);
   const roles = new Map(members.map((m) => [m.profile.id, m.role]));
   const total = credits?.reduce((sum, c) => sum + c.chapters, 0) ?? 0;
 
   return (
     <div className={styles.page}>
-      <ReaderNav story={story} current="credits" hasBible={entries.length > 0} />
-
       <header className={styles.chapterHead}>
         <h1 className={styles.chapterTitle}>Credits</h1>
         {credits && (

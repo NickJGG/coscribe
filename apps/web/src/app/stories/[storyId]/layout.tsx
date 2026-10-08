@@ -3,10 +3,11 @@ import { StoryChat } from "@/components/StoryChat";
 import { StoryPanelProvider } from "@/components/StoryPanel";
 import { StoryPresenceProvider } from "@/components/StoryPresence";
 import { StoryUpdates } from "@/components/StoryUpdates";
+import { OutsideReader } from "./OutsideReader";
 
 /**
  * Keeps the right panel, and the Story Chat, presence and update subscriptions, mounted while moving
- * between a story's pages. Viewers never get Chat. Shells without a PanelSlot (the Reader) never show the panel.
+ * between a story's pages. Viewers never get Chat, and the Reader doesn't either.
  */
 export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]">) {
   const { storyId } = await props.params;
@@ -16,7 +17,9 @@ export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]
     <StoryPanelProvider>
       {props.children}
       {data?.myRole && data.viewer && (
-        <StoryChat storyId={data.story.id} me={data.viewer.userId} members={data.members.map((m) => m.profile)} />
+        <OutsideReader>
+          <StoryChat storyId={data.story.id} me={data.viewer.userId} members={data.members.map((m) => m.profile)} />
+        </OutsideReader>
       )}
     </StoryPanelProvider>
   );

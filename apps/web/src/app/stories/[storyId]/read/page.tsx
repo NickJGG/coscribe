@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
-import { ReaderNav } from "./ReaderNav";
+import { storyRibbon } from "@/lib/contribution";
+import { ContributionRibbon } from "@/components/ContributionRibbon";
 import styles from "./reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read">): Promise<Metadata> {
@@ -16,21 +17,37 @@ const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
 /** The Reader View's title page: who wrote it, and the table of contents. */
 export default async function ReaderPage(props: PageProps<"/stories/[storyId]/read">) {
   const { storyId } = await props.params;
-  const { story, chapters, entries, credits, members } = await requireReader(storyId, `/stories/${storyId}/read`);
+  const { story, chapters, credits, members } = await requireReader(storyId, `/stories/${storyId}/read`);
   const first = chapters[0];
 
   // Credits order (most written first), falling back to members if the text couldn't be loaded.
   const names = credits?.flatMap((c) => (c.person && c.chapters + c.bible > 0 ? [c.person.username] : [])) ?? [];
   const byline = names.length ? names : members.map((m) => m.profile.username);
+  const ribbon =
+    credits &&
+    storyRibbon(
+      members.map((m) => ({
+        id: m.profile.id,
+        name: m.profile.username,
+        color: m.profile.author_color,
+        role: m.role,
+        joinedAt: m.joined_at,
+      })),
+      [Object.fromEntries(credits.map((c) => [c.id, c.chapters]))],
+      new Map(credits.flatMap((c) => (c.person ? [[c.id, c.person.username] as const] : [])))
+    );
 
   return (
     <div className={styles.page}>
-      <ReaderNav story={story} current="contents" hasBible={entries.length > 0} />
-
       <header className={styles.titlePage}>
         <p className={styles.eyebrow}>A Coscribe story</p>
         <h1 className={styles.bookTitle}>{story.title}</h1>
         <p className={styles.byline}>by {listFormat.format(byline)}</p>
+        {ribbon && (
+          <span className={styles.ribbon}>
+            <ContributionRibbon segments={ribbon} />
+          </span>
+        )}
         {story.finished_at && (
           <p className="muted">Finished {finishedOn.format(new Date(story.finished_at))}</p>
         )}

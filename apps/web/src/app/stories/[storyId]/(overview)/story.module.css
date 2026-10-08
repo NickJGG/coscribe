@@ -220,6 +220,11 @@
     min-width: 44px;
     height: 44px;
   }
+
+  .menuItem,
+  .renameForm .input {
+    min-height: 44px;
+  }
 }
 
 .menu {

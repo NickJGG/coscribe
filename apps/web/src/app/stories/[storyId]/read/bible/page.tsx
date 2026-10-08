@@ -4,7 +4,7 @@ import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES } from "@/lib/entries";
 import { ProseView } from "@/components/ProseView";
-import { ReaderNav, Unavailable } from "../ReaderNav";
+import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read/bible">): Promise<Metadata> {
@@ -14,7 +14,7 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]/read
 
 export default async function ReaderBiblePage(props: PageProps<"/stories/[storyId]/read/bible">) {
   const { storyId } = await props.params;
-  const { story, entries, content } = await requireReader(storyId, `/stories/${storyId}/read/bible`);
+  const { entries, content } = await requireReader(storyId, `/stories/${storyId}/read/bible`);
   if (!entries.length) notFound();
 
   const groups = ENTRY_TYPES.map((type) => ({ type, entries: entries.filter((e) => e.type === type) })).filter(
@@ -23,8 +23,6 @@ export default async function ReaderBiblePage(props: PageProps<"/stories/[storyI
 
   return (
     <div className={styles.page}>
-      <ReaderNav story={story} current="bible" hasBible />
-
       <header className={styles.chapterHead}>
         <h1 className={styles.chapterTitle}>Story Bible</h1>
         {groups.length > 1 && (

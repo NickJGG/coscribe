@@ -89,6 +89,10 @@
   flex-shrink: 0;
 }
 
+.writers {
+  display: inline-flex;
+}
+
 .live {
   display: inline-flex;
   align-items: center;
@@ -138,6 +142,9 @@
     gap: 6px;
   }
 
+  /* The sheet's title row leads back to the Story, and its Here now lists the Writers. */
+  .wordmark,
+  .writers,
   .invite,
   .live[data-member],
   .crumbStory,
@@ -511,6 +518,7 @@
 .footer {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 6px 16px;
   min-height: 33px;
@@ -610,6 +618,7 @@
     left: 0;
     display: flex;
     height: min(70dvh, 36rem);
+    padding-bottom: env(safe-area-inset-bottom);
     border: 0;
     border-radius: 18px 18px 0 0;
     background: var(--paper-raised);
@@ -659,7 +668,13 @@
     height: 44px;
   }
 
-  .footerButton {
+  .footerButton,
+  .footerLink,
+  .crumbSheet,
+  .add,
+  .tabs button,
+  .search input,
+  .addForm .input {
     min-height: 44px;
   }
 }

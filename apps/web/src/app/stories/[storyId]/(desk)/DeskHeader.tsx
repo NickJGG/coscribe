@@ -72,7 +72,11 @@ export function DeskStatus({ member }: { member: boolean }) {
 
   return (
     <>
-      {writers.length > 0 && <AvatarStack people={writers} size="sm" />}
+      {writers.length > 0 && (
+        <span className={styles.writers}>
+          <AvatarStack people={writers} size="sm" />
+        </span>
+      )}
       {label && (
         <span className={styles.live} data-connection={connection} data-member={member || undefined} role="status">
           {label}

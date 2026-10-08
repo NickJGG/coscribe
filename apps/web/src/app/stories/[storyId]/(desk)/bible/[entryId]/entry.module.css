@@ -203,3 +203,22 @@
     font-size: var(--step-2);
   }
 }
+
+@media (pointer: coarse) {
+  .type,
+  .alias,
+  .addAlias,
+  .linkSwitch,
+  .aliasInput {
+    min-height: 44px;
+  }
+
+  .aliasInput {
+    height: 44px;
+  }
+
+  .removeAlias {
+    width: 36px;
+    height: 36px;
+  }
+}

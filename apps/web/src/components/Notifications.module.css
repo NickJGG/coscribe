@@ -107,3 +107,9 @@ a.story:hover {
 .foot a:hover {
   color: var(--ink);
 }
+
+@media (pointer: coarse) {
+  .markAll {
+    min-height: 44px;
+  }
+}

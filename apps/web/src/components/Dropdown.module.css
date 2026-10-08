@@ -27,3 +27,27 @@
 .panel[hidden] {
   display: none;
 }
+
+/*
+ * Phones: a full-width sheet from the bottom of the screen. The spread shadow is the scrim, so a tap on it
+ * lands outside the Dropdown and closes it. Doubled to outrank a caller's panelClassName width.
+ */
+@media (max-width: 600px) {
+  .panel.panel {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: 85dvh;
+    padding-bottom: env(safe-area-inset-bottom);
+    border: 0;
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 0 0 100vmax var(--scrim);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

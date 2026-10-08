@@ -5,7 +5,7 @@ import { getChapters, getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
-import { ReaderNav, Unavailable } from "../ReaderNav";
+import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read/[chapterId]">): Promise<Metadata> {
@@ -17,7 +17,7 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]/read
 
 export default async function ReaderChapterPage(props: PageProps<"/stories/[storyId]/read/[chapterId]">) {
   const { storyId, chapterId } = await props.params;
-  const { story, chapters, entries, content, authors } = await requireReader(
+  const { story, chapters, content, authors } = await requireReader(
     storyId,
     `/stories/${storyId}/read/${chapterId}`
   );
@@ -31,8 +31,6 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
 
   return (
     <div className={styles.page}>
-      <ReaderNav story={story} current="chapter" hasBible={entries.length > 0} />
-
       <header className={styles.chapterHead}>
         <p className={styles.eyebrow}>Chapter {index + 1}</p>
         <h1 className={styles.chapterTitle}>{chapter.title}</h1>

@@ -34,7 +34,7 @@ export async function SiteHeader() {
         </nav>
       ) : (
         !viewer && (
-          <nav className={`${styles.nav} ${styles.watch}`} aria-label="Main">
+          <nav className={styles.nav} aria-label="Main">
             <NavLink href="/stories" className={styles.navLink}>
               Watch live stories
             </NavLink>

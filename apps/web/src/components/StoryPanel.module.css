@@ -90,3 +90,15 @@
     height: 44px;
   }
 }
+
+/* Phones: Chat and History take the whole screen. */
+@media (max-width: 600px) {
+  .slot[data-variant] > .panel {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    width: auto;
+    border-left: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

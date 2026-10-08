@@ -67,10 +67,17 @@
   }
 }
 
-/* The front page's "Watch one being written" covers it where the signed-out header runs out of room. */
+/*
+ * Phones keep the wordmark and the account menus. The wordmark already goes to Stories, and the front
+ * page's "Watch one being written" covers the signed-out link.
+ */
 @media (max-width: 480px) {
-  .watch {
+  .nav {
     display: none;
+  }
+
+  .end {
+    gap: 4px;
   }
 }
 
@@ -127,6 +134,11 @@
   .avatarButton {
     width: 44px;
     height: 44px;
+  }
+
+  .menuItem,
+  .panelFoot .input {
+    min-height: 44px;
   }
 }
 
