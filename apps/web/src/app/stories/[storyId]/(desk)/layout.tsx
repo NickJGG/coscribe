@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getChapters, getEntries, getOpenNoteCounts, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
+import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
 import { addChapter } from "@/lib/actions/chapters";
 import { addEntry } from "@/lib/actions/entries";
@@ -39,23 +40,27 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   ]);
   const writable = myRole && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
+  const reorderable = !!writable && canManageChapters(myRole);
+  const chapterIds = chapters.map((c) => c.id);
   // Rendered here so the menus' Server Actions are bound on the server.
-  const chapterMenus =
-    writable && canManageChapters(myRole)
-      ? Object.fromEntries(
-          chapters.map((chapter, i) => [
+  const chapterMenus = reorderable
+    ? Object.fromEntries(
+        chapters.map((chapter, i) => {
+          const { up, down } = moveTargets(chapterIds, i);
+          return [
             chapter.id,
             <ChapterMenu
               key={chapter.id}
               storyId={story.id}
               chapter={chapter}
-              first={i === 0}
-              last={i === chapters.length - 1}
+              upAfter={up}
+              downAfter={down}
               only={chapters.length === 1}
             />,
-          ])
-        )
-      : undefined;
+          ];
+        })
+      )
+    : undefined;
   const entryMenus = writable
     ? Object.fromEntries(
         entries.map((entry) => [
@@ -103,6 +108,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 entries={entries}
                 member={!!myRole}
                 noteCounts={noteCounts}
+                reorderable={reorderable}
                 chapterMenus={chapterMenus}
                 entryMenus={entryMenus}
                 newChapter={

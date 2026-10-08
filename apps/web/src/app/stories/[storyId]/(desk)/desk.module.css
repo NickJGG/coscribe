@@ -365,6 +365,62 @@
   opacity: 1;
 }
 
+/* A reorderable row: its grip takes the number's place on hover or focus, and always where there's no hover. */
+.sortable {
+  position: relative;
+}
+
+.grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  width: 1.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--faint);
+  cursor: grab;
+  opacity: 0;
+  touch-action: none;
+}
+
+.grip svg {
+  width: 14px;
+  height: 14px;
+}
+
+.sortable:hover .grip,
+.sortable:focus-within .grip,
+.placeholder .grip,
+.lifted .grip {
+  opacity: 1;
+}
+
+.sortable:hover .num,
+.sortable:focus-within .num,
+.placeholder .num,
+.lifted .num {
+  visibility: hidden;
+}
+
+.placeholder {
+  opacity: 0.35;
+}
+
+.lifted {
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  font-weight: 500;
+  cursor: grabbing;
+}
+
+.listError {
+  padding: 0 8px;
+}
+
 .pageRow {
   grid-template-columns: 1.4rem minmax(0, 1fr);
 }
@@ -741,8 +797,13 @@
 }
 
 @media (pointer: coarse) {
-  .itemMenu {
+  .itemMenu,
+  .grip {
     opacity: 1;
+  }
+
+  .sortable .num {
+    visibility: hidden;
   }
 
   .row,

@@ -1,4 +1,4 @@
-import { deleteChapter, moveChapter, renameChapter, setChapterLocked } from "@/lib/actions/chapters";
+import { deleteChapter, moveChapterTo, renameChapter, setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { Dropdown } from "@/components/Dropdown";
 import styles from "./menu.module.css";
@@ -9,14 +9,15 @@ type Chapter = { id: string; title: string; locked: boolean };
 export function ChapterMenu({
   storyId,
   chapter,
-  first,
-  last,
+  upAfter,
+  downAfter,
   only,
 }: {
   storyId: string;
   chapter: Chapter;
-  first: boolean;
-  last: boolean;
+  /** Where Move up and Move down land, as `moveChapterTo`'s `afterId`; `undefined` hides the item. */
+  upAfter?: string | null;
+  downAfter?: string;
   only: boolean;
 }) {
   return (
@@ -44,13 +45,13 @@ export function ChapterMenu({
       <ActionForm action={setChapterLocked.bind(null, storyId, chapter.id, !chapter.locked)}>
         <button className={styles.menuItem}>{chapter.locked ? "Unlock" : "Lock"}</button>
       </ActionForm>
-      {!first && (
-        <ActionForm action={moveChapter.bind(null, storyId, chapter.id, -1)}>
+      {upAfter !== undefined && (
+        <ActionForm action={moveChapterTo.bind(null, storyId, chapter.id, upAfter)}>
           <button className={styles.menuItem}>Move up</button>
         </ActionForm>
       )}
-      {!last && (
-        <ActionForm action={moveChapter.bind(null, storyId, chapter.id, 1)}>
+      {downAfter !== undefined && (
+        <ActionForm action={moveChapterTo.bind(null, storyId, chapter.id, downAfter)}>
           <button className={styles.menuItem}>Move down</button>
         </ActionForm>
       )}

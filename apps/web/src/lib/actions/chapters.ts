@@ -69,12 +69,13 @@ export async function setChapterLocked(storyId: string, chapterId: string, locke
   return null;
 }
 
-export async function moveChapter(storyId: string, chapterId: string, direction: -1 | 1): Promise<ActionResult> {
-  if (!isUuid(storyId) || !isUuid(chapterId)) return INVALID;
+/** Moves the Chapter to just after `afterId`, or first when it's null. */
+export async function moveChapterTo(storyId: string, chapterId: string, afterId: string | null): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isUuid(chapterId) || (afterId !== null && !isUuid(afterId))) return INVALID;
   await requireProfile(`/stories/${storyId}`);
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("move_chapter", { p_chapter: chapterId, p_direction: direction });
+  const { error } = await supabase.rpc("move_chapter_to", { p_chapter: chapterId, p_after: afterId ?? undefined });
   if (error) return errorText(error);
 
   refresh();

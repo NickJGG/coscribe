@@ -497,8 +497,8 @@ isOneToOne: false
 "mark_notifications_read":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
-"move_chapter":
-{ Args: { "p_chapter": string,"p_direction": number }; Returns: undefined
+"move_chapter_to":
+{ Args: { "p_after"?: string,"p_chapter": string }; Returns: undefined
                            },
 "next_free_color":
 { Args: { "p_preferred": string,"p_taken": (string)[] }; Returns: string

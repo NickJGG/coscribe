@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ENTRY_GROUP_LABEL, ENTRY_TYPES, type EntryType } from "@/lib/entries";
 import { joinNames } from "@/lib/presence";
-import { shortWords } from "@/lib/words";
 import { Avatar } from "@/components/Avatar";
-import { PresenceDots, useHereNow, type HereNow } from "@/components/StoryPresence";
+import { useHereNow, type HereNow } from "@/components/StoryPresence";
+import { ChapterList } from "./ChapterList";
 import { useDeskFrame, type SidebarTab } from "./DeskFrame";
 import styles from "./desk.module.css";
 
@@ -22,7 +22,8 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 /**
  * Navigation through a Story: the Overview, (for members) Settings and Story search, then Chapters and
  * Story Bible tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and
- * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id.
+ * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id. When
+ * `reorderable`, Chapters can also be dragged into a new order.
  */
 export function Sidebar({
   storyId,
@@ -31,6 +32,7 @@ export function Sidebar({
   entries,
   member,
   noteCounts,
+  reorderable,
   chapterMenus,
   entryMenus,
   newChapter,
@@ -42,6 +44,7 @@ export function Sidebar({
   entries: Entry[];
   member: boolean;
   noteCounts?: Record<string, number>;
+  reorderable: boolean;
   chapterMenus?: Record<string, React.ReactNode>;
   entryMenus?: Record<string, React.ReactNode>;
   newChapter: React.ReactNode;
@@ -182,49 +185,15 @@ export function Sidebar({
             hidden={tab !== "chapters"}
             onScroll={(e) => (scrollTops.current.chapters = e.currentTarget.scrollTop)}
           >
-            <ol className={styles.list}>
-              {chapters.map((chapter, i) => {
-                const inside = here.filter((h) => h.documentId === chapter.id);
-                const openNotes = noteCounts?.[chapter.id] ?? 0;
-                return (
-                <li key={chapter.id} className={styles.item}>
-                  <Link
-                    href={`/stories/${storyId}/chapters/${chapter.id}`}
-                    scroll={false}
-                    className={styles.row}
-                    aria-current={chapter.id === chapterId ? "page" : undefined}
-                  >
-                    <span className={styles.num}>{i + 1}</span>
-                    <span className={styles.name}>{chapter.title}</span>
-                    <span className={styles.meta}>
-                      {openNotes > 0 && (
-                        <span className={styles.noteCount} title={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
-                          <NoteIcon />
-                          {openNotes}
-                          <span className="sr-only"> open {openNotes === 1 ? "Note" : "Notes"},</span>
-                        </span>
-                      )}
-                      {chapter.locked && (
-                        <>
-                          <LockIcon />
-                          <span className="sr-only">Locked,</span>
-                        </>
-                      )}
-                      {inside.length ? (
-                        <PresenceDots here={inside} />
-                      ) : (
-                        <>
-                          {shortWords(chapter.word_count)}
-                          <span className="sr-only"> words</span>
-                        </>
-                      )}
-                    </span>
-                  </Link>
-                  {chapterMenus && <span className={styles.itemMenu}>{chapterMenus[chapter.id]}</span>}
-                </li>
-                );
-              })}
-            </ol>
+            <ChapterList
+              storyId={storyId}
+              chapters={chapters}
+              chapterId={chapterId}
+              here={here}
+              noteCounts={noteCounts}
+              chapterMenus={chapterMenus}
+              reorderable={reorderable}
+            />
             {newChapter}
           </div>
 
@@ -453,23 +422,6 @@ function SearchIcon() {
     <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
       <circle cx="8.75" cy="8.75" r="5" />
       <path d="m12.5 12.5 4 4" />
-    </svg>
-  );
-}
-
-function NoteIcon() {
-  return (
-    <svg className={styles.noteIcon} viewBox="0 0 20 20" aria-hidden>
-      <path d="M4 4.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9l-3.5 3v-3H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg className={styles.lock} viewBox="0 0 20 20" aria-hidden>
-      <rect x="4.5" y="9" width="11" height="8" rx="1.5" />
-      <path d="M7 9V6.5a3 3 0 0 1 6 0V9" />
     </svg>
   );
 }
