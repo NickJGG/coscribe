@@ -6,24 +6,22 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { refreshSyncAccess } from "@/lib/sync";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
+import { readStoryForm } from "@/lib/story-form";
 import type { MemberRole } from "@/lib/story-roles";
 
 const INVALID = "Something went wrong. Try again.";
 
-function readStoryForm(formData: FormData) {
-  const title = String(formData.get("title") ?? "").trim();
-  const visibility = formData.get("visibility") === "public" ? "public" : "private";
-  const titleError = !title ? "Give the story a title." : title.length > 120 ? "Keep titles under 120 characters." : null;
-  return { title, visibility, titleError } as const;
-}
-
 export async function createStory(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   await requireProfile("/stories");
-  const { title, visibility, titleError } = readStoryForm(formData);
-  if (titleError) return titleError;
+  const { title, visibility, blurb, error: formError } = readStoryForm(formData);
+  if (formError) return formError;
 
   const supabase = await createClient();
-  const { data: storyId, error } = await supabase.rpc("create_story", { p_title: title, p_visibility: visibility });
+  const { data: storyId, error } = await supabase.rpc("create_story", {
+    p_title: title,
+    p_visibility: visibility,
+    p_blurb: blurb ?? undefined,
+  });
   if (error) return errorText(error);
 
   redirect(`/stories/${storyId}`);
@@ -32,13 +30,13 @@ export async function createStory(_prev: ActionResult, formData: FormData): Prom
 export async function updateStory(storyId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
   if (!isUuid(storyId)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);
-  const { title, visibility, titleError } = readStoryForm(formData);
-  if (titleError) return titleError;
+  const { title, visibility, blurb, error: formError } = readStoryForm(formData);
+  if (formError) return formError;
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("stories")
-    .update({ title, visibility })
+    .update({ title, visibility, blurb })
     .eq("id", storyId)
     .select("id");
   if (error) return errorText(error);

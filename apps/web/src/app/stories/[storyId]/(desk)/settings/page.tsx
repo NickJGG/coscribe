@@ -41,7 +41,7 @@ export default async function StorySettingsPage(props: PageProps<"/stories/[stor
         <section className="section">
           <h2>Story</h2>
           <ActionForm action={updateStory.bind(null, story.id)} className={styles.form}>
-            <StoryFields title={story.title} visibility={story.visibility} />
+            <StoryFields title={story.title} blurb={story.blurb} visibility={story.visibility} />
             <div>
               <button className="button button-primary">Save</button>
             </div>

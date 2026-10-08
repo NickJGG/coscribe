@@ -1,11 +1,14 @@
+import { BLURB_MAX } from "@/lib/story-form";
 import styles from "./StoryFields.module.css";
 
-/** Title and Visibility inputs, shared by the create form and the Host's settings form. */
+/** Title, Blurb and Visibility inputs, shared by the create form and the Host's settings form. */
 export function StoryFields({
   title = "",
+  blurb = "",
   visibility = "private",
 }: {
   title?: string;
+  blurb?: string | null;
   visibility?: "public" | "private";
 }) {
   return (
@@ -15,6 +18,24 @@ export function StoryFields({
           Title
         </label>
         <input id="title" name="title" className="input" defaultValue={title} maxLength={120} required />
+      </div>
+
+      <div className={styles.field}>
+        <label htmlFor="blurb" className={styles.label}>
+          Blurb
+        </label>
+        <textarea
+          id="blurb"
+          name="blurb"
+          className={`input ${styles.textarea}`}
+          defaultValue={blurb ?? ""}
+          maxLength={BLURB_MAX}
+          rows={3}
+          aria-describedby="blurb-hint"
+        />
+        <span id="blurb-hint" className={`muted ${styles.hint}`}>
+          Optional. A line or two under the title.
+        </span>
       </div>
 
       <fieldset className={styles.field}>

@@ -150,3 +150,15 @@
   flex-direction: column;
   gap: 6px;
 }
+
+.blurb {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  font-style: italic;
+  font-size: 0.9375rem;
+}

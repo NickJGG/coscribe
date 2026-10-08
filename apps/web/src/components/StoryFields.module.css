@@ -15,3 +15,13 @@
   gap: 8px;
   cursor: pointer;
 }
+
+.textarea {
+  max-width: 480px;
+  padding-block: 8px;
+  resize: vertical;
+}
+
+.hint {
+  font-size: var(--step--1);
+}

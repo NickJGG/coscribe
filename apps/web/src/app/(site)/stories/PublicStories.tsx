@@ -70,6 +70,7 @@ export async function PublicStories() {
                 <Link href={`/stories/${story.id}`} className={styles.title}>
                   {story.title}
                 </Link>
+                {story.blurb && <p className={styles.blurb}>{story.blurb}</p>}
                 <span className={styles.sub}>
                   {story.status === "finished" ? (
                     <>

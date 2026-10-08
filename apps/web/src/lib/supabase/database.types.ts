@@ -233,14 +233,14 @@ isOneToOne: false
                   ]
                 },"stories": {
                   Row: {
-                    "created_at": string,"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
+                    "blurb": string | null,"created_at": string,"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Update: {
-                    "created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Relationships: [
                     
@@ -374,7 +374,7 @@ isOneToOne: false
 { Args: { "p_story": string }; Returns: string
                            },
 "create_story":
-{ Args: { "p_title": string,"p_visibility": Database["public"]['Enums']["story_visibility"] }; Returns: string
+{ Args: { "p_blurb"?: string,"p_title": string,"p_visibility": Database["public"]['Enums']["story_visibility"] }; Returns: string
                            },
 "delete_chapter":
 { Args: { "p_chapter": string }; Returns: undefined
@@ -406,7 +406,7 @@ isOneToOne: false
                            },
 "live_public_stories":
 { Args: Record<PropertyKey, never>; Returns: {
-              "id": string,"title": string,"viewers": number,"writers": number
+              "blurb": string,"id": string,"title": string,"viewers": number,"writers": number
             }[]
                            },
 "mark_notifications_read":
@@ -423,7 +423,7 @@ isOneToOne: false
                            },
 "public_stories":
 { Args: Record<PropertyKey, never>; Returns: {
-              "edited_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"viewers": number,"writers": number
+              "blurb": string,"edited_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"viewers": number,"writers": number
             }[]
                            },
 "remove_member":

@@ -20,7 +20,7 @@ const YOU: Record<MemberRole, string> = { host: "You host", cohost: "You co-host
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]">): Promise<Metadata> {
   const data = await getStory((await props.params).storyId);
-  return { title: data?.story.title ?? "Story" };
+  return { title: data?.story.title ?? "Story", description: data?.story.blurb ?? undefined };
 }
 
 /** The Story's Overview: who's writing now, what changed lately, and who writes it. */
@@ -94,6 +94,15 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
       <header className={styles.heading}>
         <span className="smallcaps">{meta.join(" · ")}</span>
         <h1 className={styles.title}>{story.title}</h1>
+        {story.blurb ? (
+          <p className={styles.blurb}>{story.blurb}</p>
+        ) : (
+          myRole === "host" && (
+            <Link href={`/stories/${story.id}/settings`} className={styles.addBlurb}>
+              Add a blurb
+            </Link>
+          )
+        )}
         <span className={styles.byline}>
           <AvatarStack people={members} />
           <span>

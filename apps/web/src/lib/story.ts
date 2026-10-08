@@ -18,7 +18,7 @@ export const getStory = cache(async (storyId: string) => {
 
   const { data: story } = await supabase
     .from("stories")
-    .select("id, title, visibility, status, created_at, finished_at")
+    .select("id, title, blurb, visibility, status, created_at, finished_at")
     .eq("id", storyId)
     .maybeSingle();
   if (!story) return null;

@@ -47,6 +47,25 @@
   overflow-wrap: anywhere;
 }
 
+.blurb {
+  max-width: var(--measure);
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: var(--step-1);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.addBlurb {
+  align-self: flex-start;
+  color: var(--faint);
+  font-size: 0.875rem;
+}
+
+.addBlurb:hover {
+  color: var(--ink-muted);
+}
+
 .byline {
   display: flex;
   flex-wrap: wrap;

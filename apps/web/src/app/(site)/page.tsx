@@ -39,6 +39,7 @@ export default async function Home() {
                 <Link href={`/stories/${story.id}`} className={styles.title}>
                   {story.title}
                 </Link>
+                {story.blurb && <p className={styles.blurb}>{story.blurb}</p>}
                 <LiveCounts writers={story.writers} viewers={story.viewers} />
               </li>
             ))}

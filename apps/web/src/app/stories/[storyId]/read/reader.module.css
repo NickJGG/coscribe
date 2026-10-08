@@ -181,6 +181,14 @@
   width: 100%;
 }
 
+.blurb {
+  max-width: 32rem;
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
 .byline {
   font-family: var(--font-prose), Georgia, serif;
   font-size: var(--step-1);

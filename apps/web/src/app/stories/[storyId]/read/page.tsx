@@ -8,7 +8,7 @@ import styles from "./reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read">): Promise<Metadata> {
   const data = await getStory((await props.params).storyId);
-  return { title: data?.story.title ?? "Story" };
+  return { title: data?.story.title ?? "Story", description: data?.story.blurb ?? undefined };
 }
 
 const finishedOn = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
@@ -42,6 +42,7 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
       <header className={styles.titlePage}>
         <p className={styles.eyebrow}>A Coscribe story</p>
         <h1 className={styles.bookTitle}>{story.title}</h1>
+        {story.blurb && <p className={styles.blurb}>{story.blurb}</p>}
         <p className={styles.byline}>by {listFormat.format(byline)}</p>
         {ribbon && (
           <span className={styles.ribbon}>
