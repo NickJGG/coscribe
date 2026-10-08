@@ -54,9 +54,8 @@ export async function deleteStory(storyId: string): Promise<ActionResult> {
   await requireProfile(`/stories/${storyId}/settings`);
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("stories").delete().eq("id", storyId).select("id");
+  const { error } = await supabase.rpc("delete_story", { p_story: storyId });
   if (error) return errorText(error);
-  if (!data.length) return errorText({ message: "not_allowed" });
 
   await refreshSyncAccess(storyId);
   redirect("/stories");

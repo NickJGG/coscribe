@@ -1,15 +1,16 @@
 import Link from "next/link";
 import Form from "next/form";
 import { getViewer } from "@/lib/viewer";
-import { getFriendships, getPendingInvites } from "@/lib/connections";
+import { getFriendships } from "@/lib/connections";
 import { signOut } from "@/lib/actions/auth";
 import type { Theme } from "@/lib/actions/profile";
 import { acceptFriendRequest, removeFriendship } from "@/lib/actions/friends";
-import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "./ActionForm";
 import { Avatar } from "./Avatar";
+import { Badge } from "./Badge";
 import { Dropdown } from "./Dropdown";
 import { NavLink } from "./NavLink";
+import { NotificationsMenu } from "./NotificationsMenu";
 import { OnlineFriends } from "./OnlineFriends";
 import { ThemeSwitch } from "./ThemeSwitch";
 import styles from "./SiteHeader.module.css";
@@ -69,7 +70,7 @@ export function AccountMenus({ profile }: { profile: { id: string; username: str
   return (
     <>
       <FriendsMenu userId={profile.id} />
-      <NotificationsMenu userId={profile.id} />
+      <NotificationsMenu />
       <YouMenu profile={profile} />
     </>
   );
@@ -151,58 +152,6 @@ async function FriendsMenu({ userId }: { userId: string }) {
   );
 }
 
-async function NotificationsMenu({ userId }: { userId: string }) {
-  const invites = await getPendingInvites(userId);
-  const label = invites.length ? `Notifications, ${invites.length} unread` : "Notifications";
-
-  return (
-    <Dropdown
-      label={label}
-      triggerClassName={styles.iconButton}
-      panelClassName={styles.panel}
-      trigger={
-        <>
-          <BellIcon />
-          <Badge count={invites.length} />
-        </>
-      }
-    >
-      <div className={styles.panelHead}>
-        <h2>Notifications</h2>
-      </div>
-      <div className={styles.panelBody}>
-        <section className={styles.panelSection}>
-          {invites.length ? (
-            invites.map((invite) => (
-              <div key={invite.id} className={styles.notice}>
-                <Avatar name={invite.inviter.username} color={invite.inviter.author_color} />
-                <div className={styles.noticeText}>
-                  <span>
-                    {invite.inviter.username} invited you to write in{" "}
-                    <Link href={`/stories/${invite.story.id}`} className={styles.storyName}>
-                      {invite.story.title}
-                    </Link>
-                  </span>
-                  <span className={styles.rowActions}>
-                    <ActionForm action={deleteInvite.bind(null, invite.id)}>
-                      <button className="button button-ghost button-tiny">Decline</button>
-                    </ActionForm>
-                    <ActionForm action={acceptInvite.bind(null, invite.id)}>
-                      <button className="button button-primary button-tiny">Join as Writer</button>
-                    </ActionForm>
-                  </span>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className={`muted ${styles.empty}`}>You&rsquo;re all caught up.</p>
-          )}
-        </section>
-      </div>
-    </Dropdown>
-  );
-}
-
 function YouMenu({ profile }: { profile: { username: string; author_color: string; theme: Theme } }) {
   return (
     <Dropdown
@@ -233,29 +182,12 @@ function YouMenu({ profile }: { profile: { username: string; author_color: strin
   );
 }
 
-function Badge({ count }: { count: number }) {
-  return count ? (
-    <span className="badge" aria-hidden>
-      {count}
-    </span>
-  ) : null;
-}
-
 function FriendsIcon() {
   return (
     <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
       <circle cx="7.5" cy="7" r="3" />
       <path d="M2 16.5c.6-2.8 2.8-4.5 5.5-4.5s4.9 1.7 5.5 4.5" />
       <path d="M13 4.2a3 3 0 0 1 0 5.6M15 12.3c1.6.6 2.6 2 3 4.2" />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg className={styles.icon} viewBox="0 0 20 20" aria-hidden>
-      <path d="M5 8a5 5 0 0 1 10 0c0 4 1.5 5.5 2 6H3c.5-.5 2-2 2-6Z" />
-      <path d="M8.2 17a2 2 0 0 0 3.6 0" />
     </svg>
   );
 }

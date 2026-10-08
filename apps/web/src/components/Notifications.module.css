@@ -1,0 +1,109 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 1.45;
+  text-align: left;
+  text-decoration: none;
+}
+
+a.item,
+button.item {
+  cursor: pointer;
+}
+
+a.item:hover,
+button.item:hover {
+  background: var(--wash);
+}
+
+.item[data-unread] {
+  background: var(--accent-wash);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.text b {
+  font-weight: 600;
+}
+
+.story {
+  font-family: var(--font-prose), Georgia, serif;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a.story:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.when {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.unreadDot {
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.actions {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.markAll {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.markAll:hover {
+  color: var(--ink);
+}
+
+.empty {
+  padding: 14px 16px;
+}
+
+.foot a {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.foot a:hover {
+  color: var(--ink);
+}

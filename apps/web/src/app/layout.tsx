@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Literata } from "next/font/google";
 import { getViewer } from "@/lib/viewer";
+import { createClient } from "@/lib/supabase/server";
+import { loadLatestNotifications } from "@/lib/notifications";
 import { Heartbeat } from "@/components/Heartbeat";
+import { NotificationsProvider } from "@/components/Notifications";
 import "./globals.css";
 
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
@@ -20,6 +23,7 @@ export default async function RootLayout({
 }>) {
   const profile = (await getViewer())?.profile;
   const theme = profile?.theme;
+  const notifications = profile ? await loadLatestNotifications(await createClient()) : null;
 
   return (
     <html
@@ -28,7 +32,13 @@ export default async function RootLayout({
       data-theme={theme && theme !== "system" ? theme : undefined}
     >
       <body>
-        {children}
+        {profile && notifications ? (
+          <NotificationsProvider userId={profile.id} initial={notifications}>
+            {children}
+          </NotificationsProvider>
+        ) : (
+          children
+        )}
         {profile && <Heartbeat />}
       </body>
     </html>
