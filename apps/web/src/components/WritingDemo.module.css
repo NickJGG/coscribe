@@ -8,10 +8,70 @@
   background: var(--paper-raised);
 }
 
-/* Room for both lines at full length, so the box never jumps while theo types. */
-.demo .prose {
-  min-height: 10.5em;
+.stage {
+  position: relative;
+  transition: opacity 0.4s;
+}
+
+.stage[data-fading] {
+  opacity: 0;
+}
+
+.stage .prose {
+  min-height: 0;
   font-size: 1.0625rem;
+}
+
+.stage .prose :global(span[data-author]) {
+  transition: background-color 0.3s;
+}
+
+/* Room for all three paragraphs at full length, so the box never jumps while they type. */
+.stage .hero {
+  min-height: 13em;
+}
+
+.small {
+  padding: 22px 18px 12px;
+}
+
+/* Every small demo gets the same stage, so the row lines up and nothing jumps mid-loop. */
+.small .stage {
+  height: 14.5rem;
+  overflow: hidden;
+}
+
+.small .prose {
+  font-size: 0.9375rem;
+}
+
+.note {
+  margin-top: 12px;
+  transition:
+    opacity 0.4s,
+    translate 0.4s;
+}
+
+.note[data-resolved] {
+  opacity: 0;
+  translate: 0 -6px;
+}
+
+.noteBody {
+  min-height: 1.45em;
+}
+
+.entry {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.entry[data-open] {
+  opacity: 1;
+}
+
+.stage [data-hover] {
+  text-decoration-color: var(--ink-muted);
 }
 
 .foot {
@@ -20,6 +80,16 @@
   justify-content: space-between;
   align-items: center;
   gap: 8px;
+  min-height: 28px;
   color: var(--ink-muted);
   font-size: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage,
+  .note,
+  .entry,
+  .stage .prose :global(span[data-author]) {
+    transition: none;
+  }
 }

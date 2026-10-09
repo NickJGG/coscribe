@@ -35,6 +35,13 @@
   gap: 8px;
 }
 
+.demoRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 24px;
+}
+
 .now {
   grid-column: 1 / -1;
   display: flex;

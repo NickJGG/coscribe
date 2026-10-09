@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
 import { getLiveStories } from "@/lib/front-page";
 import { LiveCounts } from "@/components/LiveCounts";
-import { WritingDemo } from "@/components/WritingDemo";
+import { AuthorsDemo, BibleDemo, NotesDemo, WritingDemo } from "@/components/WritingDemo";
 import styles from "./home.module.css";
 
 export default async function Home() {
@@ -29,6 +29,12 @@ export default async function Home() {
       </div>
 
       <WritingDemo />
+
+      <div className={styles.demoRow}>
+        <NotesDemo />
+        <AuthorsDemo />
+        <BibleDemo />
+      </div>
 
       {live.length > 0 && (
         <section className={styles.now}>
