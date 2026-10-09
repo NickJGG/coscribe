@@ -1,15 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "./Badge";
-import { Dropdown } from "./Dropdown";
-import { MarkAllReadButton, NotificationItem, useNotifications } from "./Notifications";
+import { Dropdown, useDropdownOpen } from "./Dropdown";
+import { NotificationItem, useNotifications } from "./Notifications";
 import headerStyles from "./SiteHeader.module.css";
 import styles from "./Notifications.module.css";
 
-/** The bell. Opening it marks nothing read: items are read when clicked, or with "Mark all read". */
+/**
+ * The bell. Opening it marks every Notification read, and anything arriving while it's open too; what was
+ * unread stays highlighted until it closes.
+ */
 export function NotificationsMenu() {
-  const { latest, unread } = useNotifications();
+  const { unread } = useNotifications();
   const label = unread ? `Notifications, ${unread} unread` : "Notifications";
 
   return (
@@ -24,15 +28,40 @@ export function NotificationsMenu() {
         </>
       }
     >
+      <NotificationsPanel />
+    </Dropdown>
+  );
+}
+
+function NotificationsPanel() {
+  const open = useDropdownOpen();
+  const { latest, unread, markAllRead } = useNotifications();
+  const [wasOpen, setWasOpen] = useState(open);
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
+
+  // Taken during render, before markAllRead's optimistic update clears read_at's evidence.
+  const unreadShown = latest.filter((n) => !n.read_at).map((n) => n.id);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    setFresh(new Set(open ? unreadShown : []));
+  } else if (open && unreadShown.some((id) => !fresh.has(id))) {
+    setFresh(new Set([...fresh, ...unreadShown]));
+  }
+
+  useEffect(() => {
+    if (open && unread > 0) void markAllRead();
+  }, [open, unread, markAllRead]);
+
+  return (
+    <>
       <div className={headerStyles.panelHead}>
         <h2>Notifications</h2>
-        <MarkAllReadButton className={styles.markAll} />
       </div>
       <div className={headerStyles.panelBody}>
         {latest.length ? (
           <div className={styles.list}>
             {latest.map((n) => (
-              <NotificationItem key={n.id} notification={n} />
+              <NotificationItem key={n.id} notification={n} highlighted={fresh.has(n.id)} />
             ))}
           </div>
         ) : (
@@ -44,7 +73,7 @@ export function NotificationsMenu() {
           <Link href="/notifications">See all &rarr;</Link>
         </div>
       )}
-    </Dropdown>
+    </>
   );
 }
 

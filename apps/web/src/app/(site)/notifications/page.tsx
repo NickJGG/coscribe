@@ -3,8 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { NOTIFICATION_COLUMNS, PAGE_SIZE } from "@/lib/notifications";
-import { NotificationItem } from "@/components/Notifications";
-import { MarkAllRead } from "./MarkAllRead";
+import { MarkAllReadOnVisit, NotificationItem } from "@/components/Notifications";
 import styles from "./notifications.module.css";
 
 export const metadata: Metadata = { title: "Notifications" };
@@ -29,13 +28,13 @@ export default async function NotificationsPage(props: PageProps<"/notifications
     <div className="page">
       <div className={styles.head}>
         <h1>Notifications</h1>
-        <MarkAllRead />
+        <MarkAllReadOnVisit />
       </div>
 
       {notifications.length ? (
         <div className={styles.list}>
           {notifications.map((n) => (
-            <NotificationItem key={n.id} notification={n} />
+            <NotificationItem key={n.id} notification={n} highlighted={!n.read_at} />
           ))}
         </div>
       ) : (

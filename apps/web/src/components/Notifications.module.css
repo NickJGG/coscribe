@@ -22,13 +22,7 @@
   text-decoration: none;
 }
 
-a.item,
-button.item {
-  cursor: pointer;
-}
-
-a.item:hover,
-button.item:hover {
+a.item:hover {
   background: var(--wash);
 }
 
@@ -80,20 +74,6 @@ a.story:hover {
   margin-top: 8px;
 }
 
-.markAll {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: var(--step--1);
-  cursor: pointer;
-}
-
-.markAll:hover {
-  color: var(--ink);
-}
-
 .empty {
   padding: 14px 16px;
 }
@@ -106,10 +86,4 @@ a.story:hover {
 
 .foot a:hover {
   color: var(--ink);
-}
-
-@media (pointer: coarse) {
-  .markAll {
-    min-height: 44px;
-  }
 }

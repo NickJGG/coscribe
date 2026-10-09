@@ -18,7 +18,6 @@ import { Avatar } from "./Avatar";
 import styles from "./Notifications.module.css";
 
 type NotificationsValue = LatestNotifications & {
-  markRead: (id: string) => void;
   markAllRead: () => Promise<void>;
 };
 
@@ -70,28 +69,13 @@ export function NotificationsProvider({
     };
   }, [supabase, userId]);
 
-  const markRead = useCallback(
-    (id: string) => {
-      const readAt = new Date().toISOString();
-      setState((current) => {
-        const wasUnread = current.latest.some((n) => n.id === id && !n.read_at);
-        return {
-          latest: current.latest.map((n) => (n.id === id && !n.read_at ? { ...n, read_at: readAt } : n)),
-          unread: wasUnread ? Math.max(0, current.unread - 1) : current.unread,
-        };
-      });
-      void supabase.from("notifications").update({ read_at: readAt }).eq("id", id).is("read_at", null);
-    },
-    [supabase]
-  );
-
   const markAllRead = useCallback(async () => {
     const readAt = new Date().toISOString();
     setState((current) => ({ latest: current.latest.map((n) => ({ ...n, read_at: n.read_at ?? readAt })), unread: 0 }));
     await supabase.rpc("mark_notifications_read");
   }, [supabase]);
 
-  const value = useMemo(() => ({ ...state, markRead, markAllRead }), [state, markRead, markAllRead]);
+  const value = useMemo(() => ({ ...state, markAllRead }), [state, markAllRead]);
 
   return <NotificationsContext value={value}>{children}</NotificationsContext>;
 }
@@ -103,21 +87,11 @@ export function useNotifications() {
 }
 
 /**
- * One Notification. Clicking it marks it read; it links to what it's about while that still exists.
- * Invites carry Join and Decline.
+ * One Notification, linking to what it's about while that still exists. Invites carry Join and Decline.
+ * `highlighted` marks it as new to whoever opened the list, whether or not it has since been read.
  */
-export function NotificationItem({ notification: n }: { notification: Notification }) {
-  const { markRead } = useNotifications();
-  // The "See all" page is server-rendered, so it remembers its own clicks.
-  const [readHere, setReadHere] = useState(false);
-  const unread = !n.read_at && !readHere;
+export function NotificationItem({ notification: n, highlighted }: { notification: Notification; highlighted: boolean }) {
   const href = notificationHref(n);
-  const read = () => {
-    if (!unread) return;
-    setReadHere(true);
-    markRead(n.id);
-  };
-
   const inviteId = n.kind === "invite_received" ? n.invite_id : null;
   const body = (
     <>
@@ -137,13 +111,13 @@ export function NotificationItem({ notification: n }: { notification: Notificati
           {relativeTime(Date.parse(n.created_at))}
         </time>
       </span>
-      {unread && <span className={styles.unreadDot} aria-label="Unread" />}
+      {highlighted && <span className={styles.unreadDot} aria-label="New" />}
     </>
   );
 
   if (inviteId) {
     return (
-      <div className={styles.item} data-unread={unread || undefined}>
+      <div className={styles.item} data-unread={highlighted || undefined}>
         {body}
         <span className={styles.actions}>
           <ActionForm action={deleteInvite.bind(null, inviteId)}>
@@ -157,30 +131,22 @@ export function NotificationItem({ notification: n }: { notification: Notificati
     );
   }
 
-  if (href) {
-    return (
-      <Link href={href} className={styles.item} data-unread={unread || undefined} onClick={read}>
-        {body}
-      </Link>
-    );
-  }
-
-  return unread ? (
-    <button type="button" className={styles.item} data-unread onClick={read}>
+  return href ? (
+    <Link href={href} className={styles.item} data-unread={highlighted || undefined}>
       {body}
-    </button>
+    </Link>
   ) : (
-    <div className={styles.item}>{body}</div>
+    <div className={styles.item} data-unread={highlighted || undefined}>
+      {body}
+    </div>
   );
 }
 
-export function MarkAllReadButton({ className, onDone }: { className?: string; onDone?: () => void }) {
-  const { unread, markAllRead } = useNotifications();
-  if (!unread) return null;
-
-  return (
-    <button type="button" className={className} onClick={() => void markAllRead().then(onDone)}>
-      Mark all read
-    </button>
-  );
+/** Marks every Notification read once, on mount: what the page showed unread stays highlighted from its render. */
+export function MarkAllReadOnVisit() {
+  const { markAllRead } = useNotifications();
+  useEffect(() => {
+    void markAllRead();
+  }, [markAllRead]);
+  return null;
 }
