@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AUTHORS, BIBLE, buildFrames, type DemoScript, type Frame, NOTES, type Step, TOGETHER } from "./writing-demo";
+import { AUTHORS, BIBLE, buildFrames, type DemoScript, type Frame, NOTES, peakFrames, type Step, TOGETHER } from "./writing-demo";
 
 const text = (f: Frame, p: number) => f.paras[p].map((x) => x.c).join("");
 const last = (s: DemoScript) => {
@@ -120,5 +120,14 @@ describe("the shipped demos", () => {
     const { frames } = buildFrames(TOGETHER);
     const f = frames.find((x) => x.paras.length === 3 && text(x, 2) === "Nobody had painted the eleventh.");
     expect(f && text(f, 1)).toBe("Eleven. There were only ever ten bells on the spit, and Wren had painted every one of them.");
+  });
+});
+
+describe("peakFrames", () => {
+  it("keeps the fullest frame for each set of flags", () => {
+    const peaks = peakFrames(buildFrames(NOTES));
+    const resolving = peaks.find((f) => f.flags.resolveShown && !f.flags.resolved);
+    expect(resolving?.fields).toEqual({ nt: "Wasn't it ten in Chapter 1?", nr: "It was. Fixing it." });
+    expect(peakFrames(buildFrames(BIBLE)).some((f) => f.flags.entryCard)).toBe(true);
   });
 });

@@ -22,6 +22,12 @@
   font-size: 1.0625rem;
 }
 
+.stage :global(.collaboration-carets__label[data-flip]) {
+  left: auto;
+  right: -1px;
+  border-radius: 4px 4px 0 4px;
+}
+
 .stage .prose :global(span[data-author]) {
   transition: background-color 0.3s;
 }
@@ -35,10 +41,28 @@
   padding: 22px 18px 12px;
 }
 
-/* Every small demo gets the same stage, so the row lines up and nothing jumps mid-loop. */
+/*
+ * --stage-height is measured from the demo's peak frames, and flex lets it grow to match its row. The bleed
+ * keeps caret labels from being clipped at the sides and top.
+ */
 .small .stage {
-  height: 14.5rem;
+  --bleed: 16px;
+  flex: 1;
+  min-height: calc(var(--stage-height, 17rem) + var(--bleed));
+  margin: calc(-1 * var(--bleed)) calc(-1 * var(--bleed)) 0;
+  padding: var(--bleed) var(--bleed) 0;
   overflow: hidden;
+}
+
+.layer {
+  position: relative;
+}
+
+.sizer {
+  position: absolute;
+  inset: var(--bleed) var(--bleed) auto;
+  overflow: hidden;
+  visibility: hidden;
 }
 
 .small .prose {

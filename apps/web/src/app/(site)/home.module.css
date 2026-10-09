@@ -2,7 +2,13 @@
   width: 100%;
   max-width: calc(62rem + 2 * var(--gutter));
   margin: 0 auto;
-  padding: 56px var(--gutter) 48px;
+  padding: 56px var(--gutter) 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 112px;
+}
+
+.hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   align-items: center;
@@ -11,8 +17,12 @@
 
 @media (max-width: 760px) {
   .page {
-    grid-template-columns: minmax(0, 1fr);
     padding-top: 28px;
+    gap: 72px;
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
 }
@@ -35,32 +45,109 @@
   gap: 8px;
 }
 
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.headRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.head h2,
+.closing h2 {
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  max-width: 36rem;
+  color: var(--ink-muted);
+}
+
+.more {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
 .demoRow {
-  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
   gap: 24px;
 }
 
-.now {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* A subgrid, so demos, titles and captions each line up across the row. */
+.demoCard {
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: 12px;
 }
 
-.now ul {
+.demoCard h3 {
+  font-size: 1.125rem;
+}
+
+.caption {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.steps {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 12px;
+  gap: 40px;
+  counter-reset: step;
 }
 
-.now li {
+.steps li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step);
+  margin-bottom: 4px;
+  color: var(--accent);
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.steps h3 {
+  font-size: 1.25rem;
+}
+
+.steps p {
+  color: var(--ink-muted);
+}
+
+.stories {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 24px;
+}
+
+.stories li {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px 14px;
+  padding: 16px 18px;
   border: 1px solid var(--hair);
   border-radius: var(--radius);
 }
@@ -87,4 +174,24 @@
   font-family: var(--font-prose), Georgia, serif;
   font-style: italic;
   font-size: 0.9375rem;
+}
+
+.counts {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.closing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  padding-top: 88px;
+  border-top: 1px solid var(--hair);
+  text-align: center;
+}
+
+.closing .lede {
+  margin-top: -6px;
 }

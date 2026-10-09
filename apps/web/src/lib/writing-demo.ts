@@ -202,6 +202,26 @@ export function buildFrames(script: DemoScript): Demo {
   return { frames, still: script.still };
 }
 
+/**
+ * The frames a demo could be tallest at: for each set of flags that are on, the frame with the most text. Rendering
+ * just these is enough to measure the height the demo needs over its whole loop.
+ */
+export function peakFrames(demo: Demo): Frame[] {
+  const peaks = new Map<string, { frame: Frame; size: number }>();
+  for (const frame of demo.frames) {
+    const key = Object.keys(frame.flags)
+      .filter((k) => frame.flags[k])
+      .sort()
+      .join();
+    const size =
+      frame.paras.reduce((n, p) => n + p.length + 1, 0) +
+      Object.values(frame.fields).reduce((n, f) => n + f.length, 0);
+    const best = peaks.get(key);
+    if (!best || size > best.size) peaks.set(key, { frame, size });
+  }
+  return [...peaks.values()].map((p) => p.frame);
+}
+
 /** maya and theo type at once; theo slips "tarred " into maya's sentence while she's still finishing it. */
 export const TOGETHER: DemoScript = {
   paras: [[["maya", "The bells began at a quarter past two"]], [["theo", "Eleven. There were only ever ten"]]],

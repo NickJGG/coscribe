@@ -470,6 +470,11 @@ isOneToOne: false
 "delete_story":
 { Args: { "p_story": string }; Returns: undefined
                            },
+"finished_public_stories":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "blurb": string,"chapters": number,"id": string,"title": string,"writers": number
+            }[]
+                           },
 "forget_story_notifications":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined
                            },

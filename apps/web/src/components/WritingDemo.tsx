@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { authorColorCss } from "@/lib/profile-rules";
 import {
   AUTHORS,
@@ -10,9 +11,11 @@ import {
   type DemoChar,
   type Frame,
   NOTES,
+  peakFrames,
   TOGETHER,
   type WriterId,
 } from "@/lib/writing-demo";
+import { Authorship } from "./Authorship";
 import { Avatar, AvatarStack, type AvatarPerson } from "./Avatar";
 import mentions from "./EntryMentions.module.css";
 import prose from "./LiveDocument.module.css";
@@ -25,6 +28,8 @@ const WRITERS: Record<WriterId, AvatarPerson> = {
   theo: { id: "theo", name: "theo", color: "#12a594" },
   juno: { id: "juno", name: "juno", color: "#d6409f" },
 };
+
+const AUTHORS_LIST = Object.values(WRITERS);
 
 const DEMOS = {
   together: buildFrames(TOGETHER),
@@ -89,36 +94,42 @@ export function WritingDemo() {
 
 /** A Note pinned to a passage, answered, fixed and Resolved. */
 export function NotesDemo() {
-  const { ref, frame } = useDemoFrame(DEMOS.notes, true);
-  const { flags, fields } = frame;
-
   return (
     <SmallDemo
-      figureRef={ref}
-      frame={frame}
+      demo={DEMOS.notes}
       writers={["maya", "theo"]}
       label="An example of a Note pinned to a passage, answered and Resolved"
-    >
-      <DemoProse frame={frame} />
+      render={(frame) => <NoteFrame frame={frame} />}
+    />
+  );
+}
+
+function NoteFrame({ frame }: { frame: Frame }) {
+  const { flags, fields } = frame;
+  return (
+    <>
+      <DemoProse frame={frame} activeNote={flags.noteOpen && !flags.resolved} />
       {flags.noteOpen && (
         <div className={`${notes.card} ${styles.note}`} data-active data-resolved={flags.resolved || undefined}>
-          <div className={notes.quote}>Eleven bells</div>
+          <blockquote className={notes.quote}>Eleven bells</blockquote>
           <NoteMessage who="theo" body={fields.nt} />
           {flags.replyOpen && (
-            <ul className={notes.replies}>
+            <ol className={notes.replies}>
               <li>
                 <NoteMessage who="maya" body={fields.nr} />
               </li>
-            </ul>
+            </ol>
           )}
           {flags.resolveShown && (
             <div className={notes.actions}>
-              <span className={`button button-ghost button-tiny ${notes.resolve}`}>&#10003; Resolve</span>
+              <button type="button" className={`button button-ghost button-tiny ${notes.resolve}`}>
+                &#10003; Resolve
+              </button>
             </div>
           )}
         </div>
       )}
-    </SmallDemo>
+    </>
   );
 }
 
@@ -128,10 +139,10 @@ function NoteMessage({ who, body }: { who: WriterId; body?: string }) {
       <Avatar name={WRITERS[who].name} color={WRITERS[who].color} size="sm" />
       <div className={notes.messageMain}>
         <div className={notes.byline}>
-          <span className={notes.name}>{who}</span>
-          <span className={notes.when}>now</span>
+          <b className={notes.name}>{who}</b>
+          <span className={notes.when}>just now</span>
         </div>
-        <div className={`${notes.body} ${styles.noteBody}`}>{body}</div>
+        <p className={`${notes.body} ${styles.noteBody}`}>{body}</p>
       </div>
     </div>
   );
@@ -139,125 +150,176 @@ function NoteMessage({ who, body }: { who: WriterId; body?: string }) {
 
 /** Show authors tints each Writer's words, and juno types on in her Author Color. */
 export function AuthorsDemo() {
-  const { ref, frame } = useDemoFrame(DEMOS.authors, true);
-
   return (
     <SmallDemo
-      figureRef={ref}
-      frame={frame}
+      demo={DEMOS.authors}
       writers={["maya", "theo", "juno"]}
       label="An example of Show authors tinting each Writer's words in their Author Color"
-      footer={
+      footer={(frame) => (
         <span inert>
           <Switch checked={!!frame.flags.showAuthors} onChange={() => {}}>
             Show authors
           </Switch>
         </span>
-      }
-    >
-      <DemoProse frame={frame} />
-    </SmallDemo>
+      )}
+      render={(frame) => <DemoProse frame={frame} />}
+    />
   );
 }
 
 /** An Alias becomes an Entry Mention and its Entry card opens under it. */
 export function BibleDemo() {
-  const { ref, frame } = useDemoFrame(DEMOS.bible, true);
-  const stage = useRef<HTMLDivElement>(null);
-  const card = useRef<HTMLDivElement>(null);
-  const open = !!frame.flags.entryCard;
-
-  useLayoutEffect(() => {
-    const mention = stage.current?.querySelector("[data-mention]");
-    if (!mention || !card.current || !stage.current) return;
-    const at = mention.getBoundingClientRect();
-    const box = stage.current.getBoundingClientRect();
-    card.current.style.top = `${at.bottom - box.top}px`;
-    card.current.style.setProperty("--x", `${at.left - box.left}px`);
-  }, [frame]);
-
   return (
     <SmallDemo
-      figureRef={ref}
-      stageRef={stage}
-      frame={frame}
+      demo={DEMOS.bible}
       writers={["maya", "theo"]}
       label="An example of a Story Bible name underlined as it's typed, with its Entry shown"
-    >
-      <DemoProse frame={frame} hoverMention={open} />
-      <div ref={card} className={`${mentions.card} ${styles.entry}`} data-open={open || undefined}>
-        <span className="smallcaps">Character</span>
-        <span className={mentions.name}>Keeper Aldous</span>
-        <span className={mentions.description}>Keeps the light on the Lantern Spit.</span>
-        <span className={mentions.preview}>
-          Took the post the winter the eleventh boat went down, and has rung the bells at every spring tide since.
-          Will not speak of his brother.
-        </span>
-        <span className={mentions.open}>Open Entry &rarr;</span>
-      </div>
-    </SmallDemo>
+      place={placeEntryCard}
+      render={(frame) => {
+        const open = !!frame.flags.entryCard;
+        return (
+          <>
+            <DemoProse frame={frame} hoverMention={open} />
+            <div className={`${mentions.card} ${styles.entry}`} data-entry-card data-open={open || undefined}>
+              <span className="smallcaps">Character</span>
+              <strong className={mentions.name}>Keeper Aldous</strong>
+              <p className={mentions.description}>Keeps the light on the Lantern Spit.</p>
+              <p className={mentions.preview}>
+                Took the post the winter the eleventh boat went down, and has rung the bells at every spring tide
+                since. Will not speak of his brother.
+              </p>
+              <Link href="/stories" className={mentions.open}>
+                Open Entry &rarr;
+              </Link>
+            </div>
+          </>
+        );
+      }}
+    />
   );
 }
 
+function placeEntryCard(layer: HTMLElement) {
+  const mention = layer.querySelector("[data-mention]");
+  const card = layer.querySelector<HTMLElement>("[data-entry-card]");
+  if (!mention || !card) return;
+  const at = mention.getBoundingClientRect();
+  const box = layer.getBoundingClientRect();
+  card.style.top = `${at.bottom - box.top}px`;
+  card.style.setProperty("--x", `${at.left - box.left}px`);
+}
+
+/**
+ * A small demo's card. Its stage is exactly as tall as the demo's tallest moment: each peak frame is rendered
+ * invisibly and measured, again whenever the width or fonts change, so nothing is cut off and nothing jumps.
+ */
 function SmallDemo({
-  figureRef,
-  stageRef,
-  frame,
+  demo,
   writers,
   label,
+  render,
+  place,
   footer,
-  children,
 }: {
-  figureRef: React.Ref<HTMLElement>;
-  stageRef?: React.Ref<HTMLDivElement>;
-  frame: Frame;
+  demo: Demo;
   writers: WriterId[];
   label: string;
-  footer?: React.ReactNode;
-  children: React.ReactNode;
+  render: (frame: Frame) => React.ReactNode;
+  place?: (layer: HTMLElement) => void;
+  footer?: (frame: Frame) => React.ReactNode;
 }) {
+  const { ref, frame } = useDemoFrame(demo, true);
+  const peaks = useMemo(() => peakFrames(demo), [demo]);
+  const stage = useRef<HTMLDivElement>(null);
+  const live = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (live.current) place?.(live.current);
+  }, [frame, place]);
+
+  useLayoutEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const sizers = [...el.querySelectorAll<HTMLElement>("[data-sizer]")];
+    const measure = () => {
+      for (const s of sizers) place?.(s);
+      el.style.setProperty("--stage-height", `${Math.max(...sizers.map((s) => s.scrollHeight))}px`);
+      if (live.current) place?.(live.current);
+    };
+    const observer = new ResizeObserver(measure);
+    for (const s of sizers) observer.observe(s);
+    return () => observer.disconnect();
+  }, [place]);
+
   return (
-    <figure ref={figureRef} className={`${styles.demo} ${styles.small}`} aria-label={label}>
-      <div ref={stageRef} className={styles.stage} data-fading={frame.fading} inert aria-hidden>
-        {children}
+    <figure ref={ref} className={`${styles.demo} ${styles.small}`} aria-label={label}>
+      <div ref={stage} className={styles.stage} data-fading={frame.fading} inert aria-hidden>
+        <div ref={live} className={styles.layer}>
+          {render(frame)}
+        </div>
+        {peaks.map((peak, i) => (
+          <div key={i} className={`${styles.layer} ${styles.sizer}`} data-sizer>
+            {render(peak)}
+          </div>
+        ))}
       </div>
       <figcaption className={styles.foot}>
         <AvatarStack people={writers.map((w) => WRITERS[w])} size="sm" />
-        {footer}
+        {footer?.(frame)}
       </figcaption>
     </figure>
   );
 }
 
 /** A frame's paragraphs as runs of one author, highlight and mention, with the visible carets spliced in. */
-function DemoProse({ frame, className, hoverMention }: { frame: Frame; className?: string; hoverMention?: boolean }) {
+function DemoProse({
+  frame,
+  className,
+  hoverMention,
+  activeNote,
+}: {
+  frame: Frame;
+  className?: string;
+  hoverMention?: boolean;
+  activeNote?: boolean;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+
+  // A caret at the end of a line would push its label past the edge, where it's clipped; flip it to the left.
+  useLayoutEffect(() => {
+    if (!box.current) return;
+    const right = box.current.getBoundingClientRect().right;
+    for (const label of box.current.querySelectorAll<HTMLElement>(".collaboration-carets__label")) {
+      delete label.dataset.flip;
+      if (label.getBoundingClientRect().right > right) label.dataset.flip = "";
+    }
+  }, [frame]);
+
   return (
-    <div
-      className={`${prose.prose} ${prose.authorship} ${styles.prose} ${className ?? ""}`}
-      data-show-authors={frame.flags.showAuthors || undefined}
-    >
-      {frame.paras.map((para, p) => (
-        <p key={p}>
-          {para.length === 0 && "​"}
-          {runs(frame, para, p).map((run, i) =>
-            "caret" in run ? (
-              <Caret key={i} who={run.caret} />
-            ) : (
-              <span
-                key={i}
-                data-author={run.a}
-                data-mention={run.m || undefined}
-                data-hover={(run.m && hoverMention) || undefined}
-                className={`${run.h ? notes.highlight : ""} ${run.m ? mentions.entryMention : ""}`}
-                style={{ "--author-tint": authorColorCss(WRITERS[run.a].color) } as React.CSSProperties}
-              >
-                {run.text}
-              </span>
-            ),
-          )}
-        </p>
-      ))}
-    </div>
+    <Authorship authors={AUTHORS_LIST} show={!!frame.flags.showAuthors} bars={false}>
+      <div ref={box} className={`${prose.prose} ${styles.prose} ${className ?? ""}`}>
+        {frame.paras.map((para, p) => (
+          <p key={p}>
+            {para.length === 0 && "​"}
+            {runs(frame, para, p).map((run, i) =>
+              "caret" in run ? (
+                <Caret key={i} who={run.caret} />
+              ) : (
+                <span
+                  key={i}
+                  data-author={run.a}
+                  data-mention={run.m || undefined}
+                  data-hover={(run.m && hoverMention) || undefined}
+                  className={`${run.h ? notes.highlight : ""} ${run.h && activeNote ? notes.active : ""} ${run.m ? mentions.entryMention : ""}`}
+                >
+                  {run.text}
+                </span>
+              ),
+            )}
+          </p>
+        ))}
+      </div>
+    </Authorship>
   );
 }
 

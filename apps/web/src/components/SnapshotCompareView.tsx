@@ -18,7 +18,7 @@ import {
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
 import { authorColorCss } from "@/lib/profile-rules";
 import { DeskToolbar } from "./DeskToolbar";
-import { Authorship, type StoryAuthor } from "./LiveDocument";
+import { Authorship, type StoryAuthor } from "./Authorship";
 import { Text } from "./ProseView";
 import { usePhone, useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
 import { usePanelOpen, useStoryPanel } from "./StoryPanel";

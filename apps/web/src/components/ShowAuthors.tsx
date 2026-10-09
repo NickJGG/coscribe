@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Authorship, type StoryAuthor } from "./LiveDocument";
+import { Authorship, type StoryAuthor } from "./Authorship";
 import { Switch } from "./Switch";
 
 /** The "Show authors" switch around already-rendered text, for the Reader View. */
