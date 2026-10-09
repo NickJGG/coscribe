@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { authorColorCss } from "@/lib/profile-rules";
 import { toStoredBody } from "@/lib/writer-mentions";
+import { useQuietToasts } from "./Notifications";
 import { Panel, usePanelOpen, useStoryPanel } from "./StoryPanel";
 import { usePeople, useStoryMembers } from "./StoryMembers";
 import { WriterMentionPicker, useWriterMentionPicker } from "./WriterMentionPicker";
@@ -39,6 +40,7 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
   const addUnread = panel?.addUnread;
   const showPanel = panel?.show;
   const open = usePanelOpen("chat");
+  const quiet = useQuietToasts();
   const { members } = useStoryMembers();
   const linked = useSearchParams().get("chat");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,6 +58,12 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
   useEffect(() => {
     openRef.current = open;
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !quiet) return;
+    quiet.setChatOpenFor(storyId);
+    return () => quiet.setChatOpenFor(null);
+  }, [open, storyId, quiet]);
 
   const loadLatest = useCallback(async () => {
     const { data, error } = await supabase

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Badge } from "./Badge";
 import { Dropdown, useDropdownOpen } from "./Dropdown";
-import { NotificationItem, useNotifications } from "./Notifications";
+import { NotificationItem, useNotifications, useQuietToasts } from "./Notifications";
 import headerStyles from "./SiteHeader.module.css";
 import styles from "./Notifications.module.css";
 
@@ -36,6 +36,7 @@ export function NotificationsMenu() {
 function NotificationsPanel() {
   const open = useDropdownOpen();
   const { latest, unread, markAllRead } = useNotifications();
+  const quiet = useQuietToasts();
   const [wasOpen, setWasOpen] = useState(open);
   const [fresh, setFresh] = useState<ReadonlySet<string>>(new Set());
 
@@ -51,6 +52,12 @@ function NotificationsPanel() {
   useEffect(() => {
     if (open && unread > 0) void markAllRead();
   }, [open, unread, markAllRead]);
+
+  useEffect(() => {
+    if (!open || !quiet) return;
+    quiet.setBellOpen(true);
+    return () => quiet.setBellOpen(false);
+  }, [open, quiet]);
 
   return (
     <>

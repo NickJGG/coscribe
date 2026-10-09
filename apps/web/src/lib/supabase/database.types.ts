@@ -497,6 +497,9 @@ isOneToOne: false
               "blurb": string,"id": string,"title": string,"viewers": number,"writers": number
             }[]
                            },
+"mark_notification_read":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
 "mark_notifications_read":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
