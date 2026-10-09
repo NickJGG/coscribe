@@ -104,6 +104,10 @@ export function notificationHref(n: Pick<Notification, "kind" | "story_id" | "no
     const chapter = detailText(n.detail, "chapter_id");
     return chapter ? `${story}/chapters/${chapter}` : story;
   }
+  if (n.kind === "chat_mention") {
+    const message = detailText(n.detail, "message_id");
+    return message ? `${story}?chat=${message}` : story;
+  }
   if (n.kind === "story_finished") return `${story}/read`;
   return story;
 }

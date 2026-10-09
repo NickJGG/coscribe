@@ -26,6 +26,20 @@
   margin-top: 2px;
 }
 
+.message,
+.grouped {
+  border-radius: 4px;
+  transition: background-color 0.6s, box-shadow 0.6s;
+}
+
+/* The message a mention notification linked to. */
+.message[data-flash],
+.grouped[data-flash] {
+  background: var(--accent-wash);
+  box-shadow: 0 0 0 4px var(--accent-wash);
+  transition: none;
+}
+
 .byline {
   display: flex;
   align-items: baseline;

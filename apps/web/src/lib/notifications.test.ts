@@ -68,6 +68,12 @@ describe("notificationHref", () => {
     expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/chapters/c9");
   });
 
+  it("opens Story Chat at the message", () => {
+    const mention = { ...base, kind: "chat_mention" as const, detail: { message_id: "m3" } };
+    expect(notificationHref(mention)).toBe("/stories/s1?chat=m3");
+    expect(notificationHref({ ...mention, detail: {} })).toBe("/stories/s1");
+  });
+
   it("has no link once the Story is gone or you were removed", () => {
     expect(notificationHref({ ...base, story_id: null })).toBeNull();
     expect(notificationHref({ ...base, kind: "story_deleted" })).toBeNull();

@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { authorColorCss } from "@/lib/profile-rules";
+import { toStoredBody } from "@/lib/writer-mentions";
 import { Panel, usePanelOpen, useStoryPanel } from "./StoryPanel";
-import { usePeople } from "./StoryMembers";
+import { usePeople, useStoryMembers } from "./StoryMembers";
+import { WriterMentionPicker, useWriterMentionPicker } from "./WriterMentionPicker";
+import { WriterMentionText } from "./WriterMentionText";
 import styles from "./StoryChat.module.css";
 
 type Message = { id: string; user_id: string; body: string; created_at: string };
@@ -13,6 +17,9 @@ const PAGE = 50;
 const COLUMNS = "id, user_id, body, created_at";
 /** Consecutive messages from one Writer within this window share a single name line. */
 const GROUP_MS = 5 * 60 * 1000;
+/** How many earlier pages a `?chat=` link loads looking for its message before giving up. */
+const REVEAL_PAGES = 5;
+const FLASH_MS = 1600;
 
 function merge(current: Message[], incoming: Message[]): Message[] {
   const byId = new Map(current.map((m) => [m.id, m]));
@@ -23,19 +30,28 @@ function merge(current: Message[], incoming: Message[]): Message[] {
 /**
  * Story Chat in the Story's right panel, rendered only for Writers and up. It stays mounted in the Story
  * layout, so it keeps listening (and counting unread) while closed. RLS keeps both history and Realtime
- * delivery to members, so a Writer removed mid-session simply stops receiving messages.
+ * delivery to members, so a Writer removed mid-session simply stops receiving messages. A `?chat=<id>` link
+ * (from a chat_mention) opens it scrolled to that message.
  */
 export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
   const supabase = useMemo(() => createClient(), []);
-  const addUnread = useStoryPanel()?.addUnread;
+  const panel = useStoryPanel();
+  const addUnread = panel?.addUnread;
+  const showPanel = panel?.show;
   const open = usePanelOpen("chat");
+  const { members } = useStoryMembers();
+  const linked = useSearchParams().get("chat");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [hasEarlier, setHasEarlier] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const picker = useWriterMentionPicker(draft, setDraft);
   const openRef = useRef(open);
   const listRef = useRef<HTMLOListElement>(null);
   const stickToBottom = useRef(true);
+  const loadingEarlier = useRef(false);
+  const reveal = useRef<{ id: string; pages: number; done: boolean } | null>(null);
 
   useEffect(() => {
     openRef.current = open;
@@ -52,6 +68,7 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
     setError(null);
     setMessages((current) => merge(current, data));
     setHasEarlier((had) => had || data.length === PAGE);
+    setLoaded(true);
   }, [supabase, storyId]);
 
   // Subscribe first and load once subscribed, so nothing sent in between is missed.
@@ -87,9 +104,10 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
     if (open && list && stickToBottom.current) list.scrollTop = list.scrollHeight;
   }, [open, messages]);
 
-  async function loadEarlier() {
-    const oldest = messages[0];
-    if (!oldest) return;
+  const oldestAt = messages[0]?.created_at;
+  const loadEarlier = useCallback(async () => {
+    if (!oldestAt || loadingEarlier.current) return;
+    loadingEarlier.current = true;
     const list = listRef.current;
     const fromBottom = list ? list.scrollHeight - list.scrollTop : 0;
 
@@ -97,9 +115,10 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
       .from("chat_messages")
       .select(COLUMNS)
       .eq("story_id", storyId)
-      .lt("created_at", oldest.created_at)
+      .lt("created_at", oldestAt)
       .order("created_at", { ascending: false })
       .limit(PAGE);
+    loadingEarlier.current = false;
     if (error) return setError("Couldn't load earlier messages.");
     stickToBottom.current = false;
     setMessages((current) => merge(current, data));
@@ -107,10 +126,39 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
     requestAnimationFrame(() => {
       if (list) list.scrollTop = list.scrollHeight - fromBottom;
     });
-  }
+  }, [supabase, storyId, oldestAt]);
+
+  useEffect(() => {
+    if (!linked) return;
+    reveal.current = { id: linked, pages: 0, done: false };
+    showPanel?.("chat");
+  }, [linked, showPanel]);
+
+  // Pages back until the linked message is loaded, then scrolls to it once the panel is showing.
+  useEffect(() => {
+    const target = reveal.current;
+    if (!target || target.done || !loaded || !open) return;
+    if (!messages.some((m) => m.id === target.id)) {
+      if (hasEarlier && target.pages < REVEAL_PAGES) {
+        target.pages++;
+        void loadEarlier();
+      } else target.done = true;
+      return;
+    }
+    target.done = true;
+    stickToBottom.current = false;
+    // Queued after loadEarlier's own scroll fix-up, so this one wins.
+    requestAnimationFrame(() => {
+      const el = listRef.current?.querySelector(`[data-chat-message="${target.id}"]`);
+      if (!el) return;
+      el.scrollIntoView({ block: "center" });
+      el.setAttribute("data-flash", "");
+      setTimeout(() => el.removeAttribute("data-flash"), FLASH_MS);
+    });
+  }, [linked, loaded, open, messages, hasEarlier, loadEarlier]);
 
   async function send() {
-    const body = draft.trim();
+    const body = toStoredBody(draft.trim(), members);
     if (!body) return;
 
     const { data, error } = await supabase
@@ -150,7 +198,7 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
             prev?.user_id === m.user_id && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
           const author = person(m.user_id);
           return (
-            <li key={m.id} className={grouped ? styles.grouped : styles.message}>
+            <li key={m.id} className={grouped ? styles.grouped : styles.message} data-chat-message={m.id}>
               {!grouped && (
                 <div className={styles.byline}>
                   <span
@@ -164,7 +212,9 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
                   </time>
                 </div>
               )}
-              <p className={styles.body}>{m.body}</p>
+              <p className={styles.body}>
+                <WriterMentionText body={m.body} />
+              </p>
             </li>
           );
         })}
@@ -183,22 +233,26 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
           void send();
         }}
       >
-        <textarea
-          name="body"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          className={`input ${styles.input}`}
-          placeholder="Message your co-writers"
-          aria-label="Message"
-          maxLength={2000}
-          rows={2}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-              e.preventDefault();
-              e.currentTarget.form?.requestSubmit();
-            }
-          }}
-        />
+        <WriterMentionPicker picker={picker}>
+          <textarea
+            {...picker.textareaProps}
+            name="body"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className={`input ${styles.input}`}
+            placeholder="Message your co-writers"
+            aria-label="Message"
+            maxLength={2000}
+            rows={2}
+            onKeyDown={(e) => {
+              if (picker.onKeyDown(e)) return;
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
+          />
+        </WriterMentionPicker>
         <button className="button button-primary button-small">Send</button>
       </form>
     </Panel>
