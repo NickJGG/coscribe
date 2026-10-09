@@ -6,9 +6,9 @@ import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import { entryNameAt, entryNamed } from "@coscribe/editor";
 import { addEntryFromText } from "@/lib/actions/entries";
-import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryType, type MentionEntry } from "@/lib/entries";
+import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryType, type EntryMentionEntry } from "@/lib/entries";
 import { useMeasure } from "@/lib/use-measure";
-import type { DocumentMentions } from "./LiveDocument";
+import type { DocumentEntryMentions } from "./LiveDocument";
 import { canAddNote, noteDraft } from "./notes/NoteHighlights";
 import styles from "./SelectionActions.module.css";
 
@@ -24,17 +24,17 @@ type Adding = { name: string; to: number };
  */
 export function SelectionActions({
   editor,
-  mentions,
+  entryMentions,
   onAddNote,
 }: {
   editor: Editor;
-  mentions?: DocumentMentions;
+  entryMentions?: DocumentEntryMentions;
   onAddNote?: () => void;
 }) {
   const layer = useRef<HTMLDivElement>(null);
   const roots = useMemo(() => [layer], []);
   const [adding, setAdding] = useState<Adding | null>(null);
-  const bible = !!mentions;
+  const bible = !!entryMentions;
 
   const offer = useEditorState({
     editor,
@@ -59,7 +59,7 @@ export function SelectionActions({
   }, [editor, offer]);
   const place = useMeasure(roots, offer && !adding ? measure : null, NOT_PLACED);
 
-  const existing = offer?.name && mentions ? entryNamed(offer.name, mentions.entries) : undefined;
+  const existing = offer?.name && entryMentions ? entryNamed(offer.name, entryMentions.entries) : undefined;
 
   return (
     <div ref={layer} className={styles.layer}>
@@ -71,9 +71,9 @@ export function SelectionActions({
             </button>
           )}
           {offer.name &&
-            mentions &&
+            entryMentions &&
             (existing ? (
-              <Link href={`/stories/${mentions.storyId}/bible/${existing.id}`}>Open Entry</Link>
+              <Link href={`/stories/${entryMentions.storyId}/bible/${existing.id}`}>Open Entry</Link>
             ) : (
               <button type="button" onClick={() => setAdding({ name: offer.name!, to: offer.to })}>
                 + Bible
@@ -81,12 +81,12 @@ export function SelectionActions({
             ))}
         </div>
       )}
-      {adding && mentions && (
+      {adding && entryMentions && (
         <BiblePopover
           editor={editor}
           layer={layer}
-          storyId={mentions.storyId}
-          entries={mentions.entries}
+          storyId={entryMentions.storyId}
+          entries={entryMentions.entries}
           adding={adding}
           onClose={() => setAdding(null)}
         />
@@ -110,7 +110,7 @@ function BiblePopover({
   editor: Editor;
   layer: React.RefObject<HTMLDivElement | null>;
   storyId: string;
-  entries: MentionEntry[];
+  entries: EntryMentionEntry[];
   adding: Adding;
   onClose: () => void;
 }) {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
-import { mentionEntries } from "@/lib/entries";
+import { entryMentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
 import { setChapterLocked } from "@/lib/actions/chapters";
@@ -56,7 +56,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       id={chapter.id}
       writer={writer}
       authors={authors}
-      mentions={{ storyId: story.id, entries: mentionEntries(entries) }}
+      entryMentions={{ storyId: story.id, entries: entryMentionEntries(entries) }}
       tools={
         manage && (
           <>

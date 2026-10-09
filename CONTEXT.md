@@ -119,9 +119,13 @@ _Avoid_: Orphaned, broken
 Another name an **Entry** goes by in the prose, such as "Aldous" for "Keeper Aldous".
 _Avoid_: Nickname, synonym
 
-**Mention**:
+**Entry Mention**:
 A place in a **Chapter**'s text where an **Entry**'s name or **Alias** appears.
-_Avoid_: Link, reference, tag
+_Avoid_: Mention (unqualified), link, reference, tag
+
+**Writer Mention**:
+An @-naming of a **Writer** inside a **Note**, a reply, or **Story Chat**, which sends them a **Notification**. Only people in the **Story** can be named.
+_Avoid_: Mention (unqualified), tag, ping
 
 ### Presence and notifications
 
@@ -145,7 +149,7 @@ _Avoid_: Alert, activity, update
 - A **Chapter** has zero or more **Snapshots**
 - An **Invite** makes exactly one **User** a **Writer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
-- An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Mentions** of **Entries**
+- An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Entry Mentions**
 - A **Chapter** has zero or more **Notes**; only **Writers** and above see them
 - A **Notification** has exactly one recipient **User**
 - **Viewers** have no **Presence**; they are only ever counted, never named

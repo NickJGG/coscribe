@@ -41,13 +41,13 @@ export function readEntryFields(formData: FormData): { fields: EntryFields } | {
 }
 
 /** Fields editable in place on the Entry page; any subset may be sent at once. */
-export type EntryPatch = Partial<EntryFields & { aliases: string[]; linkMentions: boolean }>;
+export type EntryPatch = Partial<EntryFields & { aliases: string[]; linkEntryMentions: boolean }>;
 
 /** Row columns for an `EntryPatch`, validated. Aliases are tidied, and ones repeating each other are dropped. */
 export function readEntryPatch(
   patch: EntryPatch
-): { columns: Partial<EntryFields & { aliases: string[]; link_mentions: boolean }> } | { error: string } {
-  const columns: Partial<EntryFields & { aliases: string[]; link_mentions: boolean }> = {};
+): { columns: Partial<EntryFields & { aliases: string[]; link_entry_mentions: boolean }> } | { error: string } {
+  const columns: Partial<EntryFields & { aliases: string[]; link_entry_mentions: boolean }> = {};
   if (patch.type !== undefined) {
     if (!ENTRY_TYPES.includes(patch.type)) return { error: "Pick a type." };
     columns.type = patch.type;
@@ -81,22 +81,22 @@ export function readEntryPatch(
     if (aliases.length > ALIASES_MAX) return { error: `An Entry can have up to ${ALIASES_MAX} Aliases.` };
     columns.aliases = aliases;
   }
-  if (patch.linkMentions !== undefined) columns.link_mentions = patch.linkMentions === true;
+  if (patch.linkEntryMentions !== undefined) columns.link_entry_mentions = patch.linkEntryMentions === true;
   return { columns };
 }
 
-/** An Entry as a live document's Mentions and their cards see it. */
-export type MentionEntry = {
+/** An Entry as a live document's Entry Mentions and their cards see it. */
+export type EntryMentionEntry = {
   id: string;
   type: EntryType;
   name: string;
   description: string;
   aliases: string[];
-  linkMentions: boolean;
+  linkEntryMentions: boolean;
 };
 
-export function mentionEntries(
-  rows: { id: string; type: EntryType; name: string; description: string; aliases: string[]; link_mentions: boolean }[]
-): MentionEntry[] {
-  return rows.map(({ link_mentions, ...e }) => ({ ...e, linkMentions: link_mentions }));
+export function entryMentionEntries(
+  rows: { id: string; type: EntryType; name: string; description: string; aliases: string[]; link_entry_mentions: boolean }[]
+): EntryMentionEntry[] {
+  return rows.map(({ link_entry_mentions, ...e }) => ({ ...e, linkEntryMentions: link_entry_mentions }));
 }

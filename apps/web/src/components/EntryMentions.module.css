@@ -2,7 +2,7 @@
   position: relative;
 }
 
-.mention {
+.entryMention {
   text-decoration: underline dotted;
   text-decoration-color: var(--faint);
   text-decoration-thickness: 1.5px;
@@ -11,12 +11,12 @@
   transition: background-color 0.6s;
 }
 
-.mention:hover {
+.entryMention:hover {
   text-decoration-color: var(--ink-muted);
 }
 
-/* The Mention a "Mentioned in" link landed on. */
-.mention[data-flash] {
+/* The Entry Mention a "Mentioned in" link landed on. */
+.entryMention[data-flash] {
   background: var(--accent-wash);
   transition: none;
 }

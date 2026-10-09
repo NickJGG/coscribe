@@ -24,11 +24,11 @@ import { relativeTime } from "@/lib/relative-time";
 import { authorColorCss } from "@/lib/profile-rules";
 import { paragraphShares, type AuthorRun } from "@/lib/contribution";
 import { useMeasure } from "@/lib/use-measure";
-import type { MentionEntry } from "@/lib/entries";
+import type { EntryMentionEntry } from "@/lib/entries";
 import { DeskToolbar } from "./DeskToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
 import { FindBar } from "./FindBar";
-import { MentionCards, mentionKey, Mentions, type MentionConfig } from "./Mentions";
+import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
 import { SelectionActions } from "./SelectionActions";
@@ -43,8 +43,8 @@ import styles from "./LiveDocument.module.css";
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
 export type Writer = { userId: string; name: string; color: string };
 
-/** The Story Bible Entries whose Mentions this document underlines. */
-export type DocumentMentions = { storyId: string; entries: MentionEntry[] };
+/** The Story Bible Entries whose Entry Mentions this document underlines. */
+export type DocumentEntryMentions = { storyId: string; entries: EntryMentionEntry[] };
 
 /** A Story member whose text can carry an `author` mark. */
 export type StoryAuthor = { id: string; name: string; color: string };
@@ -66,7 +66,7 @@ const SLOW_MS = 1000;
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
- * row's end, before Show authors. `mentions` underlines those Entries' Mentions, with a card on hover.
+ * row's end, before Show authors. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
@@ -77,14 +77,14 @@ export function LiveDocument({
   writer,
   authors,
   tools,
-  mentions,
+  entryMentions,
 }: {
   kind: DocumentKind;
   id: string;
   writer: Writer | null;
   authors: StoryAuthor[];
   tools?: React.ReactNode;
-  mentions?: DocumentMentions;
+  entryMentions?: DocumentEntryMentions;
 }) {
   const documents = useLiveDocuments();
   const report = useLiveReport();
@@ -219,7 +219,7 @@ export function LiveDocument({
         </DeskToolbar.Fill>
       )}
       {session && synced ? (
-        <MaybeMentionCards mentions={mentions}>
+        <MaybeEntryMentionCards entryMentions={entryMentions}>
           <Authorship
             authors={authors}
             show={showAuthors}
@@ -227,7 +227,7 @@ export function LiveDocument({
               editor && (
                 <>
                   {notes && <NoteLayer editor={editor} />}
-                  <SelectionActions editor={editor} mentions={mentions} onAddNote={notes?.startDraft} />
+                  <SelectionActions editor={editor} entryMentions={entryMentions} onAddNote={notes?.startDraft} />
                 </>
               )
             }
@@ -237,13 +237,13 @@ export function LiveDocument({
               session={session}
               writer={writer}
               editable={!readOnly}
-              mentions={mentions?.entries}
+              entryMentions={entryMentions?.entries}
               notes={noteOptions}
               find={{ query: findQuery, current: findCurrent }}
               onEditor={setEditor}
             />
           </Authorship>
-        </MaybeMentionCards>
+        </MaybeEntryMentionCards>
       ) : (
         <div className={styles.loading} aria-label={`Loading the ${KINDS[kind].noun}`} role="status">
           {LOADING_LINES.map((width, i) => (
@@ -262,23 +262,23 @@ function occurrence(param: string | null): number | null {
 
 const LOADING_LINES = ["100%", "96%", "100%", "88%", "100%", "93%", "62%"];
 
-function MaybeMentionCards({ mentions, children }: { mentions?: DocumentMentions; children: React.ReactNode }) {
-  if (!mentions) return children;
+function MaybeEntryMentionCards({ entryMentions, children }: { entryMentions?: DocumentEntryMentions; children: React.ReactNode }) {
+  if (!entryMentions) return children;
   return (
-    <MentionCards storyId={mentions.storyId} entries={mentions.entries}>
+    <EntryMentionCards storyId={entryMentions.storyId} entries={entryMentions.entries}>
       {children}
-    </MentionCards>
+    </EntryMentionCards>
   );
 }
 
-const NO_MENTIONS: MentionEntry[] = [];
+const NO_ENTRY_MENTIONS: EntryMentionEntry[] = [];
 
 function LiveEditor({
   kind,
   session,
   writer,
   editable,
-  mentions = NO_MENTIONS,
+  entryMentions = NO_ENTRY_MENTIONS,
   notes,
   find,
   onEditor,
@@ -287,7 +287,7 @@ function LiveEditor({
   session: LiveSession;
   writer: Writer | null;
   editable: boolean;
-  mentions?: MentionEntry[];
+  entryMentions?: EntryMentionEntry[];
   notes?: NoteHighlightOptions;
   find: FindConfig;
   onEditor: (editor: Editor | null) => void;
@@ -307,7 +307,7 @@ function LiveEditor({
       }),
       Placeholder.configure({ placeholder }),
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
-      Mentions.configure({ entries: mentions, focusable: !editable }),
+      EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
       Find.configure(find),
     ],
@@ -320,11 +320,11 @@ function LiveEditor({
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
-    const current = mentionKey.getState(editor.state);
-    if (current?.entries === mentions && current.focusable === !editable) return;
-    const config: MentionConfig = { entries: mentions, focusable: !editable };
-    editor.view.dispatch(editor.state.tr.setMeta(mentionKey, config));
-  }, [editor, mentions, editable]);
+    const current = entryMentionKey.getState(editor.state);
+    if (current?.entries === entryMentions && current.focusable === !editable) return;
+    const config: EntryMentionConfig = { entries: entryMentions, focusable: !editable };
+    editor.view.dispatch(editor.state.tr.setMeta(entryMentionKey, config));
+  }, [editor, entryMentions, editable]);
 
   const { query, current } = find;
   useEffect(() => {

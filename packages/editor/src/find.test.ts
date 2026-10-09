@@ -3,7 +3,7 @@ import type { Node } from "@tiptap/pm/model"
 import { describe, expect, it } from "vitest"
 import { findText, MIN_QUERY } from "./find"
 import { chapterExtensions, entryExtensions } from "./index"
-import { blockTexts } from "./mentions"
+import { blockTexts } from "./entry-mentions"
 
 function found(text: string, query: string) {
   return findText(text, query).map((m) => text.slice(m.from, m.to))

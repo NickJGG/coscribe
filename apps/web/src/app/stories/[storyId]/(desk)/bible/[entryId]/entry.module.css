@@ -145,7 +145,7 @@
   font-size: var(--step--1);
 }
 
-.mentioned {
+.entryMentioned {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -153,16 +153,16 @@
   border-top: 1px solid var(--ink);
 }
 
-.mentions {
+.entryMentions {
   padding: 0;
   list-style: none;
 }
 
-.mentions li + li {
+.entryMentions li + li {
   border-top: 1px solid var(--hair);
 }
 
-.mentionLink {
+.entryMentionLink {
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -171,23 +171,23 @@
   text-decoration: none;
 }
 
-.mentionLink:hover .mentionTitle {
+.entryMentionLink:hover .entryMentionTitle {
   text-decoration: underline;
 }
 
-.mentionNumber {
+.entryMentionNumber {
   min-width: 1.5em;
   color: var(--faint);
   font-variant-numeric: tabular-nums;
 }
 
-.mentionTitle {
+.entryMentionTitle {
   flex: 1;
   font-family: var(--font-prose), Georgia, serif;
   overflow-wrap: anywhere;
 }
 
-.mentionCount {
+.entryMentionCount {
   color: var(--ink-muted);
   font-size: var(--step--1);
   font-variant-numeric: tabular-nums;

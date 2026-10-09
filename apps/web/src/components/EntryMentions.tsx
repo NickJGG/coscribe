@@ -6,40 +6,40 @@ import { Extension } from "@tiptap/core";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
-import { findMentions } from "@coscribe/editor";
-import { ENTRY_TYPE_LABEL, type MentionEntry } from "@/lib/entries";
+import { findEntryMentions } from "@coscribe/editor";
+import { ENTRY_TYPE_LABEL, type EntryMentionEntry } from "@/lib/entries";
 import { getEntryPreview } from "@/lib/actions/entries";
 import { touchedTextblocks } from "@/lib/touched-textblocks";
-import styles from "./Mentions.module.css";
+import styles from "./EntryMentions.module.css";
 
-/** Which Entries to underline, and whether Mentions take keyboard focus (only when the text isn't editable). */
-export type MentionConfig = { entries: MentionEntry[]; focusable: boolean };
+/** Which Entries to underline, and whether Entry Mentions take keyboard focus (only when the text isn't editable). */
+export type EntryMentionConfig = { entries: EntryMentionEntry[]; focusable: boolean };
 
-type MentionState = MentionConfig & { set: DecorationSet };
+type EntryMentionState = EntryMentionConfig & { set: DecorationSet };
 
-export const mentionKey = new PluginKey<MentionState>("mentions");
+export const entryMentionKey = new PluginKey<EntryMentionState>("entryMentions");
 
 /**
- * Underlines Mentions with decorations, so the document schema (and apps/sync) never sees them, and turns
+ * Underlines Entry Mentions with decorations, so the document schema (and apps/sync) never sees them, and turns
  * spellcheck off over every name and Alias, linked or not. Edits re-match only the text blocks they touch;
- * a transaction with a `MentionConfig` under `mentionKey` re-matches everything.
+ * a transaction with an `EntryMentionConfig` under `entryMentionKey` re-matches everything.
  */
-export const Mentions = Extension.create<MentionConfig>({
-  name: "mentions",
+export const EntryMentions = Extension.create<EntryMentionConfig>({
+  name: "entryMentions",
 
   addOptions() {
     return { entries: [], focusable: false };
   },
 
   addProseMirrorPlugins() {
-    const initial: MentionConfig = { entries: this.options.entries, focusable: this.options.focusable };
+    const initial: EntryMentionConfig = { entries: this.options.entries, focusable: this.options.focusable };
     return [
-      new Plugin<MentionState>({
-        key: mentionKey,
+      new Plugin<EntryMentionState>({
+        key: entryMentionKey,
         state: {
           init: (_, state) => ({ ...initial, set: decorateAll(state.doc, initial) }),
           apply(tr, prev) {
-            const config = tr.getMeta(mentionKey) as MentionConfig | undefined;
+            const config = tr.getMeta(entryMentionKey) as EntryMentionConfig | undefined;
             if (config) return { ...config, set: decorateAll(tr.doc, config) };
             if (!tr.docChanged) return prev;
 
@@ -52,14 +52,14 @@ export const Mentions = Extension.create<MentionConfig>({
           },
         },
         props: {
-          decorations: (state) => mentionKey.getState(state)?.set,
+          decorations: (state) => entryMentionKey.getState(state)?.set,
         },
       }),
     ];
   },
 });
 
-function decorateAll(doc: ProseMirrorNode, config: MentionConfig): DecorationSet {
+function decorateAll(doc: ProseMirrorNode, config: EntryMentionConfig): DecorationSet {
   if (!config.entries.length) return DecorationSet.empty;
   const decorations: Decoration[] = [];
   doc.descendants((node, pos) => {
@@ -70,35 +70,35 @@ function decorateAll(doc: ProseMirrorNode, config: MentionConfig): DecorationSet
   return DecorationSet.create(doc, decorations);
 }
 
-function decorateBlock(node: ProseMirrorNode, pos: number, { entries, focusable }: MentionConfig): Decoration[] {
+function decorateBlock(node: ProseMirrorNode, pos: number, { entries, focusable }: EntryMentionConfig): Decoration[] {
   if (!entries.length) return [];
-  return findMentions(node.textContent, entries).map((m) =>
+  return findEntryMentions(node.textContent, entries).map((m) =>
     Decoration.inline(
       pos + 1 + m.from,
       pos + 1 + m.to,
       m.linked
-        ? { class: styles.mention, "data-mention": m.entryId, spellcheck: "false", ...(focusable && { tabindex: "0" }) }
+        ? { class: styles.entryMention, "data-entry-mention": m.entryId, spellcheck: "false", ...(focusable && { tabindex: "0" }) }
         : { spellcheck: "false" }
     )
   );
 }
 
-type Card = { entry: MentionEntry; x: number; y: number };
+type Card = { entry: EntryMentionEntry; x: number; y: number };
 
 const OPEN_MS = 300;
 const CLOSE_MS = 200;
 
 /**
- * Hovering or focusing a Mention inside `children` shows a read-only card for its Entry. The body's
+ * Hovering or focusing an Entry Mention inside `children` shows a read-only card for its Entry. The body's
  * opening lines load on first open and are kept for the rest of the visit.
  */
-export function MentionCards({
+export function EntryMentionCards({
   storyId,
   entries,
   children,
 }: {
   storyId: string;
-  entries: MentionEntry[];
+  entries: EntryMentionEntry[];
   children: React.ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -130,12 +130,12 @@ export function MentionCards({
   }
 
   function open(target: EventTarget, delay: number) {
-    const mention = (target as Element).closest<HTMLElement>("[data-mention]");
-    if (!mention || !box.current) return false;
-    const entry = entries.find((e) => e.id === mention.dataset.mention);
+    const entryMention = (target as Element).closest<HTMLElement>("[data-entry-mention]");
+    if (!entryMention || !box.current) return false;
+    const entry = entries.find((e) => e.id === entryMention.dataset.entryMention);
     if (!entry) return false;
     const origin = box.current.getBoundingClientRect();
-    const rect = mention.getClientRects()[0] ?? mention.getBoundingClientRect();
+    const rect = entryMention.getClientRects()[0] ?? entryMention.getBoundingClientRect();
     const next = { entry, x: rect.left - origin.left, y: rect.bottom - origin.top };
     later(() => setCard((c) => (c?.entry.id === entry.id ? c : next)), delay);
     return true;

@@ -30,8 +30,8 @@ describe("readEntryFields", () => {
 
 describe("readEntryPatch", () => {
   it("maps only the fields sent", () => {
-    expect(readEntryPatch({ name: " Wren ", linkMentions: false })).toEqual({
-      columns: { name: "Wren", link_mentions: false },
+    expect(readEntryPatch({ name: " Wren ", linkEntryMentions: false })).toEqual({
+      columns: { name: "Wren", link_entry_mentions: false },
     });
     expect(readEntryPatch({})).toEqual({ columns: {} });
   });

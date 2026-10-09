@@ -26,13 +26,13 @@ export {
 export { findFolded, findText, foldQuery, foldText, MIN_QUERY, type FindMatch, type FoldedText } from "./find"
 export {
   blockTexts,
-  countMentions,
+  countEntryMentions,
   entryNameAt,
   entryNamed,
-  findMentions,
-  type Mention,
-  type MentionTarget,
-} from "./mentions"
+  findEntryMentions,
+  type EntryMention,
+  type EntryMentionTarget,
+} from "./entry-mentions"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 

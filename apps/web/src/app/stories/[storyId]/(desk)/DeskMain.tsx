@@ -28,7 +28,7 @@ function writeScroll(doc: string, top: number) {
   } catch {}
 }
 
-const MENTION_HASH = /^#mention-([0-9a-f-]{36})$/i;
+const ENTRY_MENTION_HASH = /^#entry-mention-([0-9a-f-]{36})$/i;
 const LOOK_TRIES = 10;
 const FLASH_MS = 1600;
 
@@ -64,7 +64,7 @@ function show(page: HTMLElement, selector: string, all: boolean, otherwise: () =
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
  * the right panel over all three. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
- * A `#mention-<entryId>` link opens at that Entry's first Mention instead, a `?find=…&n=` link at that
+ * A `#entry-mention-<entryId>` link opens at that Entry's first Entry Mention instead, a `?find=…&n=` link at that
  * search match (again on every step), and a `?note=` link leaves it to the Note.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
@@ -87,9 +87,9 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     // The Notes on the page scroll to a linked Note themselves; a Snapshot comparison opens at its top.
     const search = new URLSearchParams(location.search);
     if (search.has("note") || search.has("compare") || (search.has("find") && search.has("n"))) return;
-    const entryId = MENTION_HASH.exec(location.hash)?.[1];
+    const entryId = ENTRY_MENTION_HASH.exec(location.hash)?.[1];
     if (!entryId) return page.scrollTo(0, readScroll(doc));
-    const stop = show(page, `[data-mention="${entryId}"]`, false, () => page.scrollTo(0, readScroll(doc)));
+    const stop = show(page, `[data-entry-mention="${entryId}"]`, false, () => page.scrollTo(0, readScroll(doc)));
     return () => {
       if (stop()) restored.current = null;
     };

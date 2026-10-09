@@ -68,7 +68,7 @@ export const getEntries = cache(async (storyId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("entries")
-    .select("id, type, name, description, aliases, link_mentions")
+    .select("id, type, name, description, aliases, link_entry_mentions")
     .eq("story_id", storyId)
     .order("name");
   return data ?? [];

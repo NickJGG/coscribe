@@ -2,7 +2,7 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { editEntry } from "@/lib/actions/entries";
-import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryPatch, type MentionEntry } from "@/lib/entries";
+import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryPatch, type EntryMentionEntry } from "@/lib/entries";
 import type { ActionResult } from "@/lib/action-result";
 import { InlineEdit } from "@/components/InlineEdit";
 import { Switch } from "@/components/Switch";
@@ -19,7 +19,7 @@ export function EntryDetails({
   actions,
 }: {
   storyId: string;
-  entry: MentionEntry;
+  entry: EntryMentionEntry;
   editable: boolean;
   actions?: React.ReactNode;
 }) {
@@ -43,7 +43,7 @@ export function EntryDetails({
             className={`smallcaps ${styles.type}`}
             aria-label="Entry type"
             value={shown.type}
-            onChange={(e) => saveNow({ type: e.currentTarget.value as MentionEntry["type"] })}
+            onChange={(e) => saveNow({ type: e.currentTarget.value as EntryMentionEntry["type"] })}
           >
             {ENTRY_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -82,10 +82,10 @@ export function EntryDetails({
           <Aliases aliases={entry.aliases} onSave={(aliases) => save({ aliases })} />
           <Switch
             className={styles.linkSwitch}
-            checked={shown.linkMentions}
-            onChange={(linkMentions) => saveNow({ linkMentions })}
+            checked={shown.linkEntryMentions}
+            onChange={(linkEntryMentions) => saveNow({ linkEntryMentions })}
           >
-            Link mentions in the text
+            Link Entry Mentions in the text
           </Switch>
         </div>
       ) : (

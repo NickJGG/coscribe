@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { blockTexts, countMentions, entryNameAt, entryNamed, findMentions, type MentionTarget } from "./mentions"
+import { blockTexts, countEntryMentions, entryNameAt, entryNamed, findEntryMentions, type EntryMentionTarget } from "./entry-mentions"
 
-const entry = (id: string, name: string, aliases: string[] = [], linkMentions = true): MentionTarget => ({
+const entry = (id: string, name: string, aliases: string[] = [], linkEntryMentions = true): EntryMentionTarget => ({
   id,
   name,
   aliases,
-  linkMentions,
+  linkEntryMentions,
 })
 
 const keeper = entry("keeper", "Keeper Aldous", ["Aldous", "the old keeper"])
@@ -16,10 +16,10 @@ const bells = entry("bells", "The Tide Bells")
 const ENTRIES = [keeper, wren, point, light, bells]
 
 function found(text: string, entries = ENTRIES) {
-  return findMentions(text, entries).map((m) => [m.entryId, text.slice(m.from, m.to)])
+  return findEntryMentions(text, entries).map((m) => [m.entryId, text.slice(m.from, m.to)])
 }
 
-describe("findMentions", () => {
+describe("findEntryMentions", () => {
   it("finds names and Aliases, ignoring case", () => {
     expect(found("Aldous climbed. keeper aldous rested. THE OLD KEEPER slept.")).toEqual([
       ["keeper", "Aldous"],
@@ -54,9 +54,9 @@ describe("findMentions", () => {
     expect(found("Éwren and wrené")).toEqual([])
   })
 
-  it("marks Mentions of Entries that don't link them", () => {
+  it("marks Entry Mentions of Entries that don't link them", () => {
     const unlinked = [entry("wren", "Wren", [], false), keeper]
-    expect(findMentions("Wren and Aldous", unlinked).map((m) => [m.entryId, m.linked])).toEqual([
+    expect(findEntryMentions("Wren and Aldous", unlinked).map((m) => [m.entryId, m.linked])).toEqual([
       ["wren", false],
       ["keeper", true],
     ])
@@ -78,11 +78,11 @@ describe("findMentions", () => {
 
   it("reports UTF-16 offsets", () => {
     const text = "😀 Wren"
-    expect(findMentions(text, ENTRIES)).toEqual([{ entryId: "wren", from: 3, to: 7, linked: true }])
+    expect(findEntryMentions(text, ENTRIES)).toEqual([{ entryId: "wren", from: 3, to: 7, linked: true }])
   })
 })
 
-describe("countMentions", () => {
+describe("countEntryMentions", () => {
   it("counts per Entry, never across paragraphs", () => {
     const doc = {
       type: "doc",
@@ -95,12 +95,12 @@ describe("countMentions", () => {
       ],
     }
     expect(blockTexts(doc)).toEqual(["Wren met Aldous", "Gull", "Point. Wren's turn."])
-    expect(Object.fromEntries(countMentions(doc, ENTRIES))).toEqual({ wren: 2, keeper: 1 })
+    expect(Object.fromEntries(countEntryMentions(doc, ENTRIES))).toEqual({ wren: 2, keeper: 1 })
   })
 
-  it("skips Entries that don't link their Mentions", () => {
+  it("skips Entries that don't link their Entry Mentions", () => {
     const doc = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Wren met Aldous" }] }] }
-    expect(Object.fromEntries(countMentions(doc, [entry("wren", "Wren", [], false), keeper]))).toEqual({ keeper: 1 })
+    expect(Object.fromEntries(countEntryMentions(doc, [entry("wren", "Wren", [], false), keeper]))).toEqual({ keeper: 1 })
   })
 })
 

@@ -7,7 +7,7 @@ import { requireProfile } from "@/lib/viewer";
 import { blockTexts, entryNamed, type ContentJSON } from "@coscribe/editor";
 import { fetchStoryContent, refreshSyncAccess } from "@/lib/sync";
 import { getEntries } from "@/lib/story";
-import { mentionEntries, readEntryFields, readEntryPatch, type EntryPatch, type EntryType } from "@/lib/entries";
+import { entryMentionEntries, readEntryFields, readEntryPatch, type EntryPatch, type EntryType } from "@/lib/entries";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 
 const INVALID = "Something went wrong. Try again.";
@@ -44,7 +44,7 @@ export async function addEntryFromText(storyId: string, name: string, type: Entr
   if ("error" in read) return read.error;
   if (!read.columns.name || !read.columns.type) return INVALID;
 
-  const existing = entryNamed(read.columns.name, mentionEntries(await getEntries(storyId)));
+  const existing = entryNamed(read.columns.name, entryMentionEntries(await getEntries(storyId)));
   if (existing) return `“${existing.name}” is already in the Story Bible.`;
 
   const supabase = await createClient();
@@ -57,7 +57,7 @@ export async function addEntryFromText(storyId: string, name: string, type: Entr
   return null;
 }
 
-/** Saves Entry fields edited in place: name, type, description, Aliases, or the Mentions switch. */
+/** Saves Entry fields edited in place: name, type, description, Aliases, or the Entry Mentions switch. */
 export async function editEntry(storyId: string, entryId: string, patch: EntryPatch): Promise<ActionResult> {
   if (!isUuid(storyId) || !isUuid(entryId)) return INVALID;
   await requireProfile(`/stories/${storyId}/bible/${entryId}`);
@@ -84,7 +84,7 @@ export async function renameEntry(
 
 const PREVIEW_CHARS = 240;
 
-/** The opening of an Entry's body for a Mention's card. Null if it's empty, unreadable, or out of reach. */
+/** The opening of an Entry's body for an Entry Mention's card. Null if it's empty, unreadable, or out of reach. */
 export async function getEntryPreview(storyId: string, entryId: string): Promise<string | null> {
   if (!isUuid(storyId) || !isUuid(entryId)) return null;
   const supabase = await createClient();
