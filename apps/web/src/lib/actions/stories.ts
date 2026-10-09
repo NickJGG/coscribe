@@ -8,6 +8,7 @@ import { refreshSyncAccess } from "@/lib/sync";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 import { readStoryForm } from "@/lib/story-form";
 import type { MemberRole } from "@/lib/story-roles";
+import { isStoryNotify } from "@/lib/notifications";
 
 const INVALID = "Something went wrong. Try again.";
 
@@ -128,6 +129,18 @@ export async function setStoryColor(storyId: string, color: string): Promise<Act
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_story_color", { p_story: storyId, p_color: color });
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
+}
+
+export async function setStoryNotify(storyId: string, value: string): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isStoryNotify(value)) return INVALID;
+  await requireProfile(`/stories/${storyId}/settings`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_story_notify", { p_story: storyId, p_notify: value });
   if (error) return errorText(error);
 
   refresh();

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { isUuid } from "@/lib/action-result";
 import type { MemberRole } from "@/lib/story-roles";
+import type { StoryNotify } from "@/lib/notifications";
 import type { StoryAuthor, Writer } from "@/components/LiveDocument";
 
 const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2 };
@@ -10,7 +11,7 @@ const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2 }
 /**
  * A Story the viewer may see (null otherwise), its members Host-first, and the viewer's own role. Each
  * member's `profile.author_color` is their effective color in this Story; `story_color` is set only when
- * that differs from their profile color.
+ * that differs from their profile color. `myNotify` is the viewer's notifications choice here.
  */
 export const getStory = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return null;
@@ -26,7 +27,7 @@ export const getStory = cache(async (storyId: string) => {
   const [{ data: members }, viewer] = await Promise.all([
     supabase
       .from("story_members")
-      .select("role, joined_at, story_color:author_color, profile:profiles (id, username, author_color)")
+      .select("role, joined_at, notify, story_color:author_color, profile:profiles (id, username, author_color)")
       .eq("story_id", storyId),
     getViewer(),
   ]);
@@ -36,9 +37,11 @@ export const getStory = cache(async (storyId: string) => {
     .sort(
     (a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.profile.username.localeCompare(b.profile.username)
   );
-  const myRole = sorted.find((m) => m.profile.id === viewer?.userId)?.role ?? null;
+  const mine = sorted.find((m) => m.profile.id === viewer?.userId);
+  const myRole = mine?.role ?? null;
+  const myNotify = (mine?.notify ?? "all") as StoryNotify;
 
-  return { story, members: sorted, myRole, viewer };
+  return { story, members: sorted, myRole, myNotify, viewer };
 });
 
 /** A visible Story's Chapters in reading order (empty if the viewer can't see the story). */

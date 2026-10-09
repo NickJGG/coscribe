@@ -363,14 +363,14 @@ isOneToOne: true
                   ]
                 },"story_members": {
                   Row: {
-                    "author_color": string | null,"joined_at": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
+                    "author_color": string | null,"joined_at": string,"notify": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color"?: string | null,"joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
+                    "author_color"?: string | null,"joined_at"?: string,"notify"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"user_id": string
                   }
                   Update: {
-                    "author_color"?: string | null,"joined_at"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"user_id"?: string
+                    "author_color"?: string | null,"joined_at"?: string,"notify"?: string,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -539,6 +539,9 @@ isOneToOne: false
                            },
 "set_story_finished":
 { Args: { "p_finished": boolean,"p_story": string }; Returns: undefined
+                           },
+"set_story_notify":
+{ Args: { "p_notify": string,"p_story": string }; Returns: undefined
                            },
 "story_colors_taken":
 { Args: { "p_story": string,"p_user": string }; Returns: (string)[]

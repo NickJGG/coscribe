@@ -144,3 +144,21 @@
     padding-inline: 16px;
   }
 }
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 0;
+}
+
+.choices legend {
+  margin-bottom: 4px;
+}
+
+.choice {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  cursor: pointer;
+}

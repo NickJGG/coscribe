@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { notificationActor, notificationHref, notificationVerb, type Notification } from "./notifications";
+import {
+  isStoryNotify,
+  notificationActor,
+  notificationHref,
+  notificationVerb,
+  type Notification,
+} from "./notifications";
 
 const base: Notification = {
   id: "n1",
@@ -78,5 +84,14 @@ describe("notificationHref", () => {
     expect(notificationHref({ ...base, story_id: null })).toBeNull();
     expect(notificationHref({ ...base, kind: "story_deleted" })).toBeNull();
     expect(notificationHref({ ...base, kind: "removed" })).toBeNull();
+  });
+});
+
+describe("isStoryNotify", () => {
+  it("accepts only the two choices", () => {
+    expect(isStoryNotify("all")).toBe(true);
+    expect(isStoryNotify("mine")).toBe(true);
+    expect(isStoryNotify("none")).toBe(false);
+    expect(isStoryNotify(undefined)).toBe(false);
   });
 });

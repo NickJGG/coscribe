@@ -4,6 +4,13 @@ import { ROLE_LABEL, type MemberRole } from "./story-roles";
 
 export type NotificationKind = Database["public"]["Enums"]["notification_kind"];
 
+/** Per-Story choice: every notification, or only those about you (no new Chapters or Writers). */
+export type StoryNotify = "all" | "mine";
+
+export function isStoryNotify(value: unknown): value is StoryNotify {
+  return value === "all" || value === "mine";
+}
+
 type Person = { id: string; username: string; author_color: string };
 
 export type Notification = {

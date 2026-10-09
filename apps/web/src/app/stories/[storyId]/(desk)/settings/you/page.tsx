@@ -7,6 +7,7 @@ import { leaveStory } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
 import { Card, Sub } from "../Card";
 import { StoryColorPicker } from "./StoryColorPicker";
+import { StoryNotifyChoice } from "./StoryNotifyChoice";
 import styles from "../settings.module.css";
 
 export default async function StorySettingsYouPage(props: PageProps<"/stories/[storyId]/settings/you">) {
@@ -14,7 +15,7 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
   const me = await requireProfile(`/stories/${storyId}/settings/you`);
   const data = await getStory(storyId);
   if (!data?.myRole) notFound();
-  const { story, members, myRole } = data;
+  const { story, members, myRole, myNotify } = data;
 
   const profileColor = me.profile.author_color;
   const mine = members.find((m) => m.profile.id === me.userId)?.profile.author_color ?? profileColor;
@@ -36,6 +37,9 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
                   : `You picked ${colorName(mine)} here. Your profile color is ${colorName(profileColor)}.`}
             </p>
           </StoryColorPicker>
+        </Sub>
+        <Sub>
+          <StoryNotifyChoice storyId={story.id} selected={myNotify} />
         </Sub>
       </Card>
 
