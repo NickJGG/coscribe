@@ -28,7 +28,7 @@ export function Breadcrumb({
       ? entries.find((e) => e.id === entryId)?.name
       : pathname === `/stories/${storyId}`
         ? "Overview"
-        : pathname === `/stories/${storyId}/settings`
+        : pathname.startsWith(`/stories/${storyId}/settings`)
           ? "Settings"
           : pathname === `/stories/${storyId}/search`
             ? "Search"

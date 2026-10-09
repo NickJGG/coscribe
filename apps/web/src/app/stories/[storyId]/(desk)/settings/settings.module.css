@@ -1,16 +1,146 @@
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  margin-top: -8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tab {
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-muted);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-current="page"] {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+}
+
+.cardHead {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.cardHead h2 {
+  font-size: var(--step-1);
+}
+
+.cardHead p {
+  margin-top: 2px;
+  font-size: var(--step--1);
+}
+
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.sub + .sub {
+  border-top: 1px solid var(--hair);
+}
+
+.sub h3 {
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--rule));
+}
+
+.danger .cardHead h2 {
+  color: var(--danger);
+}
+
+/* A heading and its description on the left, one action on the right; wraps under on phones. */
+.inlineRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.inlineRow > div:first-child {
+  flex: 1 1 16rem;
+}
+
+.inlineRow p {
+  margin-top: 2px;
+  font-size: var(--step--1);
+}
+
+.hint {
+  margin-top: -8px;
+  font-size: var(--step--1);
+}
+
+.status {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--wash);
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.saved {
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
 .form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.subheading {
-  margin-top: 8px;
-  font-family: var(--font-ui), system-ui, sans-serif;
-  font-size: var(--step-0);
-}
-
 .token {
   font-size: 0.875rem;
   overflow-wrap: anywhere;
+}
+
+/* Keeps role pills lined up on rows without a "···" menu. */
+.menuSpacer {
+  display: inline-block;
+  min-width: 32px;
+}
+
+@media (pointer: coarse) {
+  .menuSpacer {
+    min-width: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .cardHead,
+  .sub {
+    padding-inline: 16px;
+  }
 }

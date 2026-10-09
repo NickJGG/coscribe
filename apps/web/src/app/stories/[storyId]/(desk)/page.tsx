@@ -100,7 +100,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
           <p className={styles.blurb}>{story.blurb}</p>
         ) : (
           myRole === "host" && (
-            <Link href={`/stories/${story.id}/settings`} className={styles.addBlurb}>
+            <Link href={`/stories/${story.id}/settings/story`} className={styles.addBlurb}>
               Add a blurb
             </Link>
           )

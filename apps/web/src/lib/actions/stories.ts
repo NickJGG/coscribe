@@ -122,15 +122,12 @@ export async function setStoryFinished(storyId: string, finished: boolean): Prom
   return null;
 }
 
-export async function setStoryColor(storyId: string, _prev: ActionResult, formData: FormData): Promise<ActionResult> {
+export async function setStoryColor(storyId: string, color: string): Promise<ActionResult> {
   if (!isUuid(storyId)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("set_story_color", {
-    p_story: storyId,
-    p_color: String(formData.get("author_color") ?? ""),
-  });
+  const { error } = await supabase.rpc("set_story_color", { p_story: storyId, p_color: color });
   if (error) return errorText(error);
 
   refresh();

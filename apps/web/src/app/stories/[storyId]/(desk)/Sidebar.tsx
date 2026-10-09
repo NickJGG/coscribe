@@ -60,6 +60,7 @@ export function Sidebar({
   const overviewHref = `/stories/${storyId}`;
   const settingsHref = `/stories/${storyId}/settings`;
   const currentIf = (href: string) => (pathname === href ? "page" : undefined);
+  const settingsCurrent = pathname.startsWith(settingsHref) ? "page" : undefined;
 
   // A pane that was hidden comes back where it was left.
   useLayoutEffect(() => {
@@ -116,7 +117,7 @@ export function Sidebar({
             <Link
               href={settingsHref}
               className={`${styles.stripButton} ${styles.stripEnd}`}
-              aria-current={currentIf(settingsHref)}
+              aria-current={settingsCurrent}
               title="Settings"
             >
               <SettingsIcon />
@@ -144,7 +145,7 @@ export function Sidebar({
                 <Link
                   href={settingsHref}
                   className={`${styles.row} ${styles.pageRow}`}
-                  aria-current={currentIf(settingsHref)}
+                  aria-current={settingsCurrent}
                 >
                   <SettingsIcon />
                   <span className={styles.name}>Settings</span>
