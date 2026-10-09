@@ -1,12 +1,13 @@
 import { getStory } from "@/lib/story";
 import { StoryChat } from "@/components/StoryChat";
+import { StoryMembersProvider } from "@/components/StoryMembers";
 import { StoryPanelProvider } from "@/components/StoryPanel";
 import { StoryPresenceProvider } from "@/components/StoryPresence";
 import { StoryUpdates } from "@/components/StoryUpdates";
 import { OutsideReader } from "./OutsideReader";
 
 /**
- * Keeps the right panel, and the Story Chat, presence and update subscriptions, mounted while moving
+ * Keeps the right panel, the members list, and the Story Chat, presence and update subscriptions, mounted while moving
  * between a story's pages. Viewers never get Chat, and the Reader doesn't either.
  */
 export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]">) {
@@ -18,21 +19,25 @@ export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]
       {props.children}
       {data?.myRole && data.viewer && (
         <OutsideReader>
-          <StoryChat storyId={data.story.id} me={data.viewer.userId} members={data.members.map((m) => m.profile)} />
+          <StoryChat storyId={data.story.id} me={data.viewer.userId} />
         </OutsideReader>
       )}
     </StoryPanelProvider>
   );
   if (!data) return panel;
 
+  const me = data.viewer?.userId ?? null;
+  const members = data.members.map(({ profile }) => ({
+    id: profile.id,
+    name: profile.username,
+    color: profile.author_color,
+  }));
   return (
-    <StoryPresenceProvider
-      storyId={data.story.id}
-      me={data.viewer?.userId ?? null}
-      members={data.members.map(({ profile }) => ({ id: profile.id, name: profile.username, color: profile.author_color }))}
-    >
-      {panel}
-      <StoryUpdates storyId={data.story.id} />
-    </StoryPresenceProvider>
+    <StoryMembersProvider storyId={data.story.id} me={me} members={members}>
+      <StoryPresenceProvider storyId={data.story.id} me={me} members={members}>
+        {panel}
+        <StoryUpdates storyId={data.story.id} />
+      </StoryPresenceProvider>
+    </StoryMembersProvider>
   );
 }

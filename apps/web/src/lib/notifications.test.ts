@@ -29,6 +29,14 @@ describe("notificationVerb", () => {
     expect(notificationVerb({ kind: "note_resolved", detail: {} })).toBe("resolved your Note in");
   });
 
+  it("says where you were mentioned", () => {
+    expect(notificationVerb({ kind: "note_mention", detail: { chapter_title: "The Tide" } })).toBe(
+      "mentioned you in a Note on “The Tide” in"
+    );
+    expect(notificationVerb({ kind: "note_mention", detail: {} })).toBe("mentioned you in a Note in");
+    expect(notificationVerb({ kind: "chat_mention", detail: {} })).toBe("mentioned you in Story Chat in");
+  });
+
   it("says which role", () => {
     expect(notificationVerb({ kind: "role_changed", detail: { role: "cohost" } })).toBe("made you a Co-host in");
     expect(notificationVerb({ kind: "role_changed", detail: { role: "host" } })).toBe("handed you Host of");
@@ -56,6 +64,7 @@ describe("notificationHref", () => {
     const reply = { ...base, kind: "note_reply" as const, note_id: "n7", detail: { chapter_id: "c9" } };
     expect(notificationHref(reply)).toBe("/stories/s1/chapters/c9?note=n7");
     expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1/chapters/c9?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_mention" })).toBe("/stories/s1/chapters/c9?note=n7");
     expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/chapters/c9");
   });
 

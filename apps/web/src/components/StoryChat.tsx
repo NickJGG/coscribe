@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { authorColorCss } from "@/lib/profile-rules";
 import { Panel, usePanelOpen, useStoryPanel } from "./StoryPanel";
+import { usePeople } from "./StoryMembers";
 import styles from "./StoryChat.module.css";
 
-type Person = { id: string; username: string; author_color: string };
 type Message = { id: string; user_id: string; body: string; created_at: string };
 
 const PAGE = 50;
@@ -25,7 +25,7 @@ function merge(current: Message[], incoming: Message[]): Message[] {
  * layout, so it keeps listening (and counting unread) while closed. RLS keeps both history and Realtime
  * delivery to members, so a Writer removed mid-session simply stops receiving messages.
  */
-export function StoryChat({ storyId, me, members }: { storyId: string; me: string; members: Person[] }) {
+export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
   const supabase = useMemo(() => createClient(), []);
   const addUnread = useStoryPanel()?.addUnread;
   const open = usePanelOpen("chat");
@@ -33,7 +33,6 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
   const [hasEarlier, setHasEarlier] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [people, setPeople] = useState(() => new Map(members.map((p) => [p.id, p])));
   const openRef = useRef(open);
   const listRef = useRef<HTMLOListElement>(null);
   const stickToBottom = useRef(true);
@@ -75,28 +74,8 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
     };
   }, [supabase, storyId, me, loadLatest, addUnread]);
 
-  const missing = useMemo(
-    () => [...new Set(messages.map((m) => m.user_id))].filter((id) => !people.has(id)),
-    [messages, people]
-  );
-
-  // Writers who joined after this page loaded, in their color for this Story.
-  useEffect(() => {
-    if (!missing.length) return;
-    void supabase
-      .from("profiles")
-      .select("id, username, author_color, story_members (author_color)")
-      .eq("story_members.story_id", storyId)
-      .in("id", missing)
-      .then(({ data }) => {
-        if (!data?.length) return;
-        const found = data.map(({ story_members, ...p }) => ({
-          ...p,
-          author_color: story_members[0]?.author_color ?? p.author_color,
-        }));
-        setPeople((current) => new Map([...current, ...found.map((p) => [p.id, p] as const)]));
-      });
-  }, [supabase, storyId, missing]);
+  const authorIds = useMemo(() => [...new Set(messages.map((m) => m.user_id))], [messages]);
+  const person = usePeople(authorIds);
 
   // Opening the panel starts from the newest message.
   useEffect(() => {
@@ -169,16 +148,16 @@ export function StoryChat({ storyId, me, members }: { storyId: string; me: strin
           const prev = messages[i - 1];
           const grouped =
             prev?.user_id === m.user_id && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
-          const person = people.get(m.user_id);
+          const author = person(m.user_id);
           return (
             <li key={m.id} className={grouped ? styles.grouped : styles.message}>
               {!grouped && (
                 <div className={styles.byline}>
                   <span
                     className={styles.author}
-                    style={{ "--author": person ? authorColorCss(person.author_color) : "var(--rule)" } as React.CSSProperties}
+                    style={{ "--author": author ? authorColorCss(author.color) : "var(--rule)" } as React.CSSProperties}
                   >
-                    {person?.username ?? "…"}
+                    {author?.name ?? "…"}
                   </span>
                   <time className="muted" dateTime={m.created_at}>
                     {formatTime(m.created_at)}

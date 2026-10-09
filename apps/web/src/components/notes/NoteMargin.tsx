@@ -8,8 +8,12 @@ import { relativeTime } from "@/lib/relative-time";
 import { useMeasure } from "@/lib/use-measure";
 import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
 import type { ActionResult } from "@/lib/action-result";
+import { toEditableText, toStoredBody } from "@/lib/writer-mentions";
 import { Avatar } from "../Avatar";
 import { Dropdown } from "../Dropdown";
+import { usePeople, useStoryMembers } from "../StoryMembers";
+import { WriterMentionPicker, useWriterMentionPicker } from "../WriterMentionPicker";
+import { WriterMentionText } from "../WriterMentionText";
 import { noteClass, noteDraft } from "./NoteHighlights";
 import { useNotes } from "./NotesProvider";
 import styles from "./notes.module.css";
@@ -23,6 +27,7 @@ type Placement = { tops: Record<string, number>; bottom: number };
 const NOT_PLACED: Placement = { tops: {}, bottom: 0 };
 const NOT_ANCHORED: { top: number; left: number } | null = null;
 const POPOVER_GAP = 6;
+const NO_IDS: string[] = [];
 
 /**
  * Laid over the Authorship box: with Show notes on, the margin of cards beside the text, one per open Note
@@ -370,6 +375,7 @@ function Message({
   active: boolean;
 }) {
   const { person, isMine, canDelete, readOnly, edit, remove } = useNotes()!;
+  const lookup = usePeople(NO_IDS);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const who = person(message.author_id);
@@ -414,7 +420,7 @@ function Message({
         </div>
         {editing ? (
           <Compose
-            initial={message.body}
+            initial={toEditableText(message.body, (id) => lookup(id)?.name ?? "someone")}
             submit="Save"
             onSubmit={async (body) => {
               const result = await edit(kind, message.id, body);
@@ -425,7 +431,9 @@ function Message({
             autoFocus
           />
         ) : (
-          <p className={styles.body}>{message.body}</p>
+          <p className={styles.body}>
+            <WriterMentionText body={message.body} />
+          </p>
         )}
         {error && (
           <p role="alert" className={styles.error}>
@@ -437,7 +445,10 @@ function Message({
   );
 }
 
-/** A Note, reply or edit box. Enter sends, Shift+Enter starts a new line, Escape cancels. */
+/**
+ * A Note, reply or edit box. Enter sends, Shift+Enter starts a new line, Escape cancels. Typed `@username`s
+ * of members are sent as Writer Mentions.
+ */
 function Compose({
   initial = "",
   placeholder,
@@ -456,11 +467,13 @@ function Compose({
   const [body, setBody] = useState(initial);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const { members } = useStoryMembers();
+  const picker = useWriterMentionPicker(body, setBody);
 
   async function send() {
     if (!body.trim() || pending) return;
     setPending(true);
-    const result = await onSubmit(body);
+    const result = await onSubmit(toStoredBody(body, members));
     setPending(false);
     setError(result);
     if (!result) setBody("");
@@ -474,25 +487,29 @@ function Compose({
         void send();
       }}
     >
-      <textarea
-        className={`input ${styles.input}`}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        placeholder={placeholder}
-        aria-label={placeholder ?? "Message"}
-        maxLength={NOTE_BODY_MAX}
-        rows={1}
-        autoFocus={autoFocus}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-            e.preventDefault();
-            e.currentTarget.form?.requestSubmit();
-          } else if (e.key === "Escape" && onCancel) {
-            e.preventDefault();
-            onCancel();
-          }
-        }}
-      />
+      <WriterMentionPicker picker={picker}>
+        <textarea
+          {...picker.textareaProps}
+          className={`input ${styles.input}`}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder ?? "Message"}
+          maxLength={NOTE_BODY_MAX}
+          rows={1}
+          autoFocus={autoFocus}
+          onKeyDown={(e) => {
+            if (picker.onKeyDown(e)) return;
+            if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            } else if (e.key === "Escape" && onCancel) {
+              e.preventDefault();
+              onCancel();
+            }
+          }}
+        />
+      </WriterMentionPicker>
       {(onCancel || body.trim()) && (
         <div className={styles.composeButtons}>
           {onCancel && (

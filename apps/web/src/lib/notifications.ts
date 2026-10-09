@@ -73,6 +73,12 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
       const title = detailText(n.detail, "chapter_title");
       return title ? `replied to a Note on “${title}” in` : "replied to a Note in";
     }
+    case "note_mention": {
+      const title = detailText(n.detail, "chapter_title");
+      return title ? `mentioned you in a Note on “${title}” in` : "mentioned you in a Note in";
+    }
+    case "chat_mention":
+      return "mentioned you in Story Chat in";
     case "note_resolved": {
       const title = detailText(n.detail, "chapter_title");
       return title ? `resolved your Note on “${title}” in` : "resolved your Note in";
@@ -89,7 +95,7 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
 export function notificationHref(n: Pick<Notification, "kind" | "story_id" | "note_id" | "detail">): string | null {
   if (!n.story_id || n.kind === "story_deleted" || n.kind === "removed") return null;
   const story = `/stories/${n.story_id}`;
-  if (n.kind === "note_reply" || n.kind === "note_resolved") {
+  if (n.kind === "note_reply" || n.kind === "note_mention" || n.kind === "note_resolved") {
     const chapter = detailText(n.detail, "chapter_id");
     if (!chapter) return story;
     return n.note_id ? `${story}/chapters/${chapter}?note=${n.note_id}` : `${story}/chapters/${chapter}`;
