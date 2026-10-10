@@ -8,7 +8,7 @@ export function Card({
   children,
 }: {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   danger?: boolean;
   children: React.ReactNode;
 }) {

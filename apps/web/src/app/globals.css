@@ -418,7 +418,12 @@ a {
 }
 
 .skeleton[data-round] {
-  border-radius: 50%;
+  border-radius: 999px;
+}
+
+.skeleton[data-text] {
+  height: 0.8em;
+  margin-block: calc((1lh - 0.8em) / 2);
 }
 
 @keyframes skeleton-fade {
