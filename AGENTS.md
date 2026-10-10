@@ -12,6 +12,12 @@ This Next.js has breaking changes from what you were trained on. Check `apps/web
 - Apply new migrations with `supabase migration up`, then `pnpm db:types`.
 - Never run `pnpm db:reset`, `supabase db reset`, or anything else that drops or truncates data without asking first, even when a plan says to.
 
+## Production
+
+- Live at Vercel (apps/web), Fly.io (`coscribe-sync`), and a hosted Supabase project linked to this repo. See the README's Production section.
+- Never run anything that touches production without asking first: `supabase db push`, any `supabase` command with `--linked`, `pnpm deploy:sync`, `fly deploy`, `fly secrets`, or `fly machine`/`scale`. Read-only checks (`fly status`, `fly logs`) are fine.
+- Never edit a migration that's already in `supabase/migrations/`; production has applied it. Add a new one.
+
 ## Checks
 
 `pnpm typecheck`, `pnpm test`, `pnpm lint`.

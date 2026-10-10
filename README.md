@@ -67,7 +67,7 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 apps/web/src/app/           Routes: home, login, auth/callback, onboarding, settings, u/[username],
                             friends, stories, stories/[storyId](/settings), invite/[token],
                             stories/[storyId]/chapters/[chapterId], stories/[storyId]/bible/[entryId],
-                            stories/[storyId]/read(/[chapterId], /bible, /credits)
+                            stories/[storyId]/read(/[chapterId], /bible, /credits), privacy
 apps/web/src/lib/supabase/  Browser, server, and proxy client factories (@supabase/ssr)
 apps/web/src/lib/actions/   Server Actions
 apps/web/src/components/    Shared UI, including LiveDocument (the Tiptap editor) and StoryChat
@@ -88,11 +88,13 @@ The hosted Supabase project, `apps/sync` on Fly.io, and `apps/web` on Vercel. `s
 3. **Auth → URL Configuration:** Site URL `https://<web domain>`, redirect URL `https://<web domain>/**`.
 4. `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` must list a key, since apps/sync verifies tokens against it. If it's empty, switch to asymmetric keys under **Settings → JWT Keys**.
 
-In the Google and Discord OAuth apps, add `https://<ref>.supabase.co/auth/v1/callback` as a redirect next to the local one. Publish the Google consent screen, or only listed test users can sign in.
+In the Google and Discord OAuth apps, add `https://<ref>.supabase.co/auth/v1/callback` as a redirect next to the local one. Publish the Google consent screen (**Audience → Publish app**), or only listed test users can sign in. Publishing needs the **Branding** page complete: home page and privacy policy (`/privacy`) links, with the web domain under *Authorized domains*.
 
 ### apps/sync on Fly.io
 
-`apps/sync/fly.toml` runs one always-on machine. Keep it at one: open documents, presence, and Snapshot timing are in memory. Set `primary_region` to match the Supabase region.
+`apps/sync/fly.toml` runs one always-on machine. Keep it at one: open documents, presence, and Snapshot timing are in memory. Set `primary_region` to match the Supabase region. The Fly account needs a card on file: trial machines stop after 5 minutes.
+
+Run these from the repo root, which is the Docker build context:
 
 ```bash
 fly apps create coscribe-sync
@@ -118,6 +120,12 @@ Import the repo with **Root Directory** `apps/web`, keeping *Include files outsi
 | `SYNC_SECRET` | Same as on Fly |
 
 `NEXT_PUBLIC_*` values are baked in at build time, so redeploy after changing them. If the build picks the wrong pnpm, add `ENABLE_EXPERIMENTAL_COREPACK=1` to use the `packageManager` version.
+
+### Shipping changes
+
+- Pushing to `main` deploys apps/web. apps/sync doesn't deploy on push: run `pnpm deploy:sync` after changing `apps/sync` or `packages/editor`.
+- A new migration goes out with `pnpm supabase db push`, before the code that needs it.
+- Debugging: `fly logs --app coscribe-sync`, Vercel's Logs tab, and Supabase **Logs → Auth**.
 
 ## Sign-in flow
 
