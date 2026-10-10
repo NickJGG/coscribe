@@ -25,3 +25,9 @@ This Next.js has breaking changes from what you were trained on. Check `apps/web
 ## Checks
 
 `pnpm typecheck`, `pnpm test`, `pnpm lint`.
+
+## Loading skeletons
+
+- Every leaf `page.tsx` has a sibling `loading.tsx` built from the page's own CSS module (`Bar`, `Line`, `Loading` from `components/Skeleton.tsx`). Update it when the page's markup changes.
+- A folder with child routes must not have a `loading.tsx`, since Next shows it on the way to every child. Move the folder's own page into a route group instead, like `(desk)/(overview)/`. The exceptions are the two plain fallbacks, `app/loading.tsx` and `app/stories/[storyId]/loading.tsx`.
+- `apps/web/src/lib/loading-boundaries.test.ts` enforces both.
