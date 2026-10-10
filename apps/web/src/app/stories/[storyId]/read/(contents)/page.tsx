@@ -5,7 +5,7 @@ import { requireReader } from "@/lib/reader";
 import { storyRibbon } from "@/lib/contribution";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { readingTime } from "@/lib/words";
-import styles from "./reader.module.css";
+import styles from "../reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read">): Promise<Metadata> {
   const data = await getStory((await props.params).storyId);

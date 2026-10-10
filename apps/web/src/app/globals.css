@@ -403,3 +403,38 @@ a {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Waits 150ms before showing, so fast navigations never flash it. */
+.skeleton {
+  display: block;
+  max-width: 100%;
+  border-radius: 4px;
+  --bar: color-mix(in srgb, var(--ink) 8%, transparent);
+  background: linear-gradient(90deg, var(--bar) 30%, color-mix(in srgb, var(--ink) 3%, transparent) 50%, var(--bar) 70%)
+    100% 0 / 300% 100%;
+  animation:
+    skeleton-fade 200ms ease-out 150ms both,
+    skeleton-shimmer 1.4s ease-in-out 350ms infinite;
+}
+
+.skeleton[data-round] {
+  border-radius: 50%;
+}
+
+@keyframes skeleton-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: skeleton-fade 200ms ease-out 150ms both;
+  }
+}

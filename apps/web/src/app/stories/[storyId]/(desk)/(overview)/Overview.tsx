@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
 import { useHereNow, type HereNow } from "@/components/StoryPresence";
-import { useDeskFrame } from "./DeskFrame";
+import { useDeskFrame } from "../DeskFrame";
 import styles from "./overview.module.css";
 
 /** A card for each Writer here now, linking to what they have open. Nothing when nobody's here. */
