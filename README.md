@@ -79,16 +79,16 @@ supabase/config.toml        Local stack config
 
 ## Production
 
-The hosted Supabase project, `apps/sync` on Fly.io, and `apps/web` on Vercel. `supabase/config.toml` only configures the local stack: hosted Auth settings live in the dashboard.
+Live at https://coscribe.ink: the hosted Supabase project, `apps/sync` on Fly.io (`coscribe-sync.fly.dev`), and `apps/web` on Vercel. `supabase/config.toml` only configures the local stack: hosted Auth settings live in the dashboard.
 
 ### Supabase
 
 1. Create the project, then `pnpm supabase link --project-ref <ref>` and `pnpm supabase db push` to apply `supabase/migrations/`. Run `db push` again after adding a migration.
 2. **Auth → Providers:** disable Email. Enable Google (with *Skip nonce checks*, matching local) and Discord.
-3. **Auth → URL Configuration:** Site URL `https://<web domain>`, redirect URL `https://<web domain>/**`.
+3. **Auth → URL Configuration:** Site URL `https://coscribe.ink`, redirect URL `https://coscribe.ink/**`.
 4. `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` must list a key, since apps/sync verifies tokens against it. If it's empty, switch to asymmetric keys under **Settings → JWT Keys**.
 
-In the Google and Discord OAuth apps, add `https://<ref>.supabase.co/auth/v1/callback` as a redirect next to the local one. Publish the Google consent screen (**Audience → Publish app**), or only listed test users can sign in. Publishing needs the **Branding** page complete: home page and privacy policy (`/privacy`) links, with the web domain under *Authorized domains*.
+In the Google and Discord OAuth apps, add `https://<ref>.supabase.co/auth/v1/callback` as a redirect next to the local one. Publish the Google consent screen (**Audience → Publish app**), or only listed test users can sign in. Publishing needs the **Branding** page complete: home page and privacy policy (`/privacy`) links, with `coscribe.ink` under *Authorized domains*.
 
 ### apps/sync on Fly.io
 
@@ -111,6 +111,8 @@ pnpm deploy:sync
 ### apps/web on Vercel
 
 Import the repo with **Root Directory** `apps/web`, keeping *Include files outside the root directory* on (it builds `packages/editor`).
+
+Under **Domains**, `coscribe.ink` serves production, and `www.coscribe.ink` and the `vercel.app` domain redirect to it. Vercel defaults to the reverse; keep it this way, because sign-in returns to the page's own domain, and Supabase only accepts `coscribe.ink`.
 
 | Variable | Value |
 |---|---|

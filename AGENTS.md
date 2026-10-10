@@ -14,7 +14,7 @@ This Next.js has breaking changes from what you were trained on. Check `apps/web
 
 ## Production
 
-- Live at Vercel (apps/web), Fly.io (`coscribe-sync`), and a hosted Supabase project linked to this repo. See the README's Production section.
+- Live at https://coscribe.ink: Vercel (apps/web), Fly.io (`coscribe-sync`), and a hosted Supabase project linked to this repo. See the README's Production section.
 - Never run anything that touches production without asking first: `supabase db push`, any `supabase` command with `--linked`, `pnpm deploy:sync`, `fly deploy`, `fly secrets`, or `fly machine`/`scale`. Read-only checks (`fly status`, `fly logs`) are fine.
 - Never edit a migration that's already in `supabase/migrations/`; production has applied it. Add a new one.
 - Migrations reach production before the code that uses them, so the deployed code must keep working against the new schema: add columns, tables, and functions rather than renaming or dropping in the same change.
