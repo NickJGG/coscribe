@@ -1,0 +1,9 @@
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+**/*.stackdump
+**/.env*
+.git
+supabase
+apps/web

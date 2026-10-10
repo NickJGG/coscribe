@@ -59,6 +59,7 @@ Both providers redirect to the local auth server at `http://127.0.0.1:55321/auth
 | `db:reset` | Drop the local DB and re-apply migrations |
 | `db:status` | Print URLs and keys for the running stack |
 | `db:types` | Regenerate `apps/web/src/lib/supabase/database.types.ts` from the local DB |
+| `deploy:sync` | Build and deploy `apps/sync` to Fly.io |
 
 ### Layout
 
@@ -75,6 +76,48 @@ packages/editor/            Shared editor schema
 supabase/migrations/        SQL migrations, applied by db:start / db:reset
 supabase/config.toml        Local stack config
 ```
+
+## Production
+
+The hosted Supabase project, `apps/sync` on Fly.io, and `apps/web` on Vercel. `supabase/config.toml` only configures the local stack: hosted Auth settings live in the dashboard.
+
+### Supabase
+
+1. Create the project, then `pnpm supabase link --project-ref <ref>` and `pnpm supabase db push` to apply `supabase/migrations/`. Run `db push` again after adding a migration.
+2. **Auth → Providers:** disable Email. Enable Google (with *Skip nonce checks*, matching local) and Discord.
+3. **Auth → URL Configuration:** Site URL `https://<web domain>`, redirect URL `https://<web domain>/**`.
+4. `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` must list a key, since apps/sync verifies tokens against it. If it's empty, switch to asymmetric keys under **Settings → JWT Keys**.
+
+In the Google and Discord OAuth apps, add `https://<ref>.supabase.co/auth/v1/callback` as a redirect next to the local one. Publish the Google consent screen, or only listed test users can sign in.
+
+### apps/sync on Fly.io
+
+`apps/sync/fly.toml` runs one always-on machine. Keep it at one: open documents, presence, and Snapshot timing are in memory. Set `primary_region` to match the Supabase region.
+
+```bash
+fly apps create coscribe-sync
+fly secrets set --app coscribe-sync DATABASE_URL=... SUPABASE_URL=https://<ref>.supabase.co SYNC_SECRET=...
+pnpm deploy:sync
+```
+
+| Secret | Value |
+|---|---|
+| `DATABASE_URL` | Supabase **Session pooler** string (port 5432, user `postgres.<ref>`). Not the transaction pooler: postgres.js uses prepared statements. The direct `db.<ref>` host is IPv6 only. |
+| `SUPABASE_URL` | `https://<ref>.supabase.co`, the token issuer |
+| `SYNC_SECRET` | A long random string, shared with apps/web |
+
+### apps/web on Vercel
+
+Import the repo with **Root Directory** `apps/web`, keeping *Include files outside the root directory* on (it builds `packages/editor`).
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | The project's Publishable key |
+| `NEXT_PUBLIC_SYNC_URL` | `wss://coscribe-sync.fly.dev` |
+| `SYNC_SECRET` | Same as on Fly |
+
+`NEXT_PUBLIC_*` values are baked in at build time, so redeploy after changing them. If the build picks the wrong pnpm, add `ENABLE_EXPERIMENTAL_COREPACK=1` to use the `packageManager` version.
 
 ## Sign-in flow
 

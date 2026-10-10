@@ -14,7 +14,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
-    "db:types": "supabase gen types typescript --local > apps/web/src/lib/supabase/database.types.ts"
+    "db:types": "supabase gen types typescript --local > apps/web/src/lib/supabase/database.types.ts",
+    "deploy:sync": "fly deploy . --config apps/sync/fly.toml --dockerfile apps/sync/Dockerfile --ha=false"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
