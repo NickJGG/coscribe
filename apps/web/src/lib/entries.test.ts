@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readEntryFields, readEntryPatch } from "./entries";
+import { entryGroups, readEntryFields, readEntryPatch } from "./entries";
 
 function form(values: Record<string, string>) {
   const data = new FormData();
@@ -48,5 +48,30 @@ describe("readEntryPatch", () => {
     expect(readEntryPatch({ name: "  " })).toHaveProperty("error");
     expect(readEntryPatch({ type: "weapon" as never })).toHaveProperty("error");
     expect(readEntryPatch({ description: "x".repeat(281) })).toHaveProperty("error");
+  });
+});
+
+describe("entryGroups", () => {
+  const entries = [
+    { id: "c1", type: "character" as const },
+    { id: "l1", type: "lore" as const },
+    { id: "c2", type: "character" as const },
+  ];
+
+  it("follows the type order and drops empty types", () => {
+    expect(entryGroups(entries, ["lore", "place", "character", "item"])).toEqual([
+      { type: "lore", entries: [{ id: "l1", type: "lore" }] },
+      {
+        type: "character",
+        entries: [
+          { id: "c1", type: "character" },
+          { id: "c2", type: "character" },
+        ],
+      },
+    ]);
+  });
+
+  it("is empty with no Entries", () => {
+    expect(entryGroups([], ["character", "place", "item", "lore"])).toEqual([]);
   });
 });

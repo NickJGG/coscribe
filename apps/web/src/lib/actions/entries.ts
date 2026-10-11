@@ -7,7 +7,14 @@ import { requireProfile } from "@/lib/viewer";
 import { blockTexts, entryNamed, type ContentJSON } from "@coscribe/editor";
 import { fetchStoryContent, refreshSyncAccess } from "@/lib/sync";
 import { getEntries } from "@/lib/story";
-import { entryMentionEntries, readEntryFields, readEntryPatch, type EntryPatch, type EntryType } from "@/lib/entries";
+import {
+  ENTRY_TYPES,
+  entryMentionEntries,
+  readEntryFields,
+  readEntryPatch,
+  type EntryPatch,
+  type EntryType,
+} from "@/lib/entries";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 
 const INVALID = "Something went wrong. Try again.";
@@ -83,6 +90,36 @@ export async function renameEntry(
 }
 
 const PREVIEW_CHARS = 240;
+
+export async function moveEntryTo(storyId: string, entryId: string, afterId: string | null): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isUuid(entryId) || (afterId !== null && !isUuid(afterId))) return INVALID;
+  await requireProfile(`/stories/${storyId}`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("move_entry_to", { p_entry: entryId, p_after: afterId ?? undefined });
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
+}
+
+export async function moveEntryType(storyId: string, type: EntryType, afterType: EntryType | null): Promise<ActionResult> {
+  if (!isUuid(storyId) || !ENTRY_TYPES.includes(type) || (afterType !== null && !ENTRY_TYPES.includes(afterType))) {
+    return INVALID;
+  }
+  await requireProfile(`/stories/${storyId}`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("move_entry_type_to", {
+    p_story: storyId,
+    p_type: type,
+    p_after: afterType ?? undefined,
+  });
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
+}
 
 /** The opening of an Entry's body for an Entry Mention's card. Null if it's empty, unreadable, or out of reach. */
 export async function getEntryPreview(storyId: string, entryId: string): Promise<string | null> {

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { countMatches, indexStory, searchStory, snippet } from "./search";
 
 const index = indexStory({
+  typeOrder: ["character", "place", "item", "lore"],
   chapters: [
     { id: "c1", title: "The Lamp", blocks: ["Wren lit the lamp.", "The lamp went out, and the lamp was cold."] },
     { id: "c2", title: "Fog", blocks: ["Nothing here."] },
@@ -69,5 +70,24 @@ describe("countMatches", () => {
       { kind: "entry", id: "e1", label: "Wren", count: 1 },
       { kind: "entry", id: "e2", label: "Gull Point", count: 0 },
     ]);
+  });
+});
+
+describe("indexStory", () => {
+  it("orders Entries by the Story's type order, keeping each type's incoming order", () => {
+    const entry = (id: string, type: "character" | "place", name: string) => ({
+      id,
+      type,
+      name,
+      aliases: [],
+      description: "",
+      blocks: [],
+    });
+    const ordered = indexStory({
+      typeOrder: ["place", "lore", "character", "item"],
+      chapters: [],
+      entries: [entry("c1", "character", "Zed"), entry("p1", "place", "Mill"), entry("c2", "character", "Abe")],
+    });
+    expect(ordered.entries.map((e) => e.id)).toEqual(["p1", "c1", "c2"]);
   });
 });

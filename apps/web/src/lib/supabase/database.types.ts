@@ -91,14 +91,14 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "aliases": (string)[],"created_at": string,"created_by": string | null,"description": string,"id": string,"link_entry_mentions": boolean,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
+                    "aliases": (string)[],"created_at": string,"created_by": string | null,"description": string,"id": string,"link_entry_mentions": boolean,"name": string,"position": number,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name": string,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name": string,"position"?: number,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
                   }
                   Update: {
-                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name"?: string,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name"?: string,"position"?: number,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
                   }
                   Relationships: [
                     {
@@ -347,14 +347,14 @@ isOneToOne: false
                   ]
                 },"stories": {
                   Row: {
-                    "blurb": string | null,"created_at": string,"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
+                    "blurb": string | null,"created_at": string,"entry_type_order": (Database["public"]['Enums']["entry_type"])[],"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "blurb"?: string | null,"created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Update: {
-                    "blurb"?: string | null,"created_at"?: string,"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Relationships: [
                     
@@ -542,6 +542,12 @@ isOneToOne: false
                            },
 "move_chapter_to":
 { Args: { "p_after"?: string,"p_chapter": string }; Returns: undefined
+                           },
+"move_entry_to":
+{ Args: { "p_after"?: string,"p_entry": string }; Returns: undefined
+                           },
+"move_entry_type_to":
+{ Args: { "p_after"?: Database["public"]['Enums']["entry_type"],"p_story": string,"p_type": Database["public"]['Enums']["entry_type"] }; Returns: undefined
                            },
 "next_free_color":
 { Args: { "p_preferred": string,"p_taken": (string)[] }; Returns: string

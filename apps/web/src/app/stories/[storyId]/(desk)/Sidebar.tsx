@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ENTRY_GROUP_LABEL, ENTRY_TYPES, type EntryType } from "@/lib/entries";
+import { ENTRY_GROUP_LABEL, entryGroups, type EntryType } from "@/lib/entries";
 import { joinNames } from "@/lib/presence";
 import { Avatar } from "@/components/Avatar";
 import { useHereNow, type HereNow } from "@/components/StoryPresence";
@@ -30,6 +30,7 @@ export function Sidebar({
   storyTitle,
   chapters,
   entries,
+  typeOrder,
   member,
   noteCounts,
   reorderable,
@@ -42,6 +43,7 @@ export function Sidebar({
   storyTitle: string;
   chapters: Chapter[];
   entries: Entry[];
+  typeOrder: EntryType[];
   member: boolean;
   noteCounts?: Record<string, number>;
   reorderable: boolean;
@@ -209,30 +211,26 @@ export function Sidebar({
             hidden={tab !== "bible"}
             onScroll={(e) => (scrollTops.current.bible = e.currentTarget.scrollTop)}
           >
-            {ENTRY_TYPES.map((type) => {
-              const group = entries.filter((e) => e.type === type);
-              if (!group.length) return null;
-              return (
-                <div key={type} className={styles.group}>
-                  <h3 className="smallcaps">{ENTRY_GROUP_LABEL[type]}</h3>
-                  <ul className={styles.list}>
-                    {group.map((entry) => (
-                      <li key={entry.id} className={styles.item}>
-                        <Link
-                          href={`/stories/${storyId}/bible/${entry.id}`}
-                          scroll={false}
-                          className={`${styles.row} ${styles.entryRow}`}
-                          aria-current={entry.id === entryId ? "page" : undefined}
-                        >
-                          <span className={styles.name}>{entry.name}</span>
-                        </Link>
-                        {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
+            {entryGroups(entries, typeOrder).map(({ type, entries: group }) => (
+              <div key={type} className={styles.group}>
+                <h3 className="smallcaps">{ENTRY_GROUP_LABEL[type]}</h3>
+                <ul className={styles.list}>
+                  {group.map((entry) => (
+                    <li key={entry.id} className={styles.item}>
+                      <Link
+                        href={`/stories/${storyId}/bible/${entry.id}`}
+                        scroll={false}
+                        className={`${styles.row} ${styles.entryRow}`}
+                        aria-current={entry.id === entryId ? "page" : undefined}
+                      >
+                        <span className={styles.name}>{entry.name}</span>
+                      </Link>
+                      {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
             {entries.length === 0 && <p className={`muted ${styles.empty}`}>No Entries yet.</p>}
             {newEntry}
           </div>

@@ -26,6 +26,10 @@ _Avoid_: Wiki, notes, lore doc
 One typed card in the **Story Bible** (Character, Place, Item, or Lore), with a name, a short description, and a body.
 _Avoid_: Card, note, article
 
+**Entry Type**:
+One of Character, Place, Item or Lore. The **Story Bible** groups its **Entries** by type, in an order each **Story** sets.
+_Avoid_: Category, kind
+
 **Desk**:
 The screen where a **Story** is written and watched: a sidebar of **Chapters** and **Entries** beside the open one.
 _Avoid_: Editor, workspace
@@ -37,6 +41,10 @@ _Avoid_: Home, story page, dashboard
 **Scene Break**:
 The centered `* * *` divider between scenes inside a **Chapter**.
 _Avoid_: Separator, horizontal rule
+
+**Dialogue**:
+Speech in a **Chapter**, recognised by its double quotation marks rather than marked by hand.
+_Avoid_: Speech, quotes, quoted text
 
 ### People and roles
 
@@ -174,4 +182,5 @@ _Avoid_: Alert, activity, update
 - "public story" first sounded like strangers could join and edit. Resolved: **Visibility** only governs viewing; editing is always invite-only.
 - "invite by link" could mean a reusable share link. Resolved: an **Invite Link** is single-use, for one person.
 - "watching" could suggest a named audience. Resolved: **Viewers** are anonymous counts everywhere; only **Writers** have **Presence**.
+- "categories" in the **Story Bible** meant its **Entry Type** groups. Resolved: the four types are fixed; a **Story** orders them but can't add or rename them.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.

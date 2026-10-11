@@ -1,5 +1,5 @@
 import { findFolded, foldQuery, foldText, MIN_QUERY, type FindMatch, type FoldedText } from "@coscribe/editor";
-import { ENTRY_TYPES, type EntryType } from "./entries";
+import { entryGroups, type EntryType } from "./entries";
 import type { SearchText } from "./actions/search";
 
 type IndexedBlock = { text: string; folded: FoldedText };
@@ -12,11 +12,10 @@ export type SearchIndex = {
 
 export function indexStory(text: SearchText): SearchIndex {
   const index = (blocks: string[]) => blocks.map((t) => ({ text: t, folded: foldText(t) }));
-  const typeOrder = (type: EntryType) => ENTRY_TYPES.indexOf(type);
   return {
     chapters: text.chapters.map((c) => ({ ...c, blocks: index(c.blocks) })),
-    entries: [...text.entries]
-      .sort((a, b) => typeOrder(a.type) - typeOrder(b.type) || a.name.localeCompare(b.name))
+    entries: entryGroups(text.entries, text.typeOrder)
+      .flatMap((g) => g.entries)
       .map((e) => ({ ...e, blocks: index(e.blocks) })),
   };
 }

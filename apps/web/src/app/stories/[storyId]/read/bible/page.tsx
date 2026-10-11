@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
-import { ENTRY_TYPE_LABEL, ENTRY_TYPES } from "@/lib/entries";
+import { ENTRY_TYPE_LABEL, entryGroups } from "@/lib/entries";
 import { ProseView } from "@/components/ProseView";
 import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
@@ -14,12 +14,10 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]/read
 
 export default async function ReaderBiblePage(props: PageProps<"/stories/[storyId]/read/bible">) {
   const { storyId } = await props.params;
-  const { entries, content } = await requireReader(storyId, `/stories/${storyId}/read/bible`);
+  const { story, entries, content } = await requireReader(storyId, `/stories/${storyId}/read/bible`);
   if (!entries.length) notFound();
 
-  const groups = ENTRY_TYPES.map((type) => ({ type, entries: entries.filter((e) => e.type === type) })).filter(
-    (g) => g.entries.length
-  );
+  const groups = entryGroups(entries, story.entry_type_order);
 
   return (
     <div className={styles.page}>

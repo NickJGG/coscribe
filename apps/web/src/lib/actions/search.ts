@@ -6,7 +6,9 @@ import { getChapters, getEntries, getStory } from "@/lib/story";
 import { isUuid } from "@/lib/action-result";
 import type { EntryType } from "@/lib/entries";
 
+/** Entries come in position order; `typeOrder` is the Story's Entry Type order. */
 export type SearchText = {
+  typeOrder: EntryType[];
   chapters: { id: string; title: string; blocks: string[] }[];
   entries: { id: string; type: EntryType; name: string; aliases: string[]; description: string; blocks: string[] }[];
 };
@@ -41,11 +43,13 @@ function storyBodies(storyId: string): Promise<Bodies | null> {
 
 /** The searchable text of a Story the viewer may see: Chapters in order, then Entries. Null if it can't be had right now. */
 export async function getSearchText(storyId: string): Promise<SearchText | null> {
-  if (!isUuid(storyId) || !(await getStory(storyId))) return null;
+  const data = isUuid(storyId) ? await getStory(storyId) : null;
+  if (!data) return null;
 
   const [chapters, entries, text] = await Promise.all([getChapters(storyId), getEntries(storyId), storyBodies(storyId)]);
   if (!text) return null;
   return {
+    typeOrder: data.story.entry_type_order,
     chapters: chapters.map((c) => ({ id: c.id, title: c.title, blocks: text.chapter[c.id] ?? [] })),
     entries: entries.map((e) => ({
       id: e.id,

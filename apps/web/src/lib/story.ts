@@ -19,7 +19,7 @@ export const getStory = cache(async (storyId: string) => {
 
   const { data: story } = await supabase
     .from("stories")
-    .select("id, title, blurb, visibility, status, created_at, finished_at")
+    .select("id, title, blurb, visibility, status, created_at, finished_at, entry_type_order")
     .eq("id", storyId)
     .maybeSingle();
   if (!story) return null;
@@ -65,7 +65,7 @@ export async function getOpenNoteCounts(storyId: string): Promise<Record<string,
   return counts;
 }
 
-/** The Story Bible, alphabetical (empty if the viewer can't see the story). */
+/** The Story Bible, each Entry Type in its hand-set order (empty if the viewer can't see the story). */
 export const getEntries = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return [];
   const supabase = await createClient();
@@ -73,7 +73,7 @@ export const getEntries = cache(async (storyId: string) => {
     .from("entries")
     .select("id, type, name, description, aliases, link_entry_mentions")
     .eq("story_id", storyId)
-    .order("name");
+    .order("position");
   return data ?? [];
 });
 

@@ -15,6 +15,7 @@ const RPC_ERRORS: Record<string, string> = {
   last_chapter: "A story needs at least one Chapter.",
   chapter_locked: "This Chapter is locked.",
   chapter_list_changed: "The Chapter list changed. Try again.",
+  entry_list_changed: "The Story Bible changed. Try again.",
   not_a_color: "Pick one of the colors.",
   color_taken: "Another Writer in this story has that color.",
 };

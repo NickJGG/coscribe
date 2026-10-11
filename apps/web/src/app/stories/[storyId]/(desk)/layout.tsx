@@ -106,6 +106,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 storyTitle={story.title}
                 chapters={chapters}
                 entries={entries}
+                typeOrder={story.entry_type_order}
                 member={!!myRole}
                 noteCounts={noteCounts}
                 reorderable={reorderable}

@@ -19,6 +19,16 @@ export const ENTRY_GROUP_LABEL: Record<EntryType, string> = {
   lore: "Lore",
 };
 
+/** The non-empty Entry Type groups in the Story's type order, each keeping its Entries' order. */
+export function entryGroups<E extends { type: EntryType }>(
+  entries: E[],
+  typeOrder: EntryType[]
+): { type: EntryType; entries: E[] }[] {
+  return typeOrder
+    .map((type) => ({ type, entries: entries.filter((e) => e.type === type) }))
+    .filter((g) => g.entries.length);
+}
+
 export const NAME_MAX = 80;
 export const DESCRIPTION_MAX = 280;
 export const ALIASES_MAX = 20;
