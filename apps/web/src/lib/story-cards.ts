@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
 import type { RibbonSegment } from "@/components/ContributionRibbon";
 import { formerWriterNames } from "@/lib/story";
+import { isWriter } from "@/lib/story-roles";
 import { readAuthorChars, storyRibbon } from "./contribution";
 
 export type StoryCardDetails = { chapterCount: number; words: number; ribbon: RibbonSegment[] };
@@ -25,7 +26,7 @@ export async function storyCardDetails(
 
   const stories = (data ?? []).map((story) => ({
     id: story.id,
-    members: story.members.map((m) => ({
+    members: story.members.filter((m) => isWriter(m.role)).map((m) => ({
       id: m.profile.id,
       name: m.profile.username,
       color: m.author_color ?? m.profile.author_color,

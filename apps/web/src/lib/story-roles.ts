@@ -17,6 +17,11 @@ export function atLeast(role: MemberRole | null | undefined, min: MemberRole): b
   return role != null && RANK[role] >= RANK[min];
 }
 
+/** A member who writes: anyone but an invited Viewer. */
+export function isWriter(role: MemberRole | null | undefined): boolean {
+  return atLeast(role, "writer");
+}
+
 /** Reorder, rename, delete, and lock or unlock Chapters. */
 export function canManageChapters(actor: MemberRole | null | undefined): boolean {
   return atLeast(actor, "cohost");
@@ -29,7 +34,7 @@ export function canDeleteEntries(actor: MemberRole | null | undefined): boolean 
 
 /** A whole Note (with its replies), or a single reply: its writer, or Co-hosts and up. */
 export function canDeleteNote(actor: MemberRole | null | undefined, isAuthor: boolean): boolean {
-  return actor != null && (isAuthor || atLeast(actor, "cohost"));
+  return isWriter(actor) && (isAuthor || atLeast(actor, "cohost"));
 }
 
 export function canManageInvites(actor: MemberRole | null | undefined): boolean {
@@ -38,12 +43,17 @@ export function canManageInvites(actor: MemberRole | null | undefined): boolean 
 
 export function canRemove(actor: MemberRole | null | undefined, target: MemberRole): boolean {
   if (target === "host" || !atLeast(actor, "cohost")) return false;
-  return target === "writer" || actor === "host";
+  return !atLeast(target, "cohost") || actor === "host";
 }
 
-/** Promote, demote, or hand off Host to. */
+/** Make Co-host, Make Writer (from Co-host), or Hand off Host. */
 export function canChangeRole(actor: MemberRole | null | undefined, target: MemberRole): boolean {
-  return actor === "host" && target !== "host";
+  return actor === "host" && isWriter(target) && target !== "host";
+}
+
+/** Make Writer or Make Viewer, between those two roles on Private stories. */
+export function canSwapViewer(actor: MemberRole | null | undefined, target: MemberRole, isPrivate: boolean): boolean {
+  return isPrivate && atLeast(actor, "cohost") && (target === "writer" || target === "viewer");
 }
 
 export function canLeave(role: MemberRole | null | undefined): boolean {

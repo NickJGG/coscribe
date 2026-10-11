@@ -1,4 +1,5 @@
 import { getStory } from "@/lib/story";
+import { isWriter } from "@/lib/story-roles";
 import { StoryChat } from "@/components/StoryChat";
 import { StoryMembersProvider } from "@/components/StoryMembers";
 import { StoryPanelProvider } from "@/components/StoryPanel";
@@ -8,7 +9,7 @@ import { OutsideReader } from "./OutsideReader";
 
 /**
  * Keeps the right panel, the members list, and the Story Chat, presence and update subscriptions, mounted while moving
- * between a story's pages. Viewers never get Chat, and the Reader doesn't either.
+ * between a story's pages. Viewers, invited or not, never get Chat, and the Reader doesn't either.
  */
 export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]">) {
   const { storyId } = await props.params;
@@ -17,7 +18,7 @@ export default async function StoryLayout(props: LayoutProps<"/stories/[storyId]
   const panel = (
     <StoryPanelProvider>
       {props.children}
-      {data?.myRole && data.viewer && (
+      {isWriter(data?.myRole) && data?.viewer && (
         <OutsideReader>
           <StoryChat storyId={data.story.id} me={data.viewer.userId} />
         </OutsideReader>

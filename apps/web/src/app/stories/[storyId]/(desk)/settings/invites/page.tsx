@@ -37,7 +37,7 @@ export default async function StorySettingsInvitesPage(props: PageProps<"/storie
 
   const friendInvites = (invites ?? []).filter((i) => i.invitee);
   const linkInvites = (invites ?? []).filter((i) => i.token);
-  const unavailable = new Set([...data.members.map((m) => m.profile.id), ...friendInvites.map((i) => i.invitee!.id)]);
+  const unavailable = new Set([...[...data.members, ...data.viewers].map((m) => m.profile.id), ...friendInvites.map((i) => i.invitee!.id)]);
   const invitable = (friendships ?? [])
     .map((f) => (f.requester_id === me.userId ? f.addressee : f.requester))
     .filter((friend) => !unavailable.has(friend.id))

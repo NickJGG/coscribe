@@ -43,6 +43,11 @@ describe("notificationVerb", () => {
     expect(notificationVerb({ kind: "chat_mention", detail: {} })).toBe("mentioned you in Story Chat in");
   });
 
+  it("says whether an Invite is to write or to read", () => {
+    expect(notificationVerb({ kind: "invite_received", detail: {} })).toBe("invited you to write in");
+    expect(notificationVerb({ kind: "invite_received", detail: { role: "viewer" } })).toBe("invited you to read");
+  });
+
   it("says which role", () => {
     expect(notificationVerb({ kind: "role_changed", detail: { role: "cohost" } })).toBe("made you a Co-host in");
     expect(notificationVerb({ kind: "role_changed", detail: { role: "host" } })).toBe("handed you Host of");

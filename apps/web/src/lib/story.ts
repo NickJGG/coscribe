@@ -4,16 +4,17 @@ import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { isUuid } from "@/lib/action-result";
-import type { MemberRole } from "@/lib/story-roles";
+import { isWriter, type MemberRole } from "@/lib/story-roles";
 import type { StoryNotify } from "@/lib/notifications";
 import type { StoryAuthor, Writer } from "@/components/LiveDocument";
 
 const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2, viewer: 3 };
 
 /**
- * A Story the viewer may see (null otherwise), its members Host-first, and the viewer's own role. Each
- * member's `profile.author_color` is their effective color in this Story; `story_color` is set only when
- * that differs from their profile color. `myNotify` is the viewer's notifications choice here.
+ * A Story the viewer may see (null otherwise), its Writers Host-first as `members`, its invited `viewers`, and
+ * the viewer's own role. Each member's `profile.author_color` is their effective color in this Story;
+ * `story_color` is set only when that differs from their profile color. `myNotify` is the viewer's
+ * notifications choice here.
  */
 export const getStory = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return null;
@@ -43,7 +44,14 @@ export const getStory = cache(async (storyId: string) => {
   const myRole = mine?.role ?? null;
   const myNotify = (mine?.notify ?? "all") as StoryNotify;
 
-  return { story, members: sorted, myRole, myNotify, viewer };
+  return {
+    story,
+    members: sorted.filter((m) => isWriter(m.role)),
+    viewers: sorted.filter((m) => !isWriter(m.role)),
+    myRole,
+    myNotify,
+    viewer,
+  };
 });
 
 /** A visible Story's Chapters in reading order (empty if the viewer can't see the story). */
@@ -70,7 +78,7 @@ export const getEntries = cache(async (storyId: string) => {
   return data ?? [];
 });
 
-/** How the viewer shows up in a live document: a named caret for members, nothing for Viewers. */
+/** How the viewer shows up in a live document: a named caret for Writers, nothing for Viewers. */
 export function liveWriter({
   members,
   viewer,

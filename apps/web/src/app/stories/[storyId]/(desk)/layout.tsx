@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getChapters, getEntries, getStory } from "@/lib/story";
-import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
+import { canDeleteEntries, canManageChapters, canManageInvites, isWriter } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
 import { addChapter } from "@/lib/actions/chapters";
@@ -35,7 +35,8 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
 
   const { story, myRole, viewer } = data;
   const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
-  const writable = myRole && story.status !== "finished";
+  const writer = isWriter(myRole);
+  const writable = writer && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
   const reorderable = !!writable && canManageChapters(myRole);
   const chapterIds = chapters.map((c) => c.id);
@@ -102,13 +103,13 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               </Link>
               <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
               <div className={styles.end}>
-                <DeskStatus member={!!myRole} />
+                <DeskStatus member={writer} />
                 {canManageInvites(myRole) && (
                   <Link href={`/stories/${story.id}/settings/invites`} className={`button button-small ${styles.invite}`}>
                     Invite
                   </Link>
                 )}
-                {myRole && <ChatButton className="button button-small" />}
+                {writer && <ChatButton className="button button-small" />}
                 {viewer?.profile ? (
                   <AccountMenus profile={viewer.profile} />
                 ) : viewer ? (
@@ -161,7 +162,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                   )
                 }
               />
-              <DeskMain footer={<DeskFooter member={!!myRole} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
+              <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
             </div>
           </StorySearchProvider>
         </DeskFrame>

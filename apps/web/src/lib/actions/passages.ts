@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { TextPoint } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/server";
 import { getChapters, getStory } from "@/lib/story";
+import { isWriter } from "@/lib/story-roles";
 import { featurePassage as featurePassageLive } from "@/lib/sync";
 import { requireProfile } from "@/lib/viewer";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
@@ -15,7 +16,7 @@ export async function featurePassage(storyId: string, chapterId: string, from: T
   const { userId, profile } = await requireProfile(`/stories/${storyId}/read/${chapterId}`);
   if (!isUuid(chapterId)) return CHAPTER_GONE;
   const [data, chapters] = await Promise.all([getStory(storyId), getChapters(storyId)]);
-  if (!data?.myRole) return "Only this Story's Writers can feature its text.";
+  if (!data || !isWriter(data.myRole)) return "Only this Story's Writers can feature its text.";
   if (data.story.status !== "finished") return "Only a Finished Story's text can be featured.";
   if (!chapters.some((c) => c.id === chapterId)) return CHAPTER_GONE;
 

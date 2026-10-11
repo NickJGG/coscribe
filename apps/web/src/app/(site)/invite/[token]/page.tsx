@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { getStory } from "@/lib/story";
+import { isWriter } from "@/lib/story-roles";
 import { acceptInviteLink } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 
@@ -27,15 +28,20 @@ export default async function InvitePage(props: PageProps<"/invite/[token]">) {
   const here = `/invite/${encodeURIComponent(token)}`;
   const viewer = await getViewer();
   const myRole = viewer?.profile ? (await getStory(data.story_id))?.myRole : null;
+  const reading = data.role === "viewer";
 
   return (
     <div className="page">
-      <p className="muted">{data.inviter_username} invited you to write in</p>
+      <p className="muted">
+        {data.inviter_username} invited you to {reading ? "read" : "write in"}
+      </p>
       <h1>{data.story_title}</h1>
 
       {myRole ? (
         <>
-          <p className="muted">You&rsquo;re already writing in this story.</p>
+          <p className="muted">
+            {isWriter(myRole) ? "You’re already writing in this story." : "You’re already reading this story."}
+          </p>
           <div>
             <Link href={`/stories/${data.story_id}`} className="button button-primary">
               Open the story
@@ -44,10 +50,12 @@ export default async function InvitePage(props: PageProps<"/invite/[token]">) {
         </>
       ) : viewer?.profile ? (
         <>
-          <p className="muted">Accepting makes you a Writer.</p>
+          <p className="muted">
+            {reading ? "Accepting lets you read along as it’s written." : "Accepting makes you a Writer."}
+          </p>
           <ActionForm action={acceptInviteLink.bind(null, token)}>
             <div>
-              <button className="button button-primary">Join as Writer</button>
+              <button className="button button-primary">{reading ? "Join as Viewer" : "Join as Writer"}</button>
             </div>
           </ActionForm>
         </>

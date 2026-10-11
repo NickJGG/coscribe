@@ -7,7 +7,7 @@ import { getViewer } from "@/lib/viewer";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { monthYear, recentlyEdited } from "@/lib/overview";
 import { relativeTime } from "@/lib/relative-time";
-import { ROLE_LABEL, type MemberRole } from "@/lib/story-roles";
+import { isWriter, ROLE_LABEL, type MemberRole } from "@/lib/story-roles";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar, AvatarStack } from "@/components/Avatar";
@@ -48,7 +48,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
     viewer && !myRole
       ? supabase
           .from("invites")
-          .select("id")
+          .select("id, role")
           .eq("story_id", story.id)
           .eq("invitee_id", viewer.userId)
           .is("used_at", null)
@@ -86,13 +86,15 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
     <div className={styles.page}>
       {invite && (
         <div className={styles.invite}>
-          <span>You&rsquo;ve been invited to write in this story.</span>
+          <span>You&rsquo;ve been invited to {invite.role === "viewer" ? "read" : "write in"} this story.</span>
           <span className="row-actions">
             <ActionForm action={deleteInvite.bind(null, invite.id)}>
               <button className="button button-ghost button-small">Decline</button>
             </ActionForm>
             <ActionForm action={acceptInvite.bind(null, invite.id)}>
-              <button className="button button-primary button-small">Join as Writer</button>
+              <button className="button button-primary button-small">
+                {invite.role === "viewer" ? "Join as Viewer" : "Join as Writer"}
+              </button>
             </ActionForm>
           </span>
         </div>
@@ -148,7 +150,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
               storyId={story.id}
               chapters={chapters.map(({ id, title }) => ({ id, title }))}
               entries={entries.map(({ id, name }) => ({ id, name }))}
-              member={!!myRole}
+              member={isWriter(myRole)}
             />
           )}
           {recent.length > 0 && (
@@ -213,6 +215,6 @@ function primaryAction(
   const n = chapters.indexOf(latest) + 1;
   return {
     href: `/stories/${storyId}/chapters/${latest.id}`,
-    label: myRole ? `Continue Chapter ${n}` : `Watch Chapter ${n} live`,
+    label: isWriter(myRole) ? `Continue Chapter ${n}` : `Watch Chapter ${n} live`,
   };
 }

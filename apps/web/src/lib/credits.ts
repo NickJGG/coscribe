@@ -22,12 +22,12 @@ export function authorIds({ chapters, bible }: Tally): string[] {
 }
 
 /**
- * Every current member (even with nothing written) and every former Writer whose text survives, most
- * Chapter text first.
+ * Every current Writer (even with nothing written) and anyone else whose text survives (former Writers, and
+ * Writers since made Viewers), most Chapter text first.
  */
-export function creditLines(tally: Tally, memberIds: string[], people: Person[]): Credit[] {
+export function creditLines(tally: Tally, writerIds: string[], people: Person[]): Credit[] {
   const byId = new Map(people.map((p) => [p.id, p]));
-  return [...new Set([...memberIds, ...authorIds(tally)])]
+  return [...new Set([...writerIds, ...authorIds(tally)])]
     .map((id) => ({
       id,
       person: byId.get(id) ?? null,

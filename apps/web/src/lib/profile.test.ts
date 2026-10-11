@@ -11,12 +11,14 @@ function row(
   id: string,
   {
     people = [mia],
+    viewers = [],
     status = "active",
     finishedAt = null,
     createdAt = "2026-01-01T00:00:00Z",
     chapters = [],
   }: {
     people?: Person[];
+    viewers?: Person[];
     status?: "active" | "finished";
     finishedAt?: string | null;
     createdAt?: string;
@@ -24,7 +26,7 @@ function row(
   } = {}
 ): ProfileStoryRow {
   return {
-    role: people[0] === mia ? "host" : "writer",
+    role: viewers.includes(mia) ? "viewer" : people[0] === mia ? "host" : "writer",
     story: {
       id,
       title: id,
@@ -34,12 +36,15 @@ function row(
       created_at: createdAt,
       finished_at: finishedAt,
       chapters: chapters.map((c) => ({ word_count: c.words, author_chars: c.chars ?? {}, edited_at: c.editedAt ?? null })),
-      members: people.map((p, i) => ({
-        role: i === 0 ? "host" : "writer",
-        joined_at: `2026-01-0${i + 1}T00:00:00Z`,
-        author_color: null,
-        profile: p,
-      })),
+      members: [
+        ...people.map((p, i) => ({
+          role: i === 0 ? ("host" as const) : ("writer" as const),
+          joined_at: `2026-01-0${i + 1}T00:00:00Z`,
+          author_color: null,
+          profile: p,
+        })),
+        ...viewers.map((p) => ({ role: "viewer" as const, joined_at: "2026-02-01T00:00:00Z", author_color: null, profile: p })),
+      ],
       activity: null,
     },
   };
@@ -88,6 +93,20 @@ describe("profileStories", () => {
     expect(story).toMatchObject({ words: 15, chapterCount: 2, editedAt: "2026-04-01T00:00:00Z", writers: 0 });
   });
 
+  it("leaves out Stories the profile User only reads, and never counts Viewers as together", () => {
+    const reading = row("reading", { people: [jordan], viewers: [mia] });
+    const watched = row("watched", { people: [mia], viewers: [jordan] });
+    const { together, finished, writing } = profileStories([reading, watched], "mia", "jordan", new Map());
+    expect(together).toEqual([]);
+    expect(finished).toEqual([]);
+    expect(ids(writing)).toEqual(["watched"]);
+  });
+
+  it("names a Viewer's surviving text as a former Writer's", () => {
+    const demoted = row("d", { people: [mia], viewers: [jordan], chapters: [{ words: 3, chars: { jordan: 3 } }] });
+    expect(formerWriterIds([demoted])).toEqual(["jordan"]);
+  });
+
   it("builds the ribbon in join order, with former Writers named", () => {
     const shared = row("s", { people: [mia, jordan], chapters: [{ words: 9, chars: { jordan: 4, mia: 2, gone: 7 } }] });
     expect(formerWriterIds([shared])).toEqual(["gone"]);
@@ -107,6 +126,8 @@ describe("writesWith", () => {
       row("b", { people: [mia, jordan, sam] }),
       row("c", { people: [jordan, mia] }),
       row("d", { people: [mia] }),
+      row("e", { people: [mia], viewers: [sam] }),
+      row("f", { people: [jordan], viewers: [mia] }),
     ];
     expect(writesWith(rows, "mia")).toEqual([
       { id: "jordan", username: "jordan", color: "#3e63dd", shared: 2 },

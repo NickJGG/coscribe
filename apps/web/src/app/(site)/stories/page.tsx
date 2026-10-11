@@ -8,6 +8,7 @@ import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { presentWriters, writingLine } from "@/lib/presence";
 import { relativeTime } from "@/lib/relative-time";
 import { byProfileOrder } from "@/lib/profile";
+import { isWriter } from "@/lib/story-roles";
 import { createStory } from "@/lib/actions/stories";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
@@ -45,6 +46,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
 
   const stories = (memberships ?? []).map(({ role, story }) => {
     const members = story.members
+      .filter((m) => isWriter(m.role))
       .map((m) => ({
         id: m.profile.id,
         name: m.profile.username,
@@ -86,9 +88,22 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       return s.chars.flatMap(Object.keys).filter((id) => !memberIds.has(id));
     })
   );
-  const writingStories = stories.filter((s) => s.status !== "finished").sort(byProfileOrder);
-  const finishedStories = stories.filter((s) => s.status === "finished").sort(byProfileOrder);
-  const card = (story: (typeof stories)[number], foot: React.ReactNode) => (
+  const writerStories = stories.filter((s) => isWriter(s.role));
+  const writingStories = writerStories.filter((s) => s.status !== "finished").sort(byProfileOrder);
+  const finishedStories = writerStories.filter((s) => s.status === "finished").sort(byProfileOrder);
+  const readingStories = stories.filter((s) => !isWriter(s.role)).sort(byProfileOrder);
+  const foot = (story: (typeof stories)[number]) =>
+    story.status === "finished" ? (
+      finishedFoot(story.chapters.length, story.words)
+    ) : story.writing ? (
+      <span className={styles.writing}>{story.writing}</span>
+    ) : story.editedAt ? (
+      `Edited ${relativeTime(Date.parse(story.editedAt))}`
+    ) : (
+      "No words yet"
+    );
+
+  const card = (story: (typeof stories)[number]) => (
     <StoryCard
       key={story.id}
       href={`/stories/${story.id}`}
@@ -99,7 +114,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       private={story.visibility === "private"}
       ribbon={storyRibbon(story.members, story.chars, formerNames)}
     >
-      {foot}
+      {foot(story)}
     </StoryCard>
   );
 
@@ -110,7 +125,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       {invites.map((invite) => (
         <div key={invite.id} className={styles.invite}>
           <span>
-            {invite.inviter.username} invited you to write in{" "}
+            {invite.inviter.username} invited you to {invite.role === "viewer" ? "read" : "write in"}{" "}
             <Link href={`/stories/${invite.story.id}`} className={styles.inviteTitle}>
               {invite.story.title}
             </Link>
@@ -120,7 +135,9 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
               <button className="button button-ghost button-small">Decline</button>
             </ActionForm>
             <ActionForm action={acceptInvite.bind(null, invite.id)}>
-              <button className="button button-primary button-small">Join as Writer</button>
+              <button className="button button-primary button-small">
+                {invite.role === "viewer" ? "Join as Viewer" : "Join as Writer"}
+              </button>
             </ActionForm>
           </span>
         </div>
@@ -128,24 +145,19 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
 
       {writingStories.length > 0 && (
         <StorySection title="Being written" count={writingStories.length}>
-          {writingStories.map((story) =>
-            card(
-              story,
-              story.writing ? (
-                <span className={styles.writing}>{story.writing}</span>
-              ) : story.editedAt ? (
-                `Edited ${relativeTime(Date.parse(story.editedAt))}`
-              ) : (
-                "No words yet"
-              )
-            )
-          )}
+          {writingStories.map(card)}
         </StorySection>
       )}
 
       {finishedStories.length > 0 && (
         <StorySection title="Finished" count={finishedStories.length}>
-          {finishedStories.map((story) => card(story, finishedFoot(story.chapters.length, story.words)))}
+          {finishedStories.map(card)}
+        </StorySection>
+      )}
+
+      {readingStories.length > 0 && (
+        <StorySection title="Reading" count={readingStories.length}>
+          {readingStories.map(card)}
         </StorySection>
       )}
 

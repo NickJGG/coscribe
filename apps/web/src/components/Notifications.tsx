@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { relativeTime } from "@/lib/relative-time";
 import {
+  isViewerInvite,
   loadLatestNotifications,
   NOTIFICATION_COLUMNS,
   notificationActor,
@@ -196,7 +197,9 @@ export function NotificationItem({ notification: n, highlighted }: { notificatio
             <button className="button button-ghost button-tiny">Decline</button>
           </ActionForm>
           <ActionForm action={acceptInvite.bind(null, inviteId)}>
-            <button className="button button-primary button-tiny">Join as Writer</button>
+            <button className="button button-primary button-tiny">
+              {isViewerInvite(n) ? "Join as Viewer" : "Join as Writer"}
+            </button>
           </ActionForm>
         </span>
       </div>

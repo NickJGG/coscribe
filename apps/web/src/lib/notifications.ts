@@ -54,6 +54,11 @@ function detailText(detail: Json, key: string): string | null {
   return typeof value === "string" ? value : null;
 }
 
+/** An `invite_received` for a Viewer Invite. */
+export function isViewerInvite(n: Pick<Notification, "detail">): boolean {
+  return detailText(n.detail, "role") === "viewer";
+}
+
 /** Who did it: the actor's username, or "Someone" once their account is gone. */
 export function notificationActor(n: Pick<Notification, "actor">): string {
   return n.actor?.username ?? "Someone";
@@ -63,7 +68,7 @@ export function notificationActor(n: Pick<Notification, "actor">): string {
 export function notificationVerb(n: Pick<Notification, "kind" | "detail">): string {
   switch (n.kind) {
     case "invite_received":
-      return "invited you to write in";
+      return isViewerInvite(n) ? "invited you to read" : "invited you to write in";
     case "writer_joined":
       return "joined";
     case "chapter_added": {

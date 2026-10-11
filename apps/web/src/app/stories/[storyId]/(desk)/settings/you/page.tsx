@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
 import { colorName } from "@/lib/profile-rules";
-import { canLeave } from "@/lib/story-roles";
+import { canLeave, isWriter } from "@/lib/story-roles";
 import { leaveStory } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
 import { Card, Sub } from "../Card";
@@ -27,19 +27,21 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
   return (
     <>
       <Card title="You" description="Only affects you, in this Story.">
+        {isWriter(myRole) && (
+          <Sub>
+            <StoryColorPicker storyId={story.id} selected={mine} taken={taken}>
+              <p className={`muted ${styles.hint}`}>
+                {mine === profileColor
+                  ? "Your cursor and text tint here. Greyed colors belong to other Writers."
+                  : owner
+                    ? `You're ${colorName(mine)} in this Story because ${owner} is ${colorName(profileColor)}.`
+                    : `You picked ${colorName(mine)} here. Your profile color is ${colorName(profileColor)}.`}
+              </p>
+            </StoryColorPicker>
+          </Sub>
+        )}
         <Sub>
-          <StoryColorPicker storyId={story.id} selected={mine} taken={taken}>
-            <p className={`muted ${styles.hint}`}>
-              {mine === profileColor
-                ? "Your cursor and text tint here. Greyed colors belong to other Writers."
-                : owner
-                  ? `You're ${colorName(mine)} in this Story because ${owner} is ${colorName(profileColor)}.`
-                  : `You picked ${colorName(mine)} here. Your profile color is ${colorName(profileColor)}.`}
-            </p>
-          </StoryColorPicker>
-        </Sub>
-        <Sub>
-          <StoryNotifyChoice storyId={story.id} selected={myNotify} />
+          <StoryNotifyChoice storyId={story.id} selected={myNotify} viewer={!isWriter(myRole)} />
         </Sub>
       </Card>
 

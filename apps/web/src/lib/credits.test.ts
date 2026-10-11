@@ -30,4 +30,9 @@ describe("credits", () => {
       ["sam", 0, 0, "sam"],
     ]);
   });
+
+  it("lists Viewers only when their text survives", () => {
+    const lines = creditLines(tallyAuthors(content), ["mia"], [mia, jordan, sam]);
+    expect(lines.map((l) => l.id)).toEqual(["mia", "gone", "jordan"]);
+  });
 });

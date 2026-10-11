@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getChapters, getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
+import { isWriter } from "@/lib/story-roles";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
 import { FeaturePassage } from "@/components/FeaturePassage";
@@ -48,7 +49,7 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
         <div>
           <ShowAuthors authors={authors} toggleClassName={styles.tools}>
             <div className={styles.text}>
-              {myRole && viewer?.profile ? (
+              {isWriter(myRole) && viewer?.profile ? (
                 <FeaturePassage
                   storyId={story.id}
                   chapterId={chapter.id}

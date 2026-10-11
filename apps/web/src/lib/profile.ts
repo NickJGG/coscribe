@@ -1,10 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/database.types";
-import type { MemberRole } from "@/lib/story-roles";
+import { isWriter, type MemberRole } from "./story-roles";
 import type { RibbonSegment } from "@/components/ContributionRibbon";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "./contribution";
 
-/** The profile User's memberships in every Story the caller can read (RLS on story_members filters). */
+/**
+ * The profile User's memberships in every Story the caller can read (RLS on story_members filters). Viewer
+ * memberships come back too; the functions below skip them, and their `members`, since profiles never show Viewers.
+ */
 export function profileStoryRows(supabase: SupabaseClient<Database>, profileId: string) {
   return supabase
     .from("story_members")
@@ -42,14 +45,17 @@ export type ProfileStory = {
 
 /** Ids in the Stories' author counts that aren't current members, for formerWriterNames. */
 export function formerWriterIds(rows: ProfileStoryRow[]): string[] {
-  return rows.flatMap(({ story }) => {
-    const memberIds = new Set(story.members.map((m) => m.profile.id));
+  return rows.filter(writes).flatMap(({ story }) => {
+    const memberIds = new Set(writers(story).map((m) => m.profile.id));
     return story.chapters.flatMap((c) => Object.keys(readAuthorChars(c.author_chars))).filter((id) => !memberIds.has(id));
   });
 }
 
+const writes = (row: ProfileStoryRow) => isWriter(row.role);
+const writers = (story: ProfileStoryRow["story"]) => story.members.filter((m) => isWriter(m.role));
+
 function toProfileStory({ role, story }: ProfileStoryRow, formerNames: ReadonlyMap<string, string>): ProfileStory {
-  const members = story.members
+  const members = writers(story)
     .map((m) => ({
       id: m.profile.id,
       name: m.profile.username,
@@ -106,9 +112,10 @@ export function profileStories(
   const together: ProfileStory[] = [];
   const finished: ProfileStory[] = [];
   const writing: ProfileStory[] = [];
-  for (const row of rows) {
+  for (const row of rows.filter(writes)) {
     const story = toProfileStory(row, formerNames);
-    const shared = viewerId !== null && viewerId !== profileId && row.story.members.some((m) => m.profile.id === viewerId);
+    const shared =
+      viewerId !== null && viewerId !== profileId && writers(row.story).some((m) => m.profile.id === viewerId);
     (shared ? together : story.status === "finished" ? finished : writing).push(story);
   }
   return {
@@ -123,8 +130,8 @@ export type CoWriter = { id: string; username: string; color: string; shared: nu
 /** Everyone the profile User shares one of these Stories with, most shared Stories first. */
 export function writesWith(rows: ProfileStoryRow[], profileId: string): CoWriter[] {
   const byId = new Map<string, CoWriter>();
-  for (const { story } of rows) {
-    for (const { profile } of story.members) {
+  for (const { story } of rows.filter(writes)) {
+    for (const { profile } of writers(story)) {
       if (profile.id === profileId) continue;
       const entry = byId.get(profile.id);
       if (entry) entry.shared++;

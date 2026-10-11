@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { countEntryMentions } from "@coscribe/editor";
 import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
-import { canDeleteEntries } from "@/lib/story-roles";
+import { canDeleteEntries, isWriter } from "@/lib/story-roles";
 import { entryMentionEntries, type EntryMentionEntry } from "@/lib/entries";
 import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
@@ -37,7 +37,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
     notFound();
   }
   const { story, entries, entry, myRole } = data;
-  const editable = !!myRole && story.status !== "finished";
+  const editable = isWriter(myRole) && story.status !== "finished";
 
   return (
     <div className={styles.page}>
