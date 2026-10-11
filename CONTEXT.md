@@ -61,7 +61,7 @@ A **User** invited to edit a specific **Story**.
 _Avoid_: Contributor, member, collaborator, author (except in "author color")
 
 **Viewer**:
-Someone watching a **Story** live without edit rights, possibly not signed in.
+Someone watching a **Story** live without edit rights: anyone on a **Public** **Story**, possibly not signed in, or a **User** invited to view a **Private** one.
 _Avoid_: Spectator, reader, guest
 
 **Friend**:
@@ -87,7 +87,7 @@ Whether a **Story** is **Public** (anyone may view) or **Private** (only invited
 _Avoid_: Privacy, access level
 
 **Invite**:
-A host-issued grant that makes one specific **User** a **Writer**, sent to a **Friend** on the site or as an **Invite Link**.
+A host-issued grant that makes one specific **User** a **Writer**, or a **Viewer** of a **Private** **Story**, sent to a **Friend** on the site or as an **Invite Link**.
 _Avoid_: Share, join request
 
 **Invite Link**:
@@ -105,7 +105,7 @@ Replacing a **Chapter**'s text with a **Snapshot**'s, recorded as a new change.
 _Avoid_: Revert, rollback, undo
 
 **Finished**:
-The state of a **Story** whose **Host** has declared it complete, locking all content and showing the **Reader View**.
+The state of a **Story** whose **Host** has declared it complete, locking all content (**Chapters**, **Story Bible** and **Notes**, but not **Story Chat**) and showing the **Reader View**.
 _Avoid_: Published, completed, archived
 
 **Reader View**:
@@ -163,12 +163,12 @@ _Avoid_: Alert, activity, update
 - A **Story** has one or more ordered **Chapters** and exactly one **Story Bible**
 - A **Story Bible** has zero or more **Entries**
 - A **Chapter** has zero or more **Snapshots**
-- An **Invite** makes exactly one **User** a **Writer** of exactly one **Story**
+- An **Invite** makes exactly one **User** a **Writer** or **Viewer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
 - An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Entry Mentions**
 - A **Chapter** has zero or more **Notes**; only **Writers** and above see them
 - A **Notification** has exactly one recipient **User**
-- **Viewers** have no **Presence**; they are only ever counted, never named
+- **Viewers** have no **Presence**; they are only ever counted, never named, except in a **Private** **Story**'s member list
 
 ## Example dialogue
 

@@ -42,33 +42,41 @@ export default async function StorySettingsInvitesPage(props: PageProps<"/storie
     .map((f) => (f.requester_id === me.userId ? f.addressee : f.requester))
     .filter((friend) => !unavailable.has(friend.id))
     .sort((a, b) => a.username.localeCompare(b.username));
+  const finished = data.story.status === "finished";
 
   return (
     <Card title="Invites" description="Each Invite makes one person a Writer.">
-      <Sub>
-        <h3>Invite a Friend</h3>
-        {invitable.length ? (
-          <ul className="rows">
-            {invitable.map((friend) => (
-              <li key={friend.id} className="row">
-                <PersonLink person={friend} />
-                <ActionForm action={inviteFriend.bind(null, storyId, friend.id)}>
-                  <button className="button button-small">Invite</button>
-                </ActionForm>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="muted">
-            Every Friend is already here or invited. <Link href="/friends">Find more friends</Link>, or use an
-            Invite Link.
-          </p>
-        )}
-      </Sub>
+      {finished ? (
+        <Sub>
+          <p className="muted">This story is Finished. Reopen it to invite Writers.</p>
+        </Sub>
+      ) : (
+        <Sub>
+          <h3>Invite a Friend</h3>
+          {invitable.length ? (
+            <ul className="rows">
+              {invitable.map((friend) => (
+                <li key={friend.id} className="row">
+                  <PersonLink person={friend} />
+                  <ActionForm action={inviteFriend.bind(null, storyId, friend.id)}>
+                    <button className="button button-small">Invite</button>
+                  </ActionForm>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">
+              Every Friend is already here or invited. <Link href="/friends">Find more friends</Link>, or use an
+              Invite Link.
+            </p>
+          )}
+        </Sub>
+      )}
 
       {friendInvites.length > 0 && (
         <Sub>
           <h3>Waiting to accept</h3>
+          {finished && <p className="muted">They can join once the story is Reopened.</p>}
           <ul className="rows">
             {friendInvites.map((invite) => (
               <li key={invite.id} className="row">
@@ -82,32 +90,40 @@ export default async function StorySettingsInvitesPage(props: PageProps<"/storie
         </Sub>
       )}
 
-      <Sub>
-        <div className={styles.inlineRow}>
-          <div>
-            <h3>Invite Links</h3>
-            <p className="muted">Each link works once, for one person, and makes them your Friend too. Send it privately.</p>
+      {(!finished || linkInvites.length > 0) && (
+        <Sub>
+          <div className={styles.inlineRow}>
+            <div>
+              <h3>Invite Links</h3>
+              <p className="muted">
+                {finished
+                  ? "They can join once the story is Reopened."
+                  : "Each link works once, for one person. Send it privately."}
+              </p>
+            </div>
+            {!finished && (
+              <ActionForm action={createInviteLink.bind(null, storyId)}>
+                <button className="button">New Invite Link</button>
+              </ActionForm>
+            )}
           </div>
-          <ActionForm action={createInviteLink.bind(null, storyId)}>
-            <button className="button">New Invite Link</button>
-          </ActionForm>
-        </div>
-        {linkInvites.length > 0 && (
-          <ul className="rows">
-            {linkInvites.map((invite) => (
-              <li key={invite.id} className="row">
-                <code className={styles.token}>/invite/{invite.token}</code>
-                <div className="row-actions">
-                  <CopyLinkButton path={`/invite/${invite.token}`} />
-                  <ActionForm action={deleteInvite.bind(null, invite.id)}>
-                    <button className="button button-small">Revoke</button>
-                  </ActionForm>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Sub>
+          {linkInvites.length > 0 && (
+            <ul className="rows">
+              {linkInvites.map((invite) => (
+                <li key={invite.id} className="row">
+                  <code className={styles.token}>/invite/{invite.token}</code>
+                  <div className="row-actions">
+                    <CopyLinkButton path={`/invite/${invite.token}`} />
+                    <ActionForm action={deleteInvite.bind(null, invite.id)}>
+                      <button className="button button-small">Revoke</button>
+                    </ActionForm>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Sub>
+      )}
     </Card>
   );
 }

@@ -581,6 +581,9 @@ isOneToOne: false
 "set_story_notify":
 { Args: { "p_notify": string,"p_story": string }; Returns: undefined
                            },
+"story_active":
+{ Args: { "p_story": string }; Returns: boolean
+                           },
 "story_colors_taken":
 { Args: { "p_story": string,"p_user": string }; Returns: (string)[]
                            },

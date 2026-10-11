@@ -44,9 +44,7 @@ export default async function InvitePage(props: PageProps<"/invite/[token]">) {
         </>
       ) : viewer?.profile ? (
         <>
-          <p className="muted">
-            Accepting makes you a Writer and adds {data.inviter_username} to your Friends.
-          </p>
+          <p className="muted">Accepting makes you a Writer.</p>
           <ActionForm action={acceptInviteLink.bind(null, token)}>
             <div>
               <button className="button button-primary">Join as Writer</button>

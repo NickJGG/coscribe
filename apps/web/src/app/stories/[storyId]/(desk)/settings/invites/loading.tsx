@@ -21,7 +21,7 @@ export default function StorySettingsInvitesLoading() {
           <div className={styles.inlineRow}>
             <div>
               <h3>Invite Links</h3>
-              <p className="muted">Each link works once, for one person, and makes them your Friend too. Send it privately.</p>
+              <p className="muted">Each link works once, for one person. Send it privately.</p>
             </div>
             <Bar width={150} height={40} />
           </div>

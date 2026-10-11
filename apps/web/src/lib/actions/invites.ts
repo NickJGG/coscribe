@@ -7,6 +7,7 @@ import { requireProfile } from "@/lib/viewer";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 
 const INVALID = "Something went wrong. Try again.";
+const JOIN_FINISHED = "This story is Finished. You can join once it's Reopened.";
 
 export async function inviteFriend(storyId: string, userId: string): Promise<ActionResult> {
   if (!isUuid(storyId) || !isUuid(userId)) return INVALID;
@@ -52,7 +53,7 @@ export async function acceptInvite(inviteId: string): Promise<ActionResult> {
 
   const supabase = await createClient();
   const { data: storyId, error } = await supabase.rpc("accept_invite", { p_invite: inviteId });
-  if (error) return errorText(error);
+  if (error) return error.message === "story_finished" ? JOIN_FINISHED : errorText(error);
 
   redirect(`/stories/${storyId}`);
 }
@@ -62,7 +63,7 @@ export async function acceptInviteLink(token: string): Promise<ActionResult> {
 
   const supabase = await createClient();
   const { data: storyId, error } = await supabase.rpc("accept_invite_link", { p_token: token });
-  if (error) return errorText(error);
+  if (error) return error.message === "story_finished" ? JOIN_FINISHED : errorText(error);
 
   redirect(`/stories/${storyId}`);
 }
