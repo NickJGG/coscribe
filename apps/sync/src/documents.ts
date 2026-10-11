@@ -9,7 +9,7 @@ const TABLE: Record<DocumentKind, string> = { chapter: "chapters", entry: "entri
 export type DocumentRef = { kind: DocumentKind; id: string }
 
 /**
- * The document's story, what `userId` (null for anonymous) may do with it, and whether they're a member.
+ * The document's story, what `userId` (null for anonymous) may do with it, and whether they're a Writer or up.
  * Null story if the document is gone. Entries have no lock, so only a Finished story makes them read-only.
  */
 export async function documentAccess(
@@ -33,7 +33,7 @@ export async function documentAccess(
     left join public.story_members m on m.story_id = s.id and m.user_id = ${userId}
     where d.id = ${doc.id}
   `
-  return { storyId: row?.story_id ?? null, access: decideAccess(row ?? null), member: !!row?.role }
+  return { storyId: row?.story_id ?? null, access: decideAccess(row ?? null), member: !!row?.role && row.role !== "viewer" }
 }
 
 export async function fetchDocument(doc: DocumentRef): Promise<Uint8Array | null> {

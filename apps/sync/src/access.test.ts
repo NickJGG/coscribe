@@ -21,6 +21,10 @@ describe("decideAccess", () => {
     expect(decideAccess({ ...open, invited: true })).toBe("read")
   })
 
+  it("keeps invited Viewers read-only", () => {
+    expect(decideAccess({ ...open, role: "viewer" })).toBe("read")
+  })
+
   it("rejects outsiders of Private stories and missing Chapters", () => {
     expect(decideAccess(open)).toBeNull()
     expect(decideAccess(null)).toBeNull()

@@ -17,7 +17,12 @@ import { BrowseButton, HereDot, WritingNow } from "./Overview";
 import { readingTime } from "@/lib/words";
 import styles from "./overview.module.css";
 
-const YOU: Record<MemberRole, string> = { host: "You host", cohost: "You co-host", writer: "You write" };
+const YOU: Record<MemberRole, string> = {
+  host: "You host",
+  cohost: "You co-host",
+  writer: "You write",
+  viewer: "You're reading",
+};
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]">): Promise<Metadata> {
   const data = await getStory((await props.params).storyId);

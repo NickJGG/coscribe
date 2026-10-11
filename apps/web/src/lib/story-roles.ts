@@ -8,9 +8,10 @@ export const ROLE_LABEL: Record<MemberRole, string> = {
   host: "Host",
   cohost: "Co-host",
   writer: "Writer",
+  viewer: "Viewer",
 };
 
-const RANK: Record<MemberRole, number> = { writer: 0, cohost: 1, host: 2 };
+const RANK: Record<MemberRole, number> = { viewer: -1, writer: 0, cohost: 1, host: 2 };
 
 export function atLeast(role: MemberRole | null | undefined, min: MemberRole): boolean {
   return role != null && RANK[role] >= RANK[min];

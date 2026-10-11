@@ -8,7 +8,7 @@ import type { MemberRole } from "@/lib/story-roles";
 import type { StoryNotify } from "@/lib/notifications";
 import type { StoryAuthor, Writer } from "@/components/LiveDocument";
 
-const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2 };
+const ROLE_ORDER: Record<MemberRole, number> = { host: 0, cohost: 1, writer: 2, viewer: 3 };
 
 /**
  * A Story the viewer may see (null otherwise), its members Host-first, and the viewer's own role. Each
