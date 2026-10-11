@@ -94,28 +94,64 @@ export function Sidebar({
     <>
       <aside className={styles.sidebar} aria-label="Story">
         <div className={styles.strip}>
-          <button type="button" className={styles.stripButton} onClick={toggle} title="Show the sidebar (Ctrl+\)">
+          <button
+            type="button"
+            className={styles.stripButton}
+            onClick={toggle}
+            data-tip="Show the sidebar"
+            data-keys="Ctrl+\"
+            data-side="right"
+          >
             <PanelIcon />
             <span className="sr-only">Show the sidebar</span>
           </button>
-          <Link href={overviewHref} className={styles.stripButton} aria-current={currentIf(overviewHref)} title="Overview">
+          <Link
+            href={overviewHref}
+            className={styles.stripButton}
+            aria-current={currentIf(overviewHref)}
+            data-tip="Overview"
+            data-side="right"
+          >
             <HomeIcon />
             <span className="sr-only">Overview</span>
           </Link>
-          <button type="button" className={styles.stripButton} onClick={() => open("chapters")} title="Chapters">
+          <button
+            type="button"
+            className={styles.stripButton}
+            onClick={() => open("chapters")}
+            data-tip="Chapters"
+            data-side="right"
+          >
             <ChaptersIcon />
             <span className="sr-only">Chapters</span>
           </button>
-          <button type="button" className={styles.stripButton} onClick={() => open("bible")} title="Story Bible">
+          <button
+            type="button"
+            className={styles.stripButton}
+            onClick={() => open("bible")}
+            data-tip="Story Bible"
+            data-side="right"
+          >
             <BibleIcon />
             <span className="sr-only">Story Bible</span>
           </button>
-          <button type="button" className={styles.stripButton} onClick={focusSearch} title="Search (/)">
+          <button
+            type="button"
+            className={styles.stripButton}
+            onClick={focusSearch}
+            data-tip="Search"
+            data-keys="/"
+            data-side="right"
+          >
             <SearchIcon />
             <span className="sr-only">Search</span>
           </button>
           {here.length > 0 && (
-            <span className={styles.stripHere} title={`Here now: ${joinNames(here.map((h) => h.person.name))}`}>
+            <span
+              className={styles.stripHere}
+              data-tip={`Here now: ${joinNames(here.map((h) => h.person.name))}`}
+              data-side="right"
+            >
               <span className="sr-only">{here.length} here now</span>
             </span>
           )}
@@ -124,7 +160,8 @@ export function Sidebar({
               href={settingsHref}
               className={`${styles.stripButton} ${styles.stripEnd}`}
               aria-current={settingsCurrent}
-              title="Settings"
+              data-tip="Settings"
+              data-side="right"
             >
               <SettingsIcon />
               <span className="sr-only">Settings</span>
@@ -137,7 +174,13 @@ export function Sidebar({
           <div className={styles.top}>
             <div className={styles.titleRow}>
               <span className={styles.storyTitle}>{storyTitle}</span>
-              <button type="button" className={styles.stripButton} onClick={toggle} title="Hide the sidebar (Ctrl+\)">
+              <button
+                type="button"
+                className={styles.stripButton}
+                onClick={toggle}
+                data-tip="Hide the sidebar"
+                data-keys="Ctrl+\"
+              >
                 <PanelIcon />
                 <span className="sr-only">Hide the sidebar</span>
               </button>

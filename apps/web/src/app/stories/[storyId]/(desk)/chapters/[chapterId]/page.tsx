@@ -64,7 +64,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
             <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
               <button
                 className="button button-ghost button-tiny with-icon"
-                title={chapter.locked ? "Unlock this Chapter" : "Lock this Chapter"}
+                data-tip={chapter.locked ? "Unlock this Chapter" : "Lock this Chapter"}
               >
                 <LockIcon open={chapter.locked} />
                 <span className="with-icon-label">{chapter.locked ? "Unlock" : "Lock"}</span>

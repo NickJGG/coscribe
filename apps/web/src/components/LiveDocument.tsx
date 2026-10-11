@@ -404,7 +404,9 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
         className={styles.tool}
         aria-pressed={active.bold}
         onClick={() => editor.chain().focus().toggleBold().run()}
-        title="Bold (Ctrl+B)"
+        data-tip="Bold"
+        data-keys="Ctrl+B"
+        aria-label="Bold"
       >
         <strong>B</strong>
       </button>
@@ -413,7 +415,9 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
         className={styles.tool}
         aria-pressed={active.italic}
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        title="Italic (Ctrl+I)"
+        data-tip="Italic"
+        data-keys="Ctrl+I"
+        aria-label="Italic"
       >
         <em>I</em>
       </button>
@@ -422,7 +426,9 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
         type="button"
         className={styles.tool}
         onClick={() => editor.chain().focus().insertSceneBreak().run()}
-        title="Scene Break (type *** on an empty line)"
+        data-tip="Scene Break"
+        data-keys="Type *** on an empty line"
+        aria-label="Scene Break"
       >
         * * *
       </button>
@@ -434,7 +440,8 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             className={styles.tool}
             aria-pressed={active.bulletList}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            title="Bulleted list (type - and a space)"
+            data-tip="Bulleted list"
+            data-keys="Type - and a space"
           >
             &bull; List
           </button>
@@ -443,7 +450,8 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             className={styles.tool}
             aria-pressed={active.orderedList}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            title="Numbered list (type 1. and a space)"
+            data-tip="Numbered list"
+            data-keys="Type 1. and a space"
           >
             1. List
           </button>
@@ -458,7 +466,8 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             disabled={!active.note}
             onMouseDown={(e) => e.preventDefault()}
             onClick={onAddNote}
-            title="Add Note on the selected text (Ctrl+Alt+M)"
+            data-tip="Add Note on the selected text"
+            data-keys="Ctrl+Alt+M"
           >
             Add Note
           </button>

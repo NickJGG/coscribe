@@ -457,7 +457,6 @@ function Summary({
 
 /** "Change X of N ‹ ›": each changed, removed or added row is a stop. */
 function Stepper({ at, count, onStep }: { at: number | null; count: number; onStep: (dir: 1 | -1) => void }) {
-  const title = (dir: 1 | -1) => (dir > 0 ? "Next change (Ctrl+G)" : "Previous change (Shift+Ctrl+G)");
   return (
     <span className={styles.stepper}>
       <span className={styles.position} role="status">
@@ -469,8 +468,9 @@ function Stepper({ at, count, onStep }: { at: number | null; count: number; onSt
           type="button"
           className={liveStyles.tool}
           onClick={() => onStep(dir)}
-          title={title(dir)}
-          aria-label={title(dir)}
+          data-tip={dir > 0 ? "Next change" : "Previous change"}
+          data-keys={dir > 0 ? "Ctrl+G" : "Shift+Ctrl+G"}
+          aria-label={dir > 0 ? "Next change" : "Previous change"}
         >
           {dir > 0 ? <>&rsaquo;</> : <>&lsaquo;</>}
         </button>
@@ -716,7 +716,7 @@ function SnapshotActions({
           // Keep the selection in the column, which the copy reads.
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => void copy()}
-          title={
+          data-tip={
             column
               ? "Copies the text selected in this column, or the whole Snapshot if nothing is selected"
               : "Copies the whole Snapshot"

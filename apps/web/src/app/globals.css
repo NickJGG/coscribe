@@ -251,6 +251,40 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.hover-label {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  max-width: calc(100vw - 16px);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hover-label[data-wrap] {
+  width: max-content;
+  max-width: min(32ch, calc(100vw - 16px));
+  white-space: normal;
+}
+
+.hover-label-keys {
+  margin-left: 6px;
+  color: color-mix(in srgb, var(--paper) 65%, transparent);
+}
+
+@media (pointer: coarse) {
+  [data-tip] {
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+}
+
 .smallcaps {
   font-family: var(--font-ui), system-ui, sans-serif;
   font-size: 0.6875rem;

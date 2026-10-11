@@ -20,7 +20,7 @@ export function ColorSwatches({
             key={color}
             className={styles.swatch}
             style={{ "--swatch": authorColorCss(color) } as React.CSSProperties}
-            title={owner ? `${AUTHOR_COLOR_NAMES[color]}, taken by ${owner}` : AUTHOR_COLOR_NAMES[color]}
+            data-tip={owner ? `${AUTHOR_COLOR_NAMES[color]}, taken by ${owner}` : AUTHOR_COLOR_NAMES[color]}
           >
             <input
               type="radio"

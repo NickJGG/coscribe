@@ -61,7 +61,7 @@ export function HereDot({ userId }: { userId: string }) {
   const here = useHereNow().some((h) => h.userId === userId);
   if (!here) return null;
   return (
-    <span className={styles.hereDot} title="Here now">
+    <span className={styles.hereDot} data-tip="Here now">
       <span className="sr-only">Here now</span>
     </span>
   );

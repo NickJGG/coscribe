@@ -79,7 +79,7 @@ export function SnapshotButton({ chapterId }: { chapterId: string }) {
         ref={button}
         type="button"
         className="button button-ghost button-tiny with-icon"
-        title={title}
+        data-tip={title}
         disabled={!snapshotChanged}
         aria-haspopup="dialog"
         aria-expanded={open}

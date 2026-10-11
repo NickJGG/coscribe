@@ -178,7 +178,7 @@ function WritesWith({ people }: { people: CoWriter[] }) {
               <Avatar name={p.username} color={p.color} size="sm" />
               {p.username}
             </Link>
-            <span className={styles.shared} title={`${p.shared} ${p.shared === 1 ? "Story" : "Stories"} together`}>
+            <span className={styles.shared} data-tip={`${p.shared} ${p.shared === 1 ? "Story" : "Stories"} together`}>
               {p.shared}
             </span>
           </li>

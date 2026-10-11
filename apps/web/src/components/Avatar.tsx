@@ -11,7 +11,7 @@ export function Avatar({ name, color, size = "md" }: { name: string; color: stri
       className={styles.avatar}
       data-size={size}
       style={{ "--c": authorColorCss(color) } as React.CSSProperties}
-      title={name}
+      data-tip={name}
       aria-hidden
     >
       {[...name][0]?.toUpperCase()}

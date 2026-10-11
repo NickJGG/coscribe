@@ -112,12 +112,12 @@ export function FindBar({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const title = (dir: 1 | -1) => {
+  const label = (dir: 1 | -1) => {
     const word = dir > 0 ? "Next" : "Previous";
-    const keys = dir > 0 ? "Ctrl+G" : "Shift+Ctrl+G";
     const d = within(dir) ? null : neighbor(dir);
-    return `${d ? `${word}: ${d.label}` : `${word} match`} (${keys})`;
+    return d ? `${word}: ${d.label}` : `${word} match`;
   };
+  const keys = (dir: 1 | -1) => (dir > 0 ? "Ctrl+G" : "Shift+Ctrl+G");
   const canStep = local > 0 || neighbor(1) !== null;
 
   let position: string;
@@ -137,7 +137,7 @@ export function FindBar({
         step(e.shiftKey ? -1 : 1);
       }}
     >
-      <span className={styles.query} title={query}>
+      <span className={styles.query} data-tip={query}>
         {query}
       </span>
       <span className={styles.position} role="status">
@@ -148,8 +148,9 @@ export function FindBar({
         className={liveStyles.tool}
         disabled={!canStep}
         onClick={() => step(-1)}
-        title={title(-1)}
-        aria-label={title(-1)}
+        data-tip={label(-1)}
+        data-keys={keys(-1)}
+        aria-label={label(-1)}
       >
         &lsaquo;
       </button>
@@ -158,15 +159,16 @@ export function FindBar({
         className={liveStyles.tool}
         disabled={!canStep}
         onClick={() => step(1)}
-        title={title(1)}
-        aria-label={title(1)}
+        data-tip={label(1)}
+        data-keys={keys(1)}
+        aria-label={label(1)}
       >
         &rsaquo;
       </button>
       <Link
         href={`/stories/${storyId}/search?q=${encodeURIComponent(query)}`}
         className={liveStyles.tool}
-        title="All results"
+        data-tip="All results"
         aria-label="All results"
       >
         <ListIcon />
@@ -176,7 +178,8 @@ export function FindBar({
         className={liveStyles.tool}
         data-find-close
         onClick={close}
-        title="Close (Escape)"
+        data-tip="Close"
+        data-keys="Escape"
         aria-label="Close find"
       >
         ✕

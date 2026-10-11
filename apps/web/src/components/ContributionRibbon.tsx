@@ -23,7 +23,13 @@ export function ContributionRibbon({
   const names = shown.map((s) => s.name).join(", ");
 
   return (
-    <span className={styles.ribbon} data-vertical={vertical || undefined} role="img" aria-label={`Written by ${names}`} title={names}>
+    <span
+      className={styles.ribbon}
+      data-vertical={vertical || undefined}
+      role="img"
+      aria-label={`Written by ${names}`}
+      data-tip={names}
+    >
       {shown.map((s) => (
         <span
           key={s.id}

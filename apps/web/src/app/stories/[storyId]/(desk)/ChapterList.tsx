@@ -233,7 +233,7 @@ function ChapterRowBody({
       <span className={styles.name}>{chapter.title}</span>
       <span className={styles.meta}>
         {openNotes > 0 && (
-          <span className={styles.noteCount} title={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
+          <span className={styles.noteCount} data-tip={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
             <NoteIcon className={styles.noteIcon} />
             {openNotes}
             <span className="sr-only"> open {openNotes === 1 ? "Note" : "Notes"},</span>

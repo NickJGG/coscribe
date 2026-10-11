@@ -102,7 +102,7 @@ export function NotesButton() {
     <button
       type="button"
       className="button button-ghost button-tiny with-icon"
-      title="Notes"
+      data-tip="Notes"
       aria-expanded={open}
       onClick={() => panel.toggle("notes")}
     >

@@ -90,7 +90,7 @@ export function PresenceDots({ here, className }: { here: HereNow[]; className?:
           key={h.userId}
           className={styles.dot}
           style={{ "--c": authorColorCss(h.person.color) } as React.CSSProperties}
-          title={h.person.name}
+          data-tip={h.person.name}
           aria-hidden
         />
       ))}

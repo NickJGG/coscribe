@@ -4,6 +4,7 @@ import { getViewer } from "@/lib/viewer";
 import { createClient } from "@/lib/supabase/server";
 import { loadLatestNotifications } from "@/lib/notifications";
 import { Heartbeat } from "@/components/Heartbeat";
+import { HoverLabels } from "@/components/HoverLabels";
 import { NotificationsProvider } from "@/components/Notifications";
 import "./globals.css";
 
@@ -40,6 +41,7 @@ export default async function RootLayout({
           children
         )}
         {profile && <Heartbeat />}
+        <HoverLabels />
       </body>
     </html>
   );
