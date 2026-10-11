@@ -8,6 +8,7 @@ const text = (text: string, userId: string, ...marks: { type: string }[]) => ({
 })
 const paragraph = (...runs: ReturnType<typeof text>[]) => ({ type: "paragraph", content: runs })
 const doc = (...content: object[]) => ({ type: "doc", content })
+const quote = (...paragraphs: object[]) => ({ type: "blockquote", content: paragraphs })
 
 const chapter = doc(
   paragraph(text("Once upon ", "mia"), text("a time", "jordan", { type: "italic" })),
@@ -31,6 +32,19 @@ describe("sliceChapter", () => {
   it("drops blocks left with no text at either end", () => {
     expect(sliceChapter(chapter, { block: 0, offset: 16 }, { block: 2, offset: 0 })).toEqual(doc())
     expect(sliceChapter(chapter, { block: 1, offset: 0 }, { block: 2, offset: 4 })).toEqual(doc(paragraph(text("The ", "mia"))))
+  })
+
+  it("slices from inside a block quote to after it, keeping the quote around its paragraphs", () => {
+    const letter = doc(
+      quote(paragraph(text("Dear Ann,", "mia")), paragraph(text("Come home.", "mia", { type: "strike" }))),
+      paragraph(text("She burned it.", "jordan"))
+    )
+    expect(sliceChapter(letter, { block: 0, offset: 14 }, { block: 1, offset: 3 })).toEqual(
+      doc(quote(paragraph(text("home.", "mia", { type: "strike" }))), paragraph(text("She", "jordan")))
+    )
+    expect(sliceChapter(letter, { block: 0, offset: 5 }, { block: 0, offset: 9 })).toEqual(
+      doc(quote(paragraph(text("Ann,", "mia"))))
+    )
   })
 })
 

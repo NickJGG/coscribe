@@ -508,7 +508,7 @@ function Segments({ segments }: { segments: DiffSegment[] }) {
 function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSegment[] }) {
   if (block.type === "sceneBreak") return <hr data-scene-break="" />;
   return (
-    <p>
+    <p className={block.quoted ? styles.quoted : undefined} style={block.align && { textAlign: block.align }}>
       <Segments segments={segments ?? block.segments} />
     </p>
   );
@@ -788,15 +788,23 @@ function selectedRange(doc: PMNode, column: HTMLElement): [number, number] | nul
   return [Math.min(a, b), Math.max(a, b)];
 }
 
-/** A DOM point inside one of the column's cells, as a position in its doc: the cell's block, plus the text before it. */
+/**
+ * A DOM point inside one of the column's cells, as a position in its doc: the cell's block (the n-th paragraph
+ * or Scene Break, at any depth, as DiffBlocks count them), plus the text before it.
+ */
 function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, offset: number): number | null {
   const cell = (node instanceof Element ? node : node.parentElement)?.closest<HTMLElement>("[data-block]");
   if (!cell || !column.contains(cell)) return null;
   const index = Number(cell.dataset.block);
-  if (!(index < doc.childCount)) return null;
-  let start = 0;
-  for (let i = 0; i < index; i++) start += doc.child(i).nodeSize;
-  const block = doc.child(index);
+  const blocks: { block: PMNode; start: number }[] = [];
+  doc.descendants((child, pos) => {
+    if (blocks.length > index) return false;
+    if (!child.isTextblock && child.type.name !== "sceneBreak") return true;
+    blocks.push({ block: child, start: pos });
+    return false;
+  });
+  if (!blocks[index]) return null;
+  const { block, start } = blocks[index];
   if (block.isLeaf) return start;
   const before = document.createRange();
   before.selectNodeContents(cell);

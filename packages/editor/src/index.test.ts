@@ -5,9 +5,16 @@ import { chapterExtensions, countWords, documentName, entryExtensions, parseDocu
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
 
-  it("allows only paragraphs, Scene Breaks, bold, italic, authorship, and Notes", () => {
-    expect(Object.keys(schema.nodes).sort()).toEqual(["doc", "paragraph", "sceneBreak", "text"])
-    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic", "note"])
+  it("allows only paragraphs, block quotes, Scene Breaks, bold, italic, strikethrough, authorship, and Notes", () => {
+    expect(Object.keys(schema.nodes).sort()).toEqual(["blockquote", "doc", "paragraph", "sceneBreak", "text"])
+    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic", "note", "strike"])
+    expect(Object.keys(schema.nodes.paragraph!.spec.attrs ?? {})).toEqual(["textAlign"])
+  })
+
+  it("keeps Scene Breaks out of block quotes", () => {
+    expect(() =>
+      schema.nodeFromJSON({ type: "doc", content: [{ type: "blockquote", content: [{ type: "sceneBreak" }] }] }).check()
+    ).toThrow()
   })
 
   it("accepts a Chapter with a Scene Break between paragraphs", () => {
@@ -28,6 +35,7 @@ describe("entry schema", () => {
 
   it("adds bulleted and numbered lists to the Chapter schema", () => {
     expect(Object.keys(schema.nodes).sort()).toEqual([
+      "blockquote",
       "bulletList",
       "doc",
       "listItem",
@@ -36,7 +44,7 @@ describe("entry schema", () => {
       "sceneBreak",
       "text",
     ])
-    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic", "note"])
+    expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic", "note", "strike"])
   })
 
   it("accepts an Entry body with a list", () => {
@@ -46,6 +54,24 @@ describe("entry schema", () => {
       content: [
         { type: "paragraph", content: [{ type: "text", text: "Known for:" }] },
         { type: "bulletList", content: [item("A limp"), item("Lying")] },
+      ],
+    })
+    expect(() => doc.check()).not.toThrow()
+  })
+
+  it("lets a block quote hold a list", () => {
+    const doc = schema.nodeFromJSON({
+      type: "doc",
+      content: [
+        {
+          type: "blockquote",
+          content: [
+            {
+              type: "bulletList",
+              content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "A" }] }] }],
+            },
+          ],
+        },
       ],
     })
     expect(() => doc.check()).not.toThrow()

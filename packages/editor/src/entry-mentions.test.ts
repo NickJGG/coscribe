@@ -104,6 +104,14 @@ describe("countEntryMentions", () => {
   })
 })
 
+describe("blockTexts", () => {
+  it("reaches into block quotes, one text per quoted paragraph", () => {
+    const p = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] })
+    const doc = { type: "doc", content: [p("Wren wrote:"), { type: "blockquote", content: [p("Dear Aldous,"), p("Come home.")] }] }
+    expect(blockTexts(doc)).toEqual(["Wren wrote:", "Dear Aldous,", "Come home."])
+  })
+})
+
 describe("entryNameAt", () => {
   const at = (text: string, selected: string, max = 80) => {
     const from = text.indexOf(selected)

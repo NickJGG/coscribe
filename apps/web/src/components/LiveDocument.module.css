@@ -69,6 +69,9 @@
 }
 
 .tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 28px;
   height: 28px;
   padding: 0 6px;
@@ -78,6 +81,16 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+.tool > svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .tool:hover:not(:disabled) {
@@ -90,13 +103,38 @@
   cursor: default;
 }
 
-.tool[aria-pressed="true"] {
+.tool[aria-pressed="true"],
+.tool[aria-expanded="true"] {
   background: var(--hair);
   color: var(--ink);
 }
 
 .tool em {
   font-family: var(--font-prose), Georgia, serif;
+}
+
+.alignTool {
+  position: relative;
+  display: inline-flex;
+}
+
+.alignRow {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.alignRow[hidden] {
+  display: none;
 }
 
 .toolSep {
@@ -127,6 +165,19 @@
 
 .prose p + p {
   margin-top: 0.9em;
+}
+
+.prose * + blockquote,
+.prose blockquote + * {
+  margin-top: 0.9em;
+}
+
+.prose blockquote {
+  padding-left: 1.5em;
+}
+
+.prose s {
+  text-decoration-thickness: 1px;
 }
 
 .prose :global(hr[data-scene-break]) {

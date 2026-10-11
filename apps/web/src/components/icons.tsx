@@ -40,3 +40,65 @@ export function GripIcon() {
     </svg>
   );
 }
+
+export function AddNoteIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M4 4.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H9l-3.5 3v-3H4a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1Z" />
+      <path d="M10 7v3.5M8.25 8.75h3.5" />
+    </svg>
+  );
+}
+
+export function SceneBreakIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      {[4, 10, 16].map((cx) => (
+        <circle key={cx} cx={cx} cy="10" r="1.6" fill="currentColor" stroke="none" />
+      ))}
+    </svg>
+  );
+}
+
+export function BlockQuoteIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path
+        fill="currentColor"
+        stroke="none"
+        d="M3.75 5h5v5c0 2.75-1.63 4.5-4.38 5l-.5-1.38c1.76-.5 2.38-1.62 2.38-3.62h-2.5Zm7.5 0h5v5c0 2.75-1.63 4.5-4.38 5l-.5-1.38c1.76-.5 2.38-1.62 2.38-3.62h-2.5Z"
+      />
+    </svg>
+  );
+}
+
+/** The short lines' starts, for left, centered and right-aligned text. */
+const ALIGN_INDENT = { left: 3, center: 5.5, right: 8 };
+
+export function AlignIcon({ align }: { align: keyof typeof ALIGN_INDENT }) {
+  const x = ALIGN_INDENT[align];
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path d={`M3 4.5h14M${x} 8.5h9M3 12.5h14M${x} 16.5h9`} />
+    </svg>
+  );
+}
+
+export function BulletListIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      {[5.5, 10, 14.5].map((cy) => (
+        <circle key={cy} cx="3.75" cy={cy} r="1.2" fill="currentColor" stroke="none" />
+      ))}
+      <path d="M7.5 5.5h9.5M7.5 10h9.5M7.5 14.5h9.5" />
+    </svg>
+  );
+}
+
+export function NumberedListIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path d="M3 4.25 4.5 3.5v5M2.75 12.25a1.5 1.5 0 0 1 3 .25c0 1.25-3 2.25-3 3.75h3M8.5 6h8.5M8.5 14h8.5" />
+    </svg>
+  );
+}

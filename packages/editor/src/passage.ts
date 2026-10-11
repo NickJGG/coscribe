@@ -1,14 +1,18 @@
 import type { JSONContent } from "@tiptap/core"
 import { countAuthorCharacters } from "./credits"
 
-/** A place in a Chapter: a top-level block's index, and a UTF-16 offset into that block's text. */
+/**
+ * A place in a Chapter: a top-level block's index, and a UTF-16 offset into that block's text. A block
+ * quote's text is its paragraphs' run together.
+ */
 export type TextPoint = { block: number; offset: number }
 
 export const FEATURE_MAX_CHARS = 500
 
 /**
  * The top-level blocks of `doc` between two points (in either order), cut to the points. Text keeps its
- * marks (including `author`) and paragraphs stay separate. Blocks left with no text at either end are dropped.
+ * marks (including `author`) and paragraphs stay separate. Blocks left with no text at either end are dropped,
+ * and so are a block quote's paragraphs outside the points.
  */
 export function sliceChapter(doc: JSONContent, a: TextPoint, b: TextPoint): JSONContent {
   const [from, to] = before(a, b) ? [a, b] : [b, a]
@@ -44,8 +48,10 @@ function cut(node: JSONContent, start: number, end: number): { node: JSONContent
   const content: JSONContent[] = []
   for (const child of node.content ?? []) {
     const { node: kept, length } = cut(child, start - at, end - at)
+    const outside = at + length <= start || at >= end
     at += length
-    if (kept.text !== "") content.push(kept)
+    if (kept.text === "" || (outside && !hasText(kept))) continue
+    content.push(kept)
   }
   const kept: JSONContent = { ...node, content }
   if (!content.length) delete kept.content

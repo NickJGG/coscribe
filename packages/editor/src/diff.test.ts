@@ -13,6 +13,14 @@ function p(...texts: Text[]): JSONContent {
 
 const hr: JSONContent = { type: "sceneBreak" }
 
+function quote(...paragraphs: JSONContent[]): JSONContent {
+  return { type: "blockquote", content: paragraphs }
+}
+
+function aligned(textAlign: string, paragraph: JSONContent): JSONContent {
+  return { ...paragraph, attrs: { textAlign } }
+}
+
 function doc(...blocks: JSONContent[]): JSONContent {
   return { type: "doc", content: blocks }
 }
@@ -20,6 +28,7 @@ function doc(...blocks: JSONContent[]): JSONContent {
 const mia = { type: "author", attrs: { userId: "mia", at: 1 } }
 const ben = { type: "author", attrs: { userId: "ben", at: 2 } }
 const bold = { type: "bold" }
+const strike = { type: "strike" }
 
 /** Segments as `text`, `[-removed-]` and `{+added+}`. */
 function showSegments(segments: DiffSegment[]): string {
@@ -128,6 +137,42 @@ describe("diffChapters", () => {
       { text: "came in ", marks: [mia, bold], op: "same" },
       { text: "slowly", marks: [ben], op: "ins" },
     ])
+  })
+
+  it("flattens a block quote into rows of its paragraphs", () => {
+    const chapter = doc(p("Before."), quote(p("Dear Ann,"), p("Come home.")), hr)
+    const diff = diffChapters(chapter, chapter)
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same", "same"])
+    expect(diff.right.map((block) => [show(block), block.quoted])).toEqual([
+      ["Before.", undefined],
+      ["Dear Ann,", true],
+      ["Come home.", true],
+      ["", undefined],
+    ])
+  })
+
+  it("doesn't count quoting, alignment or strikethrough alone as a difference", () => {
+    const diff = diffChapters(
+      doc(p("Dear Ann,"), p("The End"), p("Struck.")),
+      doc(quote(p("Dear Ann,")), aligned("center", p("The End")), p({ text: "Struck.", marks: [strike] }))
+    )
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same"])
+    expect(diff.additions + diff.removals).toBe(0)
+    expect(diff.left[0]!.quoted).toBeUndefined()
+    expect(diff.right[0]!.quoted).toBe(true)
+    expect(diff.right[1]!.align).toBe("center")
+    expect(diff.right[2]!.segments).toEqual([{ text: "Struck.", marks: [strike], op: "same" }])
+  })
+
+  it("keeps each side's look on a changed row", () => {
+    const diff = diffChapters(
+      doc(aligned("right", p("Yours, Ann"))),
+      doc(quote(aligned("center", p("Yours ever, Ann"))))
+    )
+    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0 }])
+    expect(diff.left[0]).toMatchObject({ align: "right" })
+    expect(diff.left[0]!.quoted).toBeUndefined()
+    expect(diff.right[0]).toMatchObject({ align: "center", quoted: true })
   })
 
   it("handles empty Chapters", () => {

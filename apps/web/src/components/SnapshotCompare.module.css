@@ -228,6 +228,10 @@
   min-height: 1lh;
 }
 
+.quoted {
+  padding-left: 1.5em;
+}
+
 .gap {
   border-radius: 4px;
   background: repeating-linear-gradient(
@@ -273,6 +277,12 @@
   text-decoration: line-through;
   text-decoration-color: color-mix(in srgb, var(--danger) 70%, transparent);
   border-radius: 2px;
+}
+
+/* Struck through by the writer: plain ink, unlike removed text's red. */
+.body s {
+  text-decoration-color: var(--ink);
+  text-decoration-thickness: 1px;
 }
 
 .cell[data-change="removed"] :global(hr[data-scene-break])::after {

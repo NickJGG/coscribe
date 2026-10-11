@@ -6,8 +6,16 @@ export type DiffOp = "same" | "del" | "ins"
 /** A piece of one text node, with that node's own marks. */
 export type DiffSegment = { text: string; marks?: JSONContent["marks"]; op: DiffOp }
 
-/** A top-level block of one side, cut into segments. A Scene Break has none. */
-export type DiffBlock = { type: "paragraph" | "sceneBreak"; segments: DiffSegment[] }
+/**
+ * A paragraph or Scene Break of one side, cut into segments (a Scene Break has none). A block quote's
+ * paragraphs are blocks of their own, marked `quoted`.
+ */
+export type DiffBlock = {
+  type: "paragraph" | "sceneBreak"
+  segments: DiffSegment[]
+  quoted?: boolean
+  align?: "center" | "right"
+}
 
 /**
  * One aligned row: a block index on each side it has a block on. A changed row also has `merged`, both
@@ -32,16 +40,22 @@ const PAIR_SIMILARITY = 0.5
 const SCENE_BREAK_KEY = "\u0000sceneBreak"
 
 type Run = { text: string; marks?: JSONContent["marks"] }
-type Block = { type: DiffBlock["type"]; runs: Run[]; text: string; key: string }
+type Block = Pick<DiffBlock, "type" | "quoted" | "align"> & { runs: Run[]; text: string; key: string }
 type Range = { length: number; op: DiffOp }
 
 function blocksOf(doc: JSONContent): Block[] {
-  return (doc.content ?? []).map((node) => {
-    if (node.type === "sceneBreak") return { type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }
+  return (doc.content ?? []).flatMap((node): Block[] => {
+    if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }]
+    if (node.type === "blockquote") return blocksOf(node).map((block) => ({ ...block, quoted: true }))
     const runs = (node.content ?? []).flatMap((n) => (n.type === "text" && n.text ? [{ text: n.text, marks: n.marks }] : []))
     const text = runs.map((r) => r.text).join("")
-    return { type: "paragraph", runs, text, key: text }
+    const align = node.attrs?.textAlign
+    return [{ type: "paragraph", runs, text, key: text, ...((align === "center" || align === "right") && { align }) }]
   })
+}
+
+function look(block: Block): Pick<DiffBlock, "quoted" | "align"> {
+  return { ...(block.quoted && { quoted: true }), ...(block.align && { align: block.align }) }
 }
 
 function similarity(a: Block, b: Block): number {
@@ -81,7 +95,7 @@ function segment(runs: Run[], ranges: Range[]): DiffSegment[][] {
 }
 
 function whole(block: Block, op: DiffOp): DiffBlock {
-  return { type: block.type, segments: block.runs.map((run) => ({ ...run, op })) }
+  return { type: block.type, segments: block.runs.map((run) => ({ ...run, op })), ...look(block) }
 }
 
 function changeRuns(ranges: Range[], op: DiffOp): number {
@@ -89,10 +103,10 @@ function changeRuns(ranges: Range[], op: DiffOp): number {
 }
 
 /**
- * What changed from `left` to `right`, two Chapters' ProseMirror JSON. Top-level blocks are aligned
- * first (equal text anchors, then leftover paragraphs paired by word similarity), then words are diffed
- * inside each pair. Only text counts: bold, italic, `author` and `note` changes are not differences,
- * and each side's segments keep that side's own marks.
+ * What changed from `left` to `right`, two Chapters' ProseMirror JSON. Blocks are aligned first (equal
+ * text anchors, then leftover paragraphs paired by word similarity), then words are diffed inside each
+ * pair. Only text counts: formatting, quoting, alignment, `author` and `note` changes are not differences,
+ * and each side's blocks and segments keep that side's own look and marks.
  */
 export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff {
   const a = blocksOf(left)
@@ -138,8 +152,8 @@ export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff
       merged.push(...rights[r++]!)
     }
     diff.rows.push({ kind: "changed", left: i, right: j, merged })
-    diff.left[i] = { type: "paragraph", segments: lefts.flat() }
-    diff.right[j] = { type: "paragraph", segments: rights.flat() }
+    diff.left[i] = { type: "paragraph", segments: lefts.flat(), ...look(a[i]!) }
+    diff.right[j] = { type: "paragraph", segments: rights.flat(), ...look(b[j]!) }
     diff.removals += changeRuns(leftRanges, "del")
     diff.additions += changeRuns(rightRanges, "ins")
   }

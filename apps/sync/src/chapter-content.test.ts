@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto"
 import { describe, expect, it } from "vitest"
 import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
 import * as Y from "yjs"
@@ -17,6 +18,7 @@ const jordan = { userId: "jordan", at: 2 }
 function para(...runs: [string, typeof mia][]) {
   return {
     type: "paragraph",
+    attrs: { textAlign: null },
     content: runs.map(([text, author]) => ({ type: "text", text, marks: [{ type: "author", attrs: author }] })),
   }
 }
@@ -40,6 +42,7 @@ describe("chapter content", () => {
     const author = { type: "author", attrs: mia }
     const paragraph = {
       type: "paragraph",
+      attrs: { textAlign: null },
       content: [
         { type: "text", text: "The ", marks: [author, note("a")] },
         { type: "text", text: "cat", marks: [author, note("a"), note("b")] },
@@ -59,6 +62,50 @@ describe("chapter content", () => {
     }
     prosemirrorJSONToYXmlFragment(entrySchema, body, doc.getXmlFragment(DOCUMENT_FIELD))
     expect(decodeChapter(Y.encodeStateAsUpdate(doc), "entry").toJSON()).toEqual(body)
+  })
+
+  it("round-trips block quotes, strikethrough and alignment", () => {
+    const author = { type: "author", attrs: mia }
+    const body = {
+      type: "doc",
+      content: [
+        {
+          type: "blockquote",
+          content: [
+            {
+              type: "paragraph",
+              attrs: { textAlign: "right" },
+              content: [{ type: "text", text: "Yours, Ann", marks: [{ type: "strike" }, author] }],
+            },
+          ],
+        },
+        { type: "paragraph", attrs: { textAlign: "center" }, content: [{ type: "text", text: "The End", marks: [author] }] },
+      ],
+    }
+    const doc = new Y.Doc()
+    prosemirrorJSONToYXmlFragment(chapterSchema, body, doc.getXmlFragment(DOCUMENT_FIELD))
+    expect(decodeChapter(Y.encodeStateAsUpdate(doc)).toJSON()).toEqual(body)
+  })
+
+  it("hashes a change of alignment alone as a change", () => {
+    const paragraph = (textAlign: string | null) => ({
+      type: "paragraph",
+      attrs: { textAlign },
+      content: [{ type: "text", text: "The End", marks: [{ type: "author", attrs: mia }] }],
+    })
+    const hash = (textAlign: string | null) => {
+      const doc = new Y.Doc()
+      prosemirrorJSONToYXmlFragment(chapterSchema, { type: "doc", content: [paragraph(textAlign)] }, doc.getXmlFragment(DOCUMENT_FIELD))
+      return contentHash(chapterContent(doc))
+    }
+    expect(hash("center")).not.toBe(hash(null))
+  })
+
+  it("hashes unaligned paragraphs as they were hashed before alignment existed", () => {
+    const doc = chapterDoc(para(["Same words.", mia]))
+    const text = { type: "text", marks: [{ type: "author", attrs: mia }], text: "Same words." }
+    const before = { type: "doc", content: [{ type: "paragraph", content: [text] }] }
+    expect(contentHash(chapterContent(doc))).toBe(createHash("sha256").update(JSON.stringify(before)).digest("hex"))
   })
 
   it("hashes equal content equally, and tells authors apart", () => {

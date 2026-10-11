@@ -5,12 +5,15 @@ import Document from "@tiptap/extension-document"
 import Italic from "@tiptap/extension-italic"
 import { BulletList, ListItem, ListKeymap, OrderedList } from "@tiptap/extension-list"
 import Paragraph from "@tiptap/extension-paragraph"
+import Strike from "@tiptap/extension-strike"
 import Text from "@tiptap/extension-text"
 import { Author } from "./author"
+import { Align, ChapterBlockquote, EntryBlockquote } from "./format"
 import { Note, NotePaste } from "./note"
 import { SceneBreak } from "./scene-break"
 
 export { SceneBreak }
+export { type Alignment } from "./format"
 export { countAuthorCharacters, type ContentJSON } from "./credits"
 export {
   diffChapters,
@@ -38,24 +41,44 @@ export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from ".
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 
 /**
- * Paragraphs, italic, bold, and Scene Breaks only, plus the `author` mark on every run of text and
- * `note` marks on noted passages. Every client and apps/sync must share this schema: y-tiptap drops
- * text carrying a mark it doesn't know.
+ * Paragraphs (left, centered or right-aligned), block quotes of paragraphs, Scene Breaks, and bold, italic and
+ * strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
+ * and apps/sync must share this schema: y-tiptap drops text carrying a mark it doesn't know.
  */
-export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author, Note, NotePaste]
+export const chapterExtensions = [
+  Document,
+  Paragraph,
+  Text,
+  Bold,
+  Italic,
+  Strike,
+  SceneBreak,
+  ChapterBlockquote,
+  Align,
+  Author,
+  Note,
+  NotePaste,
+]
 
 /**
  * The shared schema's version. A client on a different one is read-only (see apps/sync), because
  * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
  * `chapterExtensions` or `entryExtensions` gains or loses a node, mark or attribute.
  */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)
 
-/** A Chapter's formatting plus bulleted and numbered lists. */
-export const entryExtensions = [...chapterExtensions, BulletList, OrderedList, ListItem, ListKeymap]
+/** A Chapter's formatting plus bulleted and numbered lists, which block quotes can hold too. */
+export const entryExtensions = [
+  ...chapterExtensions.filter((extension) => extension !== ChapterBlockquote),
+  EntryBlockquote,
+  BulletList,
+  OrderedList,
+  ListItem,
+  ListKeymap,
+]
 
 /** Server-side (apps/sync) view of an Entry body, for the Reader View. */
 export const entrySchema = getSchema(entryExtensions)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
@@ -15,6 +15,7 @@ import {
   documentName,
   DOCUMENT_FIELD,
   entryExtensions,
+  type Alignment,
   type SnapshotMessage,
   type SyncMessage,
   type DocumentKind,
@@ -26,6 +27,7 @@ import { Authorship, HEX_COLOR, type StoryAuthor } from "./Authorship";
 import { DeskToolbar } from "./DeskToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
 import { FindBar } from "./FindBar";
+import { AddNoteIcon, AlignIcon, BlockQuoteIcon, BulletListIcon, NumberedListIcon, SceneBreakIcon } from "./icons";
 import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
@@ -385,12 +387,28 @@ function Outdated() {
   );
 }
 
+const ALIGNMENTS = [
+  { align: "left", label: "Align left", keys: "Ctrl+Shift+L" },
+  { align: "center", label: "Center", keys: "Ctrl+Shift+E" },
+  { align: "right", label: "Align right", keys: undefined },
+] satisfies { align: Alignment; label: string; keys?: string }[];
+
+const keepEditorFocus = (e: React.MouseEvent) => e.preventDefault();
+
+function alignmentOf(editor: Editor): Alignment {
+  if (editor.isActive({ textAlign: "center" })) return "center";
+  return editor.isActive({ textAlign: "right" }) ? "right" : "left";
+}
+
 function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean; onAddNote?: () => void }) {
   const active = useEditorState({
     editor,
     selector: ({ editor }) => ({
       bold: editor.isActive("bold"),
       italic: editor.isActive("italic"),
+      strike: editor.isActive("strike"),
+      blockquote: editor.isActive("blockquote"),
+      align: alignmentOf(editor),
       bulletList: editor.isActive("bulletList"),
       orderedList: editor.isActive("orderedList"),
       note: canAddNote(editor),
@@ -421,6 +439,17 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
       >
         <em>I</em>
       </button>
+      <button
+        type="button"
+        className={styles.tool}
+        aria-pressed={active.strike}
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        data-tip="Strikethrough"
+        data-keys="Ctrl+Shift+S"
+        aria-label="Strikethrough"
+      >
+        <s>S</s>
+      </button>
       <span className={styles.toolSep} aria-hidden />
       <button
         type="button"
@@ -430,8 +459,20 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
         data-keys="Type *** on an empty line"
         aria-label="Scene Break"
       >
-        * * *
+        <SceneBreakIcon />
       </button>
+      <button
+        type="button"
+        className={styles.tool}
+        aria-pressed={active.blockquote}
+        onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        data-tip="Block quote"
+        data-keys="Ctrl+Shift+B · type > and a space"
+        aria-label="Block quote"
+      >
+        <BlockQuoteIcon />
+      </button>
+      <AlignTool editor={editor} align={active.align} />
       {lists && (
         <>
           <span className={styles.toolSep} aria-hidden />
@@ -442,8 +483,9 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             data-tip="Bulleted list"
             data-keys="Type - and a space"
+            aria-label="Bulleted list"
           >
-            &bull; List
+            <BulletListIcon />
           </button>
           <button
             type="button"
@@ -452,8 +494,9 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             data-tip="Numbered list"
             data-keys="Type 1. and a space"
+            aria-label="Numbered list"
           >
-            1. List
+            <NumberedListIcon />
           </button>
         </>
       )}
@@ -464,16 +507,92 @@ function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean;
             type="button"
             className={styles.tool}
             disabled={!active.note}
-            onMouseDown={(e) => e.preventDefault()}
+            onMouseDown={keepEditorFocus}
             onClick={onAddNote}
             data-tip="Add Note on the selected text"
             data-keys="Ctrl+Alt+M"
+            aria-label="Add Note"
           >
-            Add Note
+            <AddNoteIcon />
           </button>
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * One button showing the paragraph's alignment, opening a row of the three. Clicks keep focus in the
+ * editor; Escape, a click outside, or tabbing away closes it.
+ */
+function AlignTool({ editor, align }: { editor: Editor; align: Alignment }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const rowId = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      if (wrapRef.current?.contains(document.activeElement)) buttonRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <span
+      ref={wrapRef}
+      className={styles.alignTool}
+      onBlur={(e) => {
+        const next = e.relatedTarget as Node | null;
+        if (next && !e.currentTarget.contains(next)) setOpen(false);
+      }}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className={styles.tool}
+        aria-label="Alignment"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls={rowId}
+        data-tip="Alignment"
+        onMouseDown={keepEditorFocus}
+        onClick={() => setOpen(!open)}
+      >
+        <AlignIcon align={align} />
+      </button>
+      <span id={rowId} className={styles.alignRow} role="group" aria-label="Alignment" hidden={!open}>
+        {ALIGNMENTS.map((option) => (
+          <button
+            key={option.align}
+            type="button"
+            className={styles.tool}
+            aria-pressed={align === option.align}
+            aria-label={option.label}
+            data-tip={option.label}
+            data-keys={option.keys}
+            onMouseDown={keepEditorFocus}
+            onClick={() => {
+              editor.chain().focus().setTextAlign(option.align).run();
+              setOpen(false);
+            }}
+          >
+            <AlignIcon align={option.align} />
+          </button>
+        ))}
+      </span>
+    </span>
   );
 }
 

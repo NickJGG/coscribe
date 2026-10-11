@@ -21,9 +21,17 @@ export function decodeChapter(state: Uint8Array, kind: DocumentKind = "chapter")
   }
 }
 
-/** Equal for equal text, formatting, and `author` marks, whatever edits led there. */
+/**
+ * Equal for equal text, formatting, and `author` marks, whatever edits led there. A paragraph's unset
+ * `textAlign` is left out, so content from before alignment existed keeps its stored hash.
+ */
 export function contentHash(content: ChapterContent): string {
-  return createHash("sha256").update(JSON.stringify(content.toJSON())).digest("hex")
+  const json = JSON.stringify(content.toJSON(), (key, value) => {
+    if (key !== "attrs" || value?.textAlign !== null) return value
+    const { textAlign: _, ...rest } = value
+    return Object.keys(rest).length ? rest : undefined
+  })
+  return createHash("sha256").update(json).digest("hex")
 }
 
 export type SnapshotState = { changed: boolean; empty: boolean }

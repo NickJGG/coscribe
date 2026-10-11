@@ -284,7 +284,18 @@
   padding-left: 1.5em;
 }
 
-.text li p + p {
+/* Set off by space, so the paragraph after one starts flush like the first in a quote. */
+.text blockquote {
+  margin: 0.75em 0;
+  padding-left: 1.5em;
+}
+
+.text s {
+  text-decoration-thickness: 1px;
+}
+
+.text li p + p,
+.text p[style*="text-align"] {
   text-indent: 0;
 }
 

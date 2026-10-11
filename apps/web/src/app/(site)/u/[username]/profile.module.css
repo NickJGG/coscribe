@@ -197,7 +197,7 @@
   border-left: 3px solid var(--author);
 }
 
-.passage blockquote {
+.passage > blockquote {
   color: var(--ink-muted);
   font-family: var(--font-prose), Georgia, serif;
   font-size: 1.3125rem;
@@ -206,23 +206,32 @@
   overflow-wrap: break-word;
 }
 
-.passage blockquote p + p {
+.passage > blockquote p + p {
   margin-top: 0.6em;
 }
 
-.passage blockquote :global(hr[data-scene-break]) {
+.passage > blockquote :global(hr[data-scene-break]) {
   margin: 0.6em 0;
   border: 0;
   text-align: center;
 }
 
-.passage blockquote :global(hr[data-scene-break])::after {
+.passage > blockquote :global(hr[data-scene-break])::after {
   content: "* * *";
   letter-spacing: 0.5em;
 }
 
+.passage > blockquote * + blockquote,
+.passage > blockquote blockquote + * {
+  margin-top: 0.6em;
+}
+
+.passage > blockquote blockquote {
+  padding-left: 1.5em;
+}
+
 /* --run is set only on the profile User's own runs. */
-.passage blockquote :global(span[data-author]) {
+.passage > blockquote :global(span[data-author]) {
   background-color: color-mix(in srgb, var(--run, transparent) 28%, transparent);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;

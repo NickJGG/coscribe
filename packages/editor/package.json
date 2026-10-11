@@ -8,12 +8,15 @@
   },
   "dependencies": {
     "@tiptap/core": "^3.31.4",
+    "@tiptap/extension-blockquote": "^3.31.4",
     "@tiptap/extension-bold": "^3.31.4",
     "@tiptap/extension-document": "^3.31.4",
     "@tiptap/extension-italic": "^3.31.4",
     "@tiptap/extension-list": "^3.31.4",
     "@tiptap/extension-paragraph": "^3.31.4",
+    "@tiptap/extension-strike": "^3.31.4",
     "@tiptap/extension-text": "^3.31.4",
+    "@tiptap/extension-text-align": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
     "diff": "^8.0.4"
   }
