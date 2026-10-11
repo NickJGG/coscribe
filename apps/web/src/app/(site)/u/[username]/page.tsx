@@ -3,15 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { ROLE_LABEL } from "@/lib/story-roles";
+import { getViewer } from "@/lib/viewer";
+import { getFriendships } from "@/lib/connections";
+import { relationTo, type Relation } from "@/lib/friends";
+import { formerWriterIds, profileStories, profileStoryRows, writesWith, type CoWriter, type ProfileStory } from "@/lib/profile";
+import { formerWriterNames } from "@/lib/story";
 import { authorColorCss } from "@/lib/profile-rules";
+import { Avatar } from "@/components/Avatar";
+import { LiveLabel } from "@/components/LiveCounts";
+import { FriendAction } from "./FriendAction";
+import { StoryCard } from "./StoryCard";
 import styles from "./profile.module.css";
 
 const getProfile = cache(async (username: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, author_color, created_at")
+    .select("id, username, author_color, bio, created_at")
     .eq("username", username.toLowerCase())
     .maybeSingle();
   return data;
@@ -25,64 +33,123 @@ export async function generateMetadata(props: PageProps<"/u/[username]">): Promi
 export default async function ProfilePage(props: PageProps<"/u/[username]">) {
   const profile = await getProfile((await props.params).username);
   if (!profile) notFound();
-  const stories = await publicStories(profile.id);
 
-  const since = new Date(profile.created_at).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const supabase = await createClient();
+  const [viewer, { data: rows }, { data: writingNow }] = await Promise.all([
+    getViewer(),
+    profileStoryRows(supabase, profile.id),
+    supabase.rpc("writing_now", { p_user: profile.id }),
+  ]);
+  const viewerId = viewer?.profile ? viewer.userId : null;
+  const self = viewerId === profile.id;
+  const [formerNames, relation] = await Promise.all([
+    formerWriterNames(formerWriterIds(rows ?? [])),
+    viewerRelation(viewerId, profile.id),
+  ]);
+
+  const { together, finished, writing } = profileStories(rows ?? [], profile.id, viewerId, formerNames);
+  const coWriters = writesWith(rows ?? [], profile.id);
+  const live = writingNow?.[0];
+  const since = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  const justThem = new Set([profile.id]);
+  const bothOfUs = viewerId ? new Set([profile.id, viewerId]) : justThem;
 
   return (
-    <div className="page" style={{ "--author": authorColorCss(profile.author_color) } as React.CSSProperties}>
-      <header className={styles.header}>
-        <span className={styles.avatar} aria-hidden>
-          {profile.username[0]!.toUpperCase()}
-        </span>
-        <div>
-          <h1>{profile.username}</h1>
-          <p className="muted">Writing on Coscribe since {since}</p>
-        </div>
-      </header>
+    <div className={styles.page} style={{ "--author": authorColorCss(profile.author_color) } as React.CSSProperties}>
+      <div className={styles.layout}>
+        <aside className={styles.aside}>
+          <span className={styles.avatar} aria-hidden>
+            {profile.username[0]!.toUpperCase()}
+          </span>
+          <div className={styles.who}>
+            <h1>{profile.username}</h1>
+            {profile.bio ? (
+              <p className={styles.bio}>{profile.bio}</p>
+            ) : (
+              self && (
+                <p className={`muted ${styles.nudge}`}>
+                  <Link href="/settings">Add a bio</Link> so people know who you are.
+                </p>
+              )
+            )}
+            <p className={`muted ${styles.since}`}>Writing on Coscribe since {since}</p>
+          </div>
+          {relation && <FriendAction relation={relation} user={profile} />}
+          {live && (
+            <Link href={`/stories/${live.story_id}/chapters/${live.chapter_id}`} className={styles.live}>
+              <span className={styles.liveHead}>
+                <LiveLabel>Writing now</LiveLabel>
+              </span>
+              <span className={styles.liveStory}>{live.story_title}</span>
+              <span className={styles.liveSub}>Chapter {live.chapter_number} · Watch →</span>
+            </Link>
+          )}
+          {coWriters.length > 0 && <WritesWith people={coWriters} />}
+        </aside>
 
-      <section className={styles.section}>
-        <h2>Stories</h2>
-        {stories.length ? (
-          <ul className="rows">
-            {stories.map(({ role, story }) => {
-              const finished = story.status === "finished";
-              return (
-                <li key={story.id} className={`row ${finished ? styles.finished : ""}`}>
-                  <Link href={`/stories/${story.id}${finished ? "/read" : ""}`} className={styles.storyTitle}>
-                    {story.title}
-                  </Link>
-                  <div className="row-actions">
-                    {finished ? <span className={`pill ${styles.finishedPill}`}>Finished</span> : <span className="pill">Being written</span>}
-                    <span className="pill">{ROLE_LABEL[role]}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="muted">No public stories yet.</p>
-        )}
-      </section>
+        <div className={styles.work}>
+          <Section title="Writing together" stories={together} lit={bothOfUs} />
+          <Section title="Finished" stories={finished} lit={justThem} />
+          <Section title="Being written" stories={writing} lit={justThem} />
+          {!together.length && !finished.length && !writing.length && (
+            <p className={`muted ${styles.empty}`}>
+              {self ? (
+                <>
+                  Stories you write will show here. <Link href="/stories?new=1#new">Start a Story</Link>
+                </>
+              ) : (
+                "No stories to show yet."
+              )}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-/** Public stories they host or write in: Finished ones first (newest first), then the rest by newest. */
-async function publicStories(userId: string) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("story_members")
-    .select("role, story:stories!inner (id, title, status, created_at, finished_at)")
-    .eq("user_id", userId)
-    .eq("story.visibility", "public");
-  const when = (s: { created_at: string; finished_at: string | null }) => s.finished_at ?? s.created_at;
-  return (data ?? []).sort(
-    (a, b) =>
-      Number(b.story.status === "finished") - Number(a.story.status === "finished") ||
-      when(b.story).localeCompare(when(a.story))
+/** "self" on your own profile, null when signed out (no action to offer). */
+async function viewerRelation(viewerId: string | null, profileId: string): Promise<Relation | "self" | null> {
+  if (!viewerId) return null;
+  if (viewerId === profileId) return "self";
+  const { connections } = await getFriendships(viewerId);
+  return relationTo(viewerId, profileId, connections);
+}
+
+function Section({ title, stories, lit }: { title: string; stories: ProfileStory[]; lit: ReadonlySet<string> }) {
+  if (!stories.length) return null;
+  return (
+    <section className={styles.section}>
+      <h2>
+        {title}
+        <span className={styles.count}>{stories.length}</span>
+      </h2>
+      <ul className={styles.grid}>
+        {stories.map((story) => (
+          <StoryCard key={story.id} story={story} lit={lit} />
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function WritesWith({ people }: { people: CoWriter[] }) {
+  return (
+    <div className={styles.with}>
+      <span className={styles.role}>Writes with</span>
+      <ul>
+        {people.map((p) => (
+          <li key={p.id}>
+            <Link href={`/u/${p.username}`}>
+              <Avatar name={p.username} color={p.color} size="sm" />
+              {p.username}
+            </Link>
+            <span className={styles.shared} title={`${p.shared} ${p.shared === 1 ? "Story" : "Stories"} together`}>
+              {p.shared}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

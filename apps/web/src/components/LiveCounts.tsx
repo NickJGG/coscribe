@@ -9,3 +9,8 @@ export function LiveCounts({ writers, viewers }: { writers: number; viewers: num
     </span>
   );
 }
+
+/** The pulsing live dot before `children`. */
+export function LiveLabel({ children }: { children: React.ReactNode }) {
+  return <span className={styles.live}>{children}</span>;
+}
