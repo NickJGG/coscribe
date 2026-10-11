@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
-import { Placeholder } from "@tiptap/extensions";
+import { Dropcursor, Gapcursor, Placeholder } from "@tiptap/extensions";
 import {
   ACCESS_REVOKED,
   AuthorStamp,
@@ -311,6 +311,8 @@ function LiveEditor({
         render: renderCaret,
       }),
       Placeholder.configure({ placeholder }),
+      Gapcursor,
+      Dropcursor,
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
       EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),

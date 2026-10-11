@@ -237,6 +237,29 @@
   user-select: none;
 }
 
+/* A caret directly in the editor root is in a gap beside a Scene Break; float it so text doesn't jump. */
+.prose > :global(.collaboration-carets__caret) {
+  position: absolute;
+  left: 0;
+  display: block;
+  width: 20px;
+  height: 2px;
+  margin: -2px 0 0;
+  border: 0;
+  background: var(--author, var(--ink-muted));
+}
+
+.prose > :global(.collaboration-carets__caret) > :global(.collaboration-carets__label) {
+  top: 50%;
+  left: 26px;
+  transform: translateY(-50%);
+  border-radius: 4px;
+}
+
+.prose :global(.ProseMirror-gapcursor)::after {
+  border-top-color: var(--ink);
+}
+
 .prose :is(ul, ol) {
   padding-left: 1.5em;
 }
