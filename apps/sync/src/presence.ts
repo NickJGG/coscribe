@@ -1,7 +1,8 @@
 /**
  * Mirrors open connections into `story_presence` (Writers, by name) and `story_activity` (counts).
  * Keyed by the connection's context object, which Hocuspocus passes unchanged to every hook. Writes run
- * one at a time, so the tables always end up matching what's in memory.
+ * one at a time, so the tables always end up matching what's in memory. Reference visits (a Pinned
+ * Entry's body beside a Chapter) are tracked but never show up in either table.
  */
 import { sql } from "./db"
 import type { DocumentRef } from "./documents"
@@ -13,6 +14,7 @@ export type Visit = {
   socketId: string
   member: boolean
   document: DocumentRef
+  reference: boolean
 }
 
 const COUNT_DELAY_MS = 2000
@@ -22,7 +24,7 @@ export function storyCounts(visits: Iterable<Visit>, storyId: string): { writers
   const writers = new Set<string>()
   const viewers = new Set<string>()
   for (const visit of visits) {
-    if (visit.storyId !== storyId) continue
+    if (visit.storyId !== storyId || visit.reference) continue
     if (visit.member && visit.userId) writers.add(visit.userId)
     else viewers.add(visit.userId ?? visit.socketId)
   }
@@ -43,6 +45,7 @@ function write(task: () => Promise<unknown>) {
 
 export function arrive(key: object, visit: Visit) {
   visits.set(key, visit)
+  if (visit.reference) return
   if (visit.member && visit.userId) {
     const { userId, storyId, document } = visit
     write(
@@ -60,8 +63,11 @@ export function depart(key: object) {
   const visit = visits.get(key)
   if (!visit) return
   visits.delete(key)
+  if (visit.reference) return
   const { userId, document } = visit
-  const stillThere = [...visits.values()].some((v) => v.member && v.userId === userId && v.document.id === document.id)
+  const stillThere = [...visits.values()].some(
+    (v) => v.member && !v.reference && v.userId === userId && v.document.id === document.id
+  )
   if (visit.member && userId && !stillThere) {
     write(() => sql`delete from public.story_presence where user_id = ${userId} and document_id = ${document.id}`)
   }

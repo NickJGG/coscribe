@@ -26,3 +26,15 @@ export function decideAccess(facts: AccessFacts | null): Access {
 export function isOutdated(schema: string | null): boolean {
   return Number(schema) !== SCHEMA_VERSION
 }
+
+const REFERENCE = "ref:"
+
+/**
+ * A Pinned Entry's body sends its token as `ref:<jwt>` (or just `ref:` when signed out): a reference
+ * connection, which counts toward no Presence.
+ */
+export function parseToken(token: string): { jwt: string | null; reference: boolean } {
+  const reference = token.startsWith(REFERENCE)
+  const jwt = reference ? token.slice(REFERENCE.length) : token
+  return { jwt: jwt || null, reference }
+}

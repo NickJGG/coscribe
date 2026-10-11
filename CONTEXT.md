@@ -120,7 +120,7 @@ The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
 
 **Note**:
-A remark pinned to a passage of a **Chapter**'s text that others can reply to, open until it is **Resolved**.
+A remark anchored to a passage of a **Chapter**'s text that others can reply to, open until it is **Resolved**.
 _Avoid_: Comment, annotation, margin note
 
 **Resolved**:
@@ -138,6 +138,10 @@ _Avoid_: Nickname, synonym
 **Entry Mention**:
 A place in a **Chapter**'s text where an **Entry**'s name or **Alias** appears.
 _Avoid_: Mention (unqualified), link, reference, tag
+
+**Pinned Entry**:
+An **Entry** a **Writer** or **Viewer** keeps open beside every **Chapter**'s text in a **Story**, for reference. Pins are personal; Pin and Unpin are the actions.
+_Avoid_: Kept, docked, open (unqualified), favourite
 
 **Writer Mention**:
 An @-naming of a **Writer** inside a **Note**, a reply, or **Story Chat**, which sends them a **Notification**. Only people in the **Story** can be named.
@@ -167,6 +171,7 @@ _Avoid_: Alert, activity, update
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
 - An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Entry Mentions**
 - A **Chapter** has zero or more **Notes**; only **Writers** and above see them
+- A **Writer** or **Viewer** has zero or more **Pinned Entries** per **Story**; signed-out readers have none
 - A **Notification** has exactly one recipient **User**
 - **Viewers** have no **Presence**; they are only ever counted, never named, except in a **Private** **Story**'s member list
 
@@ -183,4 +188,5 @@ _Avoid_: Alert, activity, update
 - "invite by link" could mean a reusable share link. Resolved: an **Invite Link** is single-use, for one person.
 - "watching" could suggest a named audience. Resolved: **Viewers** are anonymous counts everywhere; only **Writers** have **Presence**.
 - "categories" in the **Story Bible** meant its **Entry Type** groups. Resolved: the four types are fixed; a **Story** orders them but can't add or rename them.
+- "pinned" once described where a **Note** sits. Resolved: a **Note** is anchored to a passage; "pin" belongs to the **Pinned Entry**.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.

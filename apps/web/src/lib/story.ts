@@ -78,6 +78,18 @@ export const getEntries = cache(async (storyId: string) => {
   return data ?? [];
 });
 
+/** The viewer's Pinned Entries' ids in a Story, newest first (empty when signed out). */
+export const getPins = cache(async (storyId: string) => {
+  if (!isUuid(storyId)) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("pinned_entries")
+    .select("entry_id")
+    .eq("story_id", storyId)
+    .order("pinned_at", { ascending: false });
+  return (data ?? []).map((p) => p.entry_id);
+});
+
 /** How the viewer shows up in a live document: a named caret for Writers, nothing for Viewers. */
 export function liveWriter({
   members,

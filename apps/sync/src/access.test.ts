@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { SCHEMA_VERSION } from "@coscribe/editor"
-import { decideAccess, isOutdated, type AccessFacts } from "./access"
+import { decideAccess, isOutdated, parseToken, type AccessFacts } from "./access"
 
 const open: AccessFacts = { visibility: "private", status: "active", locked: false, role: null, invited: false }
 
@@ -42,5 +42,17 @@ describe("isOutdated", () => {
     expect(isOutdated(null)).toBe(true)
     expect(isOutdated("")).toBe(true)
     expect(isOutdated("abc")).toBe(true)
+  })
+})
+
+describe("parseToken", () => {
+  it("passes a plain token through", () => {
+    expect(parseToken("jwt")).toEqual({ jwt: "jwt", reference: false })
+    expect(parseToken("")).toEqual({ jwt: null, reference: false })
+  })
+
+  it("strips the reference prefix", () => {
+    expect(parseToken("ref:jwt")).toEqual({ jwt: "jwt", reference: true })
+    expect(parseToken("ref:")).toEqual({ jwt: null, reference: true })
   })
 })

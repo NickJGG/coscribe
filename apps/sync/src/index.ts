@@ -9,7 +9,8 @@
  * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts), and open Chapters
  *   tell their connections whether taking one would save anything.
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
- *   cleared before the server starts listening.
+ *   cleared before the server starts listening. Reference connections (Pinned Entry bodies, whose token
+ *   starts `ref:`) don't count.
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
@@ -28,7 +29,7 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 import { Database } from "@hocuspocus/extension-database"
 import { Server, type Hocuspocus } from "@hocuspocus/server"
 import { ACCESS_REVOKED, parseDocumentName, type AccessMessage, type OutdatedMessage } from "@coscribe/editor"
-import { isOutdated } from "./access"
+import { isOutdated, parseToken } from "./access"
 import { verifyUser } from "./auth"
 import { env } from "./env"
 import {
@@ -58,6 +59,7 @@ type Context = {
   member: boolean
   socketId: string
   outdated: boolean
+  reference: boolean
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
@@ -84,13 +86,14 @@ const server = new Server<Context>({
     const doc = parseDocumentName(documentName)
     if (!doc) throw new Error("unknown document")
 
-    const userId = token ? await verifyUser(token) : null
+    const { jwt, reference } = parseToken(token)
+    const userId = jwt ? await verifyUser(jwt) : null
     const { storyId, access, member } = await documentAccess(doc, userId)
     if (!storyId || !access) throw new Error("forbidden")
 
     const outdated = isOutdated(requestParameters.get("schema"))
     connectionConfig.readOnly = access === "read" || outdated
-    return { userId, storyId, document: doc, member, socketId, outdated } satisfies Context
+    return { userId, storyId, document: doc, member, socketId, outdated, reference } satisfies Context
   },
 
   async afterLoadDocument({ documentName, document }) {
@@ -183,6 +186,7 @@ function serverContext(chapterId: string, storyId: string): Context {
     member: false,
     socketId: "server",
     outdated: false,
+    reference: false,
   }
 }
 

@@ -331,6 +331,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"pinned_entries": {
+                  Row: {
+                    "entry_id": string,"pinned_at": string,"story_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "entry_id": string,"pinned_at"?: string,"story_id": string,"user_id": string
+                  }
+                  Update: {
+                    "entry_id"?: string,"pinned_at"?: string,"story_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "pinned_entries_entry_id_fkey"
+      columns: ["entry_id"]
+isOneToOne: false
+      referencedRelation: "entries"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pinned_entries_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "pinned_entries_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "author_color": string,"bio": string | null,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"username": string
