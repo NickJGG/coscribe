@@ -1,4 +1,5 @@
-import { Bar, Line, Loading } from "@/components/Skeleton";
+import { Loading } from "@/components/Skeleton";
+import { StorySectionSkeleton } from "@/components/StoryCard";
 import styles from "./stories.module.css";
 
 export default function StoriesLoading() {
@@ -6,20 +7,7 @@ export default function StoriesLoading() {
     <Loading>
       <div className={styles.page}>
         <h1>Your stories</h1>
-        <ul className={styles.list}>
-          {[55, 70, 40, 62].map((width, i) => (
-            <li key={i} className={styles.story}>
-              <div className={styles.main}>
-                <Line className={styles.title} width={`${width}%`} />
-                <Line className={styles.sub} width="12rem" />
-              </div>
-              <div className={styles.side}>
-                <Bar width={66} height={26} round />
-                <Bar width={140} height={4} round />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <StorySectionSkeleton titleWidth="9rem" cards={["55%", "70%", "40%"]} />
       </div>
     </Loading>
   );

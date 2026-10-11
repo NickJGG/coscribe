@@ -39,7 +39,7 @@ export function FeaturedPassage({
     if (!self || !canFeature) return null;
     return (
       <div className={styles.choose}>
-        <span className={styles.role}>Featured Passage</span>
+        <span className={styles.label}>Featured Passage</span>
         <span>
           Show visitors how you write: select a passage you wrote in a Finished Story&rsquo;s Reader View, then choose
           &ldquo;Feature on my profile&rdquo;.
@@ -52,7 +52,7 @@ export function FeaturedPassage({
     if (!self) return null;
     return (
       <div className={styles.choose}>
-        <span className={styles.role}>Featured Passage · hidden</span>
+        <span className={styles.label}>Featured Passage · hidden</span>
         <span>
           Your passage from <em>{passage.storyTitle}</em> is hidden while it&rsquo;s being written again. It comes back
           when the Story is Finished.

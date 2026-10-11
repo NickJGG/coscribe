@@ -1,4 +1,6 @@
 import { cache } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { isUuid } from "@/lib/action-result";
@@ -90,9 +92,12 @@ export function storyAuthors({
 }
 
 /** Usernames of former Writers whose text survives. Deleted accounts are simply missing. */
-export async function formerWriterNames(ids: string[]): Promise<Map<string, string>> {
+export async function formerWriterNames(
+  ids: string[],
+  client?: SupabaseClient<Database>
+): Promise<Map<string, string>> {
   if (!ids.length) return new Map();
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const { data } = await supabase.from("profiles").select("id, username").in("id", [...new Set(ids)]);
   return new Map((data ?? []).map((p) => [p.id, p.username]));
 }

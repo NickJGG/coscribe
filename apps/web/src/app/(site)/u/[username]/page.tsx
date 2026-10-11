@@ -12,9 +12,10 @@ import { authorColorCss } from "@/lib/profile-rules";
 import type { JSONContent } from "@tiptap/core";
 import { Avatar } from "@/components/Avatar";
 import { LiveLabel } from "@/components/LiveCounts";
+import { StorySection } from "@/components/StoryCard";
 import { FeaturedPassage, type Passage } from "./FeaturedPassage";
 import { FriendAction } from "./FriendAction";
-import { StoryCard } from "./StoryCard";
+import { ProfileStoryCard } from "./ProfileStoryCard";
 import styles from "./profile.module.css";
 
 const getProfile = cache(async (username: string) => {
@@ -153,24 +154,18 @@ async function viewerRelation(viewerId: string | null, profileId: string): Promi
 function Section({ title, stories, lit }: { title: string; stories: ProfileStory[]; lit: ReadonlySet<string> }) {
   if (!stories.length) return null;
   return (
-    <section className={styles.section}>
-      <h2>
-        {title}
-        <span className={styles.count}>{stories.length}</span>
-      </h2>
-      <ul className={styles.grid}>
-        {stories.map((story) => (
-          <StoryCard key={story.id} story={story} lit={lit} />
-        ))}
-      </ul>
-    </section>
+    <StorySection title={title} count={stories.length}>
+      {stories.map((story) => (
+        <ProfileStoryCard key={story.id} story={story} lit={lit} />
+      ))}
+    </StorySection>
   );
 }
 
 function WritesWith({ people }: { people: CoWriter[] }) {
   return (
     <div className={styles.with}>
-      <span className={styles.role}>Writes with</span>
+      <span className={styles.label}>Writes with</span>
       <ul>
         {people.map((p) => (
           <li key={p.id}>

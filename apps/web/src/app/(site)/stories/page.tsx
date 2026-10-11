@@ -7,15 +7,13 @@ import { getPendingInvites } from "@/lib/connections";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { presentWriters, writingLine } from "@/lib/presence";
 import { relativeTime } from "@/lib/relative-time";
-import { ROLE_LABEL } from "@/lib/story-roles";
+import { byProfileOrder } from "@/lib/profile";
 import { createStory } from "@/lib/actions/stories";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
-import { AvatarStack } from "@/components/Avatar";
-import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { StoryFields } from "@/components/StoryFields";
+import { finishedFoot, StoryCard, StorySection } from "@/components/StoryCard";
 import { PublicStories } from "./PublicStories";
-import { readingTime } from "@/lib/words";
 import styles from "./stories.module.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -36,7 +34,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       .select(`
         role,
         story:stories (
-          id, title, status, created_at,
+          id, title, blurb, status, visibility, created_at, finished_at,
           chapters (id, position, word_count, author_chars, edited_at),
           members:story_members (role, joined_at, author_color, profile:profiles (id, username, author_color)),
           presence:story_presence (id, user_id, kind, document_id, connected_at)
@@ -69,25 +67,40 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         return member ? [{ name: member.name, chapter }] : [];
       })
     );
-    const words = story.chapters.reduce((sum, c) => sum + c.word_count, 0);
     return {
       ...story,
       role,
       members,
       writing,
       editedAt,
-      words,
-      readingTime: readingTime(words),
+      createdAt: story.created_at,
+      finishedAt: story.finished_at,
+      words: story.chapters.reduce((sum, c) => sum + c.word_count, 0),
       chars: story.chapters.map((c) => readAuthorChars(c.author_chars)),
     };
   });
-  stories.sort((a, b) => (b.editedAt ?? b.created_at).localeCompare(a.editedAt ?? a.created_at));
 
   const formerNames = await formerWriterNames(
     stories.flatMap((s) => {
       const memberIds = new Set(s.members.map((m) => m.id));
       return s.chars.flatMap(Object.keys).filter((id) => !memberIds.has(id));
     })
+  );
+  const writingStories = stories.filter((s) => s.status !== "finished").sort(byProfileOrder);
+  const finishedStories = stories.filter((s) => s.status === "finished").sort(byProfileOrder);
+  const card = (story: (typeof stories)[number], foot: React.ReactNode) => (
+    <StoryCard
+      key={story.id}
+      href={`/stories/${story.id}`}
+      title={story.title}
+      blurb={story.blurb}
+      finished={story.status === "finished"}
+      role={story.role}
+      private={story.visibility === "private"}
+      ribbon={storyRibbon(story.members, story.chars, formerNames)}
+    >
+      {foot}
+    </StoryCard>
   );
 
   return (
@@ -113,43 +126,30 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         </div>
       ))}
 
-      {stories.length ? (
-        <ul className={styles.list}>
-          {stories.map((story) => (
-            <li key={story.id} className={styles.story}>
-              <div className={styles.main}>
-                <Link href={`/stories/${story.id}`} className={styles.title}>
-                  {story.title}
-                </Link>
-                <span className={styles.sub}>
-                  {story.status === "finished" ? (
-                    <>
-                      <span className="pill">Finished</span>
-                      <span>
-                        {story.chapters.length} {story.chapters.length === 1 ? "Chapter" : "Chapters"} ·{" "}
-                        {story.words.toLocaleString("en-US")} words
-                        {story.readingTime && ` · ${story.readingTime} read`}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className={story.writing ? styles.writing : undefined}>
-                        {story.writing ??
-                          (story.editedAt ? `Edited ${relativeTime(Date.parse(story.editedAt))}` : "No words yet")}
-                      </span>
-                      <span>{ROLE_LABEL[story.role]}</span>
-                    </>
-                  )}
-                </span>
-              </div>
-              <div className={styles.side}>
-                <AvatarStack people={story.members} />
-                <ContributionRibbon segments={storyRibbon(story.members, story.chars, formerNames)} />
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
+      {writingStories.length > 0 && (
+        <StorySection title="Being written" count={writingStories.length}>
+          {writingStories.map((story) =>
+            card(
+              story,
+              story.writing ? (
+                <span className={styles.writing}>{story.writing}</span>
+              ) : story.editedAt ? (
+                `Edited ${relativeTime(Date.parse(story.editedAt))}`
+              ) : (
+                "No words yet"
+              )
+            )
+          )}
+        </StorySection>
+      )}
+
+      {finishedStories.length > 0 && (
+        <StorySection title="Finished" count={finishedStories.length}>
+          {finishedStories.map((story) => card(story, finishedFoot(story.chapters.length, story.words)))}
+        </StorySection>
+      )}
+
+      {!stories.length && (
         <p className="muted">You&rsquo;re not in any stories yet. Start one, or ask a friend for an Invite.</p>
       )}
 

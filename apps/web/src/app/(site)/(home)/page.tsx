@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
 import { getLiveStories, getRecentlyFinished } from "@/lib/front-page";
 import { LiveCounts } from "@/components/LiveCounts";
+import { finishedFoot, StoryCard, StoryGrid } from "@/components/StoryCard";
 import { AuthorsDemo, BibleDemo, NotesDemo, WritingDemo } from "@/components/WritingDemo";
 import styles from "./home.module.css";
 
@@ -75,13 +76,20 @@ export default async function Home() {
           <SectionHead title="Being written now" more>
             Public Stories you can watch right now, as they&rsquo;re written.
           </SectionHead>
-          <ul className={styles.stories}>
+          <StoryGrid>
             {live.map((story) => (
-              <StoryCard key={story.id} story={story}>
+              <StoryCard
+                key={story.id}
+                href={`/stories/${story.id}`}
+                title={story.title}
+                blurb={story.blurb}
+                finished={false}
+                ribbon={story.ribbon}
+              >
                 <LiveCounts writers={story.writers} viewers={story.viewers} />
               </StoryCard>
             ))}
-          </ul>
+          </StoryGrid>
         </section>
       ) : (
         finished.length > 0 && (
@@ -89,16 +97,20 @@ export default async function Home() {
             <SectionHead title="Recently Finished" more>
               Read them from the first line to the Credits.
             </SectionHead>
-            <ul className={styles.stories}>
+            <StoryGrid>
               {finished.map((story) => (
-                <StoryCard key={story.id} story={story}>
-                  <span className={styles.counts}>
-                    {story.writers} {story.writers === 1 ? "Writer" : "Writers"} · {story.chapters}{" "}
-                    {story.chapters === 1 ? "Chapter" : "Chapters"}
-                  </span>
+                <StoryCard
+                  key={story.id}
+                  href={`/stories/${story.id}/read`}
+                  title={story.title}
+                  blurb={story.blurb}
+                  finished
+                  ribbon={story.ribbon}
+                >
+                  {finishedFoot(story.chapterCount, story.words)}
                 </StoryCard>
               ))}
-            </ul>
+            </StoryGrid>
           </section>
         )
       )}
@@ -137,23 +149,5 @@ function DemoCard({ title, demo, children }: { title: string; demo: React.ReactN
       <h3>{title}</h3>
       <p className={styles.caption}>{children}</p>
     </div>
-  );
-}
-
-function StoryCard({
-  story,
-  children,
-}: {
-  story: { id: string; title: string; blurb: string | null };
-  children: React.ReactNode;
-}) {
-  return (
-    <li>
-      <Link href={`/stories/${story.id}`} className={styles.title}>
-        {story.title}
-      </Link>
-      {story.blurb && <p className={styles.blurb}>{story.blurb}</p>}
-      {children}
-    </li>
   );
 }

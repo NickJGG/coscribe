@@ -84,10 +84,12 @@ function toProfileStory({ role, story }: ProfileStoryRow, formerNames: ReadonlyM
   };
 }
 
+type Ordered = Pick<ProfileStory, "status" | "words" | "createdAt" | "finishedAt" | "editedAt">;
+
 /** Finished first (latest first), then latest edited, then Stories with no words yet (newest first). */
-function byProfileOrder(a: ProfileStory, b: ProfileStory): number {
-  const rank = (s: ProfileStory) => (s.status === "finished" ? 0 : s.words > 0 ? 1 : 2);
-  const key = (s: ProfileStory) => (s.status === "finished" ? s.finishedAt : s.words > 0 ? s.editedAt : s.createdAt) ?? "";
+export function byProfileOrder(a: Ordered, b: Ordered): number {
+  const rank = (s: Ordered) => (s.status === "finished" ? 0 : s.words > 0 ? 1 : 2);
+  const key = (s: Ordered) => (s.status === "finished" ? s.finishedAt : s.words > 0 ? s.editedAt : s.createdAt) ?? "";
   return rank(a) - rank(b) || key(b).localeCompare(key(a));
 }
 

@@ -1,4 +1,5 @@
 import { Bar, Line, Loading } from "@/components/Skeleton";
+import { StorySectionSkeleton } from "@/components/StoryCard";
 import styles from "./profile.module.css";
 
 export default function ProfileLoading() {
@@ -16,22 +17,7 @@ export default function ProfileLoading() {
             <Bar width="6.5rem" height={32} />
           </aside>
           <div className={styles.work}>
-            <section className={styles.section}>
-              <Line as="h2" width="9rem" />
-              <ul className={styles.grid}>
-                {[60, 75, 50].map((width, i) => (
-                  <li key={i} className={`${styles.card} ${styles.manuscript}`}>
-                    <span className={styles.spine} />
-                    <div className={styles.body}>
-                      <Line className={styles.role} width="3rem" />
-                      <Line className={styles.title} width={`${width}%`} />
-                      <Line className={styles.blurb} width="100%" />
-                      <Line className={styles.foot} width="7rem" />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            <StorySectionSkeleton titleWidth="9rem" cards={["60%", "75%", "50%"]} />
           </div>
         </div>
       </div>

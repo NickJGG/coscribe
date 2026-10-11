@@ -1,0 +1,124 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.count {
+  margin-left: 10px;
+  color: var(--faint);
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: var(--step--1);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 16px;
+  list-style: none;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  border: 1px solid var(--rule);
+  border-radius: 4px 10px 10px 4px;
+  overflow: hidden;
+}
+
+.book {
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+}
+
+/* A second sheet peeking out from behind. */
+.manuscript {
+  margin: 0 4px 4px 0;
+  background: var(--paper);
+  box-shadow: 4px 4px 0 -1px var(--paper), 4px 4px 0 0 var(--rule);
+}
+
+.spine {
+  display: flex;
+  flex: none;
+  width: 8px;
+  background: var(--hair);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px 18px 18px;
+}
+
+.role {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.private {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+}
+
+.lock {
+  width: 11px;
+  height: 11px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.title {
+  margin-bottom: 2px;
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+/* The whole card is the link's hit area. */
+.title::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.card:hover .title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.blurb {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  color: var(--ink-muted);
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: 0.9375rem;
+  font-style: italic;
+}
+
+.foot {
+  margin-top: auto;
+  padding-top: 10px;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}

@@ -136,52 +136,6 @@
   color: var(--ink-muted);
 }
 
-.stories {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 24px;
-}
-
-.stories li {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  border: 1px solid var(--hair);
-  border-radius: var(--radius);
-}
-
-.title {
-  font-family: var(--font-prose), Georgia, serif;
-  font-weight: 600;
-  text-decoration: none;
-  overflow-wrap: anywhere;
-}
-
-.title:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.blurb {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  overflow: hidden;
-  color: var(--ink-muted);
-  font-family: var(--font-prose), Georgia, serif;
-  font-style: italic;
-  font-size: 0.9375rem;
-}
-
-.counts {
-  color: var(--ink-muted);
-  font-size: var(--step--1);
-  font-variant-numeric: tabular-nums;
-}
-
 .closing {
   display: flex;
   flex-direction: column;
