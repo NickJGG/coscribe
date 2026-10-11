@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getChapters, getEntries, getOpenNoteCounts, getStory } from "@/lib/story";
+import { getChapters, getEntries, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
@@ -34,11 +34,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   if (!data) return props.children;
 
   const { story, myRole, viewer } = data;
-  const [chapters, entries, noteCounts] = await Promise.all([
-    getChapters(story.id),
-    getEntries(story.id),
-    myRole ? getOpenNoteCounts(story.id) : undefined,
-  ]);
+  const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
   const writable = myRole && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
   const reorderable = !!writable && canManageChapters(myRole);
@@ -133,7 +129,6 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 entries={entries}
                 typeOrder={story.entry_type_order}
                 member={!!myRole}
-                noteCounts={noteCounts}
                 reorderable={reorderable}
                 chapterMenus={chapterMenus}
                 entryMenus={entryMenus}

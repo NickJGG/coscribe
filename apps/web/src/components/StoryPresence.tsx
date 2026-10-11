@@ -82,10 +82,14 @@ export function ChapterPresence({ chapterId, className }: { chapterId: string; c
   return <PresenceDots here={here} className={className} />;
 }
 
+const MAX_DOTS = 3;
+
+/** A dot per Writer, up to three, then "+n" for the rest. */
 export function PresenceDots({ here, className }: { here: HereNow[]; className?: string }) {
+  const hidden = here.slice(MAX_DOTS);
   return (
     <span className={`${styles.dots} ${className ?? ""}`}>
-      {here.map((h) => (
+      {here.slice(0, MAX_DOTS).map((h) => (
         <span
           key={h.userId}
           className={styles.dot}
@@ -94,6 +98,11 @@ export function PresenceDots({ here, className }: { here: HereNow[]; className?:
           aria-hidden
         />
       ))}
+      {hidden.length > 0 && (
+        <span className={styles.more} data-tip={joinNames(hidden.map((h) => h.person.name))} aria-hidden>
+          +{hidden.length}
+        </span>
+      )}
       <span className="sr-only">{joinNames(here.map((h) => h.person.name))} here now</span>
     </span>
   );

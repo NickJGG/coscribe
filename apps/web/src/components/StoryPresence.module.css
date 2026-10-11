@@ -1,5 +1,6 @@
 .dots {
   display: inline-flex;
+  align-items: center;
   gap: 3px;
 }
 
@@ -8,4 +9,10 @@
   height: 7px;
   border-radius: 50%;
   background: var(--c);
+}
+
+.more {
+  color: var(--faint);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
 }

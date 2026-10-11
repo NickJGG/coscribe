@@ -22,10 +22,10 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 
 /**
  * Navigation through a Story: the Overview, (for members) Settings and Story search, then Chapters and
- * Story Bible tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from
- * `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and the "···" menus from `chapterMenus`,
- * `entryMenus` (keyed by id) and `typeMenus` (keyed by Entry Type), rendered by the layout. When `reorderable`,
- * Chapters, Entries and Entry Types can also be dragged into a new order.
+ * Story Bible tabs, each keeping its own scroll position. Management lives here too: `newChapter` and
+ * `newEntry`, and the "···" menus from `chapterMenus`, `entryMenus` (keyed by id) and `typeMenus` (keyed by
+ * Entry Type), rendered by the layout. When `reorderable`, Chapters, Entries and Entry Types can also be
+ * dragged into a new order.
  */
 export function Sidebar({
   storyId,
@@ -34,7 +34,6 @@ export function Sidebar({
   entries,
   typeOrder,
   member,
-  noteCounts,
   reorderable,
   chapterMenus,
   entryMenus,
@@ -48,7 +47,6 @@ export function Sidebar({
   entries: Entry[];
   typeOrder: EntryType[];
   member: boolean;
-  noteCounts?: Record<string, number>;
   reorderable: boolean;
   chapterMenus?: Record<string, React.ReactNode>;
   entryMenus?: Record<string, React.ReactNode>;
@@ -240,7 +238,6 @@ export function Sidebar({
               chapters={chapters}
               chapterId={chapterId}
               here={here}
-              noteCounts={noteCounts}
               chapterMenus={chapterMenus}
               reorderable={reorderable}
             />
@@ -263,6 +260,7 @@ export function Sidebar({
               entries={entries}
               typeOrder={typeOrder}
               entryId={entryId}
+              here={here}
               entryMenus={entryMenus}
               typeMenus={typeMenus}
               reorderable={reorderable}

@@ -26,27 +26,25 @@ import { CSS } from "@dnd-kit/utilities";
 import { moveChapterTo } from "@/lib/actions/chapters";
 import type { ActionResult } from "@/lib/action-result";
 import { afterId } from "@/lib/chapter-order";
-import { shortWords } from "@/lib/words";
 import { PresenceDots, type HereNow } from "@/components/StoryPresence";
-import { GripIcon, LockIcon, NoteIcon } from "@/components/icons";
+import { GripIcon, LockIcon } from "@/components/icons";
 import formStyles from "@/components/ActionForm.module.css";
 import styles from "./desk.module.css";
 
-type Chapter = { id: string; title: string; locked: boolean; word_count: number };
+type Chapter = { id: string; title: string; locked: boolean };
 
 type ListProps = {
   storyId: string;
   chapters: Chapter[];
   chapterId?: string;
   here: HereNow[];
-  noteCounts?: Record<string, number>;
   chapterMenus?: Record<string, React.ReactNode>;
 };
 
 /** The sidebar's Chapters. When `reorderable`, each row has a grip for dragging it to a new place. */
 export function ChapterList({ reorderable, ...props }: ListProps & { reorderable: boolean }) {
   if (reorderable) return <SortableChapterList {...props} />;
-  const { storyId, chapters, chapterId, here, noteCounts, chapterMenus } = props;
+  const { storyId, chapters, chapterId, here, chapterMenus } = props;
   return (
     <ol className={styles.list}>
       {chapters.map((chapter, i) => (
@@ -57,7 +55,6 @@ export function ChapterList({ reorderable, ...props }: ListProps & { reorderable
             number={i + 1}
             current={chapter.id === chapterId}
             here={here}
-            openNotes={noteCounts?.[chapter.id] ?? 0}
           />
           {chapterMenus && <span className={styles.itemMenu}>{chapterMenus[chapter.id]}</span>}
         </li>
@@ -75,7 +72,7 @@ const SCREEN_READER_INSTRUCTIONS = {
  * The order updates as soon as a Chapter is dropped and reverts if the move fails. While a drag is under way,
  * the list stays as it was when the drag began, so another Co-host's change can't shift rows under the pointer.
  */
-function SortableChapterList({ storyId, chapters, chapterId, here, noteCounts, chapterMenus }: ListProps) {
+function SortableChapterList({ storyId, chapters, chapterId, here, chapterMenus }: ListProps) {
   const dndId = useId();
   const [optimistic, setOptimistic] = useOptimistic(chapters);
   const [drag, setDrag] = useState<{ id: UniqueIdentifier; snapshot: Chapter[] } | null>(null);
@@ -141,7 +138,6 @@ function SortableChapterList({ storyId, chapters, chapterId, here, noteCounts, c
                 number={i + 1}
                 current={chapter.id === chapterId}
                 here={here}
-                openNotes={noteCounts?.[chapter.id] ?? 0}
                 menu={chapterMenus?.[chapter.id]}
               />
             ))}
@@ -151,12 +147,7 @@ function SortableChapterList({ storyId, chapters, chapterId, here, noteCounts, c
           {dragged && (
             <div className={`${styles.item} ${styles.sortable} ${styles.lifted}`}>
               <div className={styles.row}>
-                <ChapterRowBody
-                  chapter={dragged}
-                  number={indexOf(dragged.id) + 1}
-                  here={here}
-                  openNotes={noteCounts?.[dragged.id] ?? 0}
-                />
+                <ChapterRowBody chapter={dragged} number={indexOf(dragged.id) + 1} here={here} />
               </div>
               <span className={styles.grip} aria-hidden>
                 <GripIcon />
@@ -174,7 +165,7 @@ function SortableChapterList({ storyId, chapters, chapterId, here, noteCounts, c
   );
 }
 
-type RowProps = { storyId: string; chapter: Chapter; number: number; current: boolean; here: HereNow[]; openNotes: number };
+type RowProps = { storyId: string; chapter: Chapter; number: number; current: boolean; here: HereNow[] };
 
 function SortableChapter({ menu, ...row }: RowProps & { menu?: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -215,44 +206,20 @@ function ChapterLink({ storyId, current, ...body }: RowProps) {
   );
 }
 
-function ChapterRowBody({
-  chapter,
-  number,
-  here,
-  openNotes,
-}: {
-  chapter: Chapter;
-  number: number;
-  here: HereNow[];
-  openNotes: number;
-}) {
+function ChapterRowBody({ chapter, number, here }: { chapter: Chapter; number: number; here: HereNow[] }) {
   const inside = here.filter((h) => h.documentId === chapter.id);
   return (
     <>
       <span className={styles.num}>{number}</span>
       <span className={styles.name}>{chapter.title}</span>
       <span className={styles.meta}>
-        {openNotes > 0 && (
-          <span className={styles.noteCount} data-tip={openNotes === 1 ? "1 open Note" : `${openNotes} open Notes`}>
-            <NoteIcon className={styles.noteIcon} />
-            {openNotes}
-            <span className="sr-only"> open {openNotes === 1 ? "Note" : "Notes"},</span>
-          </span>
-        )}
         {chapter.locked && (
           <>
             <LockIcon className={styles.lock} />
             <span className="sr-only">Locked,</span>
           </>
         )}
-        {inside.length ? (
-          <PresenceDots here={inside} />
-        ) : (
-          <>
-            {shortWords(chapter.word_count)}
-            <span className="sr-only"> words</span>
-          </>
-        )}
+        {inside.length > 0 && <PresenceDots here={inside} />}
       </span>
     </>
   );

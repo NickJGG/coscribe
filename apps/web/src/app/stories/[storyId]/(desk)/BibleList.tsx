@@ -28,6 +28,7 @@ import { moveEntryTo, moveEntryType } from "@/lib/actions/entries";
 import type { ActionResult } from "@/lib/action-result";
 import { afterId, placeAfter } from "@/lib/chapter-order";
 import { ENTRY_GROUP_LABEL, entryGroups, type EntryType } from "@/lib/entries";
+import { PresenceDots, type HereNow } from "@/components/StoryPresence";
 import { GripIcon } from "@/components/icons";
 import formStyles from "@/components/ActionForm.module.css";
 import styles from "./desk.module.css";
@@ -40,6 +41,7 @@ type ListProps = {
   entries: Entry[];
   typeOrder: EntryType[];
   entryId?: string;
+  here: HereNow[];
   entryMenus?: Record<string, React.ReactNode>;
   typeMenus?: Partial<Record<EntryType, React.ReactNode>>;
 };
@@ -50,7 +52,7 @@ type ListProps = {
  */
 export function BibleList({ reorderable, ...props }: ListProps & { reorderable: boolean }) {
   if (reorderable) return <SortableBibleList {...props} />;
-  const { storyId, entries, typeOrder, entryId, entryMenus } = props;
+  const { storyId, entries, typeOrder, entryId, here, entryMenus } = props;
   return (
     <>
       {entryGroups(entries, typeOrder).map(({ type, entries: group }) => (
@@ -59,7 +61,7 @@ export function BibleList({ reorderable, ...props }: ListProps & { reorderable: 
           <ul className={styles.list}>
             {group.map((entry) => (
               <li key={entry.id} className={styles.item}>
-                <EntryLink storyId={storyId} entry={entry} current={entry.id === entryId} />
+                <EntryLink storyId={storyId} entry={entry} current={entry.id === entryId} here={here} />
                 {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
               </li>
             ))}
@@ -89,7 +91,7 @@ const entriesList = (type: EntryType) => `entries:${type}`;
  * Drops reorder at once and revert if the move fails. While a drag is under way, the Bible stays as it was
  * when the drag began, so another Co-host's change can't shift rows under the pointer.
  */
-function SortableBibleList({ storyId, entries, typeOrder, entryId, entryMenus, typeMenus }: ListProps) {
+function SortableBibleList({ storyId, entries, typeOrder, entryId, here, entryMenus, typeMenus }: ListProps) {
   const dndId = useId();
   const [optimistic, setOptimistic] = useOptimistic<Order>({ typeOrder, entries });
   const [drag, setDrag] = useState<{ id: UniqueIdentifier; snapshot: Order } | null>(null);
@@ -204,6 +206,7 @@ function SortableBibleList({ storyId, entries, typeOrder, entryId, entryMenus, t
                       storyId={storyId}
                       entry={entry}
                       current={entry.id === entryId}
+                      here={here}
                       menu={entryMenus?.[entry.id]}
                     />
                   ))}
@@ -227,7 +230,7 @@ function SortableBibleList({ storyId, entries, typeOrder, entryId, entryMenus, t
           ) : draggedEntry ? (
             <div className={`${styles.item} ${styles.sortable} ${styles.lifted}`}>
               <div className={`${styles.row} ${styles.entryRow}`}>
-                <span className={styles.name}>{draggedEntry.name}</span>
+                <EntryRowBody entry={draggedEntry} here={here} />
               </div>
               <span className={`${styles.grip} ${styles.entryGrip}`} aria-hidden>
                 <GripIcon />
@@ -317,7 +320,7 @@ function GroupHead({
   );
 }
 
-type RowProps = { storyId: string; entry: Entry; current: boolean };
+type RowProps = { storyId: string; entry: Entry; current: boolean; here: HereNow[] };
 
 function SortableEntry({ menu, ...row }: RowProps & { menu?: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
@@ -345,15 +348,29 @@ function SortableEntry({ menu, ...row }: RowProps & { menu?: React.ReactNode }) 
   );
 }
 
-function EntryLink({ storyId, entry, current }: RowProps) {
+function EntryLink({ storyId, current, ...body }: RowProps) {
   return (
     <Link
-      href={`/stories/${storyId}/bible/${entry.id}`}
+      href={`/stories/${storyId}/bible/${body.entry.id}`}
       scroll={false}
       className={`${styles.row} ${styles.entryRow}`}
       aria-current={current ? "page" : undefined}
     >
-      <span className={styles.name}>{entry.name}</span>
+      <EntryRowBody {...body} />
     </Link>
+  );
+}
+
+function EntryRowBody({ entry, here }: { entry: Entry; here: HereNow[] }) {
+  const inside = here.filter((h) => h.kind === "entry" && h.documentId === entry.id);
+  return (
+    <>
+      <span className={styles.name}>{entry.name}</span>
+      {inside.length > 0 && (
+        <span className={styles.meta}>
+          <PresenceDots here={inside} />
+        </span>
+      )}
+    </>
   );
 }
