@@ -6,11 +6,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/viewer";
 import { getFriendships } from "@/lib/connections";
 import { relationTo, type Relation } from "@/lib/friends";
-import { formerWriterIds, profileStories, profileStoryRows, writesWith, type CoWriter, type ProfileStory } from "@/lib/profile";
+import { formerWriterIds, profileStories, profileStoryRows, writesWith, type CoWriter, type ProfileStory, type ProfileStoryRow } from "@/lib/profile";
 import { formerWriterNames } from "@/lib/story";
 import { authorColorCss } from "@/lib/profile-rules";
+import type { JSONContent } from "@tiptap/core";
 import { Avatar } from "@/components/Avatar";
 import { LiveLabel } from "@/components/LiveCounts";
+import { FeaturedPassage, type Passage } from "./FeaturedPassage";
 import { FriendAction } from "./FriendAction";
 import { StoryCard } from "./StoryCard";
 import styles from "./profile.module.css";
@@ -35,10 +37,15 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
   if (!profile) notFound();
 
   const supabase = await createClient();
-  const [viewer, { data: rows }, { data: writingNow }] = await Promise.all([
+  const [viewer, { data: rows }, { data: writingNow }, { data: featured }] = await Promise.all([
     getViewer(),
     profileStoryRows(supabase, profile.id),
     supabase.rpc("writing_now", { p_user: profile.id }),
+    supabase
+      .from("featured_passages")
+      .select("story_id, chapter_id, content, story:stories (title, status, chapters (id, position))")
+      .eq("user_id", profile.id)
+      .maybeSingle(),
   ]);
   const viewerId = viewer?.profile ? viewer.userId : null;
   const self = viewerId === profile.id;
@@ -53,6 +60,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
   const since = new Date(profile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" });
   const justThem = new Set([profile.id]);
   const bothOfUs = viewerId ? new Set([profile.id, viewerId]) : justThem;
+  const passage = featured && featuredPassage(featured, rows ?? [], profile);
 
   return (
     <div className={styles.page} style={{ "--author": authorColorCss(profile.author_color) } as React.CSSProperties}>
@@ -88,6 +96,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
         </aside>
 
         <div className={styles.work}>
+          <FeaturedPassage passage={passage} userId={profile.id} self={self} canFeature={finished.length > 0} />
           <Section title="Writing together" stories={together} lit={bothOfUs} />
           <Section title="Finished" stories={finished} lit={justThem} />
           <Section title="Being written" stories={writing} lit={justThem} />
@@ -106,6 +115,31 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
       </div>
     </div>
   );
+}
+
+type FeaturedRow = {
+  story_id: string;
+  chapter_id: string;
+  content: unknown;
+  story: { title: string; status: string; chapters: { id: string; position: number }[] };
+};
+
+function featuredPassage(
+  row: FeaturedRow,
+  rows: ProfileStoryRow[],
+  profile: { id: string; author_color: string }
+): Passage {
+  const member = rows.find((r) => r.story.id === row.story_id)?.story.members.find((m) => m.profile?.id === profile.id);
+  const chapters = row.story.chapters.toSorted((a, b) => a.position - b.position);
+  return {
+    storyId: row.story_id,
+    storyTitle: row.story.title,
+    chapterId: row.chapter_id,
+    chapterNumber: chapters.findIndex((c) => c.id === row.chapter_id) + 1,
+    finished: row.story.status === "finished",
+    content: row.content as JSONContent,
+    color: member?.author_color ?? profile.author_color,
+  };
 }
 
 /** "self" on your own profile, null when signed out (no action to offer). */

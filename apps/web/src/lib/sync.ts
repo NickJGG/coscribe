@@ -1,5 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
-import type { DocumentKind } from "@coscribe/editor";
+import type { DocumentKind, TextPoint } from "@coscribe/editor";
 
 /** A server-to-server call to apps/sync, authorized with SYNC_SECRET. Callers check permissions first. */
 async function syncFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -67,4 +67,16 @@ export async function fetchStoryContent(storyId: string): Promise<StoryContent |
     console.error(`story content for ${storyId} failed`, error);
     return null;
   }
+}
+
+/** Saves the User's Featured Passage from a Chapter. The reason it can't be featured, "gone", or null when saved. */
+export async function featurePassage(
+  chapterId: string,
+  body: { userId: string; from: TextPoint; to: TextPoint }
+): Promise<string | "gone" | null> {
+  const response = await syncFetch(`/chapters/${chapterId}/feature`, { method: "POST", body: JSON.stringify(body) });
+  if (response.status === 404) return "gone";
+  if (response.status === 422) return ((await response.json()) as { error: string }).error;
+  if (!response.ok) throw new Error(`feature passage failed: ${response.status}`);
+  return null;
 }

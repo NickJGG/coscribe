@@ -115,6 +115,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"featured_passages": {
+                  Row: {
+                    "chapter_id": string,"content": NonNullable<Json>,"created_at": string,"story_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "chapter_id": string,"content": NonNullable<Json>,"created_at"?: string,"story_id": string,"user_id": string
+                  }
+                  Update: {
+                    "chapter_id"?: string,"content"?: NonNullable<Json>,"created_at"?: string,"story_id"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "featured_passages_chapter_id_fkey"
+      columns: ["chapter_id"]
+isOneToOne: false
+      referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "featured_passages_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "featured_passages_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"friendships": {
                   Row: {
                     "addressee_id": string,"created_at": string,"requester_id": string,"status": Database["public"]['Enums']["friendship_status"]

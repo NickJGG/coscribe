@@ -5,6 +5,7 @@ import { getChapters, getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
+import { FeaturePassage } from "@/components/FeaturePassage";
 import { readingTime } from "@/lib/words";
 import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
@@ -18,7 +19,7 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]/read
 
 export default async function ReaderChapterPage(props: PageProps<"/stories/[storyId]/read/[chapterId]">) {
   const { storyId, chapterId } = await props.params;
-  const { story, chapters, content, authors } = await requireReader(
+  const { story, chapters, content, authors, myRole, viewer } = await requireReader(
     storyId,
     `/stories/${storyId}/read/${chapterId}`
   );
@@ -47,7 +48,19 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
         <div>
           <ShowAuthors authors={authors} toggleClassName={styles.tools}>
             <div className={styles.text}>
-              <ProseView content={text} />
+              {myRole && viewer?.profile ? (
+                <FeaturePassage
+                  storyId={story.id}
+                  chapterId={chapter.id}
+                  userId={viewer.userId}
+                  username={viewer.profile.username}
+                  content={text}
+                >
+                  <ProseView content={text} positions />
+                </FeaturePassage>
+              ) : (
+                <ProseView content={text} />
+              )}
             </div>
           </ShowAuthors>
         </div>

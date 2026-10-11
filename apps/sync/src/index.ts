@@ -18,6 +18,9 @@
  *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
  *   - `POST /chapters/<id>/snapshot` takes a Snapshot of the live Chapter, with body `{ name: string | null }`:
  *     201 when taken, 409 when nothing changed since the last one, 404 when the Chapter is gone.
+ *   - `POST /chapters/<id>/feature` saves a User's Featured Passage from the Chapter, with body
+ *     `{ userId, from, to }` (TextPoints): 204 when saved, 422 with the reason it can't be featured, 404
+ *     when the Chapter is gone.
  */
 import { createHash, timingSafeEqual } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
@@ -34,6 +37,7 @@ import {
   storyContent,
   type DocumentRef,
 } from "./documents"
+import { featurePassage, isTextPoint } from "./passages"
 import { arrive, clearPresence, depart, setMember } from "./presence"
 import {
   chapterLoaded,
@@ -48,7 +52,7 @@ import {
 type Context = { userId: string | null; storyId: string; document: DocumentRef; member: boolean; socketId: string }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot))?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot|feature))?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -146,6 +150,15 @@ async function route(
     const name = typeof body?.name === "string" ? body.name.trim() || null : null
     const result = await takeSnapshotNow(instance, id, name, (storyId) => serverContext(id, storyId))
     response.writeHead({ taken: 201, unchanged: 409, gone: 404 }[result]).end()
+  } else if (method === "POST" && resource === "chapters" && action === "feature") {
+    const body = await readJson(request)
+    if (typeof body?.userId !== "string" || !isTextPoint(body.from) || !isTextPoint(body.to)) {
+      return response.writeHead(400).end()
+    }
+    const result = await featurePassage(id, body.userId, body.from, body.to, (name) => instance.documents.get(name))
+    if (result.saved) response.writeHead(204).end()
+    else if ("gone" in result) response.writeHead(404).end()
+    else response.writeHead(422, { "content-type": "application/json" }).end(JSON.stringify({ error: result.error }))
   } else {
     response.writeHead(404).end()
   }

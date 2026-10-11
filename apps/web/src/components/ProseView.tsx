@@ -3,34 +3,35 @@ import type { JSONContent } from "@tiptap/core";
 /**
  * Renders stored Chapter or Entry JSON as plain markup, server-side, matching the editor's output
  * (`span[data-author]` runs, `hr[data-scene-break]`) so LiveDocument's prose and authorship styles apply.
+ * `positions` numbers the top-level blocks with `data-block`, for mapping a selection back to the JSON.
  */
-export function ProseView({ content }: { content: JSONContent }) {
-  return <Children nodes={content.content} />;
+export function ProseView({ content, positions = false }: { content: JSONContent; positions?: boolean }) {
+  return content.content?.map((node, i) => <Node key={i} node={node} block={positions ? i : undefined} />);
 }
 
 function Children({ nodes }: { nodes: JSONContent[] | undefined }) {
   return nodes?.map((node, i) => <Node key={i} node={node} />);
 }
 
-function Node({ node }: { node: JSONContent }) {
+function Node({ node, block }: { node: JSONContent; block?: number }) {
   switch (node.type) {
     case "paragraph":
       return (
-        <p>
+        <p data-block={block}>
           <Children nodes={node.content} />
         </p>
       );
     case "sceneBreak":
-      return <hr data-scene-break="" />;
+      return <hr data-scene-break="" data-block={block} />;
     case "bulletList":
       return (
-        <ul>
+        <ul data-block={block}>
           <Children nodes={node.content} />
         </ul>
       );
     case "orderedList":
       return (
-        <ol start={typeof node.attrs?.start === "number" ? node.attrs.start : undefined}>
+        <ol start={typeof node.attrs?.start === "number" ? node.attrs.start : undefined} data-block={block}>
           <Children nodes={node.content} />
         </ol>
       );
