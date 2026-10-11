@@ -3,10 +3,15 @@
 import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 import { HocuspocusProvider, HocuspocusProviderWebsocket } from "@hocuspocus/provider";
 import * as Y from "yjs";
-import type { SnapshotMessage, SyncMessage } from "@coscribe/editor";
+import { SCHEMA_VERSION, type SnapshotMessage, type SyncMessage } from "@coscribe/editor";
 
-/** `snapshot` is the latest SnapshotMessage, kept for a session reused after its message arrived. */
-export type LiveSession = { provider: HocuspocusProvider; ydoc: Y.Doc; snapshot: SnapshotMessage | null };
+/** `snapshot` and `outdated` keep what apps/sync said, for a session reused after its message arrived. */
+export type LiveSession = {
+  provider: HocuspocusProvider;
+  ydoc: Y.Doc;
+  snapshot: SnapshotMessage | null;
+  outdated: boolean;
+};
 
 type LiveDocuments = {
   /** The document's session, created on first open. Every open needs a matching close. */
@@ -45,7 +50,10 @@ export function SyncSocketProvider({ children }: { children: React.ReactNode }) 
       open(name, token) {
         let entry = entries.current.get(name);
         if (!entry) {
-          socket.current ??= new HocuspocusProviderWebsocket({ url: process.env.NEXT_PUBLIC_SYNC_URL! });
+          // Every document on the socket comes from this build, so the socket carries the schema version.
+          socket.current ??= new HocuspocusProviderWebsocket({
+            url: `${process.env.NEXT_PUBLIC_SYNC_URL!}?schema=${SCHEMA_VERSION}`,
+          });
           const ydoc = new Y.Doc();
           const provider = new HocuspocusProvider({ websocketProvider: socket.current, name, document: ydoc, token });
           const answered = new Promise<void>((resolve) => {
@@ -55,10 +63,11 @@ export function SyncSocketProvider({ children }: { children: React.ReactNode }) 
           });
           // A provider on a shared socket doesn't attach itself.
           provider.attach();
-          const created: Entry = { provider, ydoc, snapshot: null, holders: 0, answered };
+          const created: Entry = { provider, ydoc, snapshot: null, outdated: false, holders: 0, answered };
           provider.on("stateless", ({ payload }: { payload: string }) => {
             const message = JSON.parse(payload) as SyncMessage;
             if (message.type === "snapshot") created.snapshot = message;
+            else if (message.type === "outdated") created.outdated = true;
           });
           entry = created;
           entries.current.set(name, entry);

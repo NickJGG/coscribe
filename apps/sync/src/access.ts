@@ -1,3 +1,5 @@
+import { SCHEMA_VERSION } from "@coscribe/editor"
+
 export type Access = "write" | "read" | null
 
 export interface AccessFacts {
@@ -17,4 +19,9 @@ export function decideAccess(facts: AccessFacts | null): Access {
   if (!facts) return null
   if (facts.role) return facts.locked || facts.status === "finished" ? "read" : "write"
   return facts.visibility === "public" || facts.invited ? "read" : null
+}
+
+/** A client on another schema version, or one too old to send it, must not edit. */
+export function isOutdated(schema: string | null): boolean {
+  return Number(schema) !== SCHEMA_VERSION
 }

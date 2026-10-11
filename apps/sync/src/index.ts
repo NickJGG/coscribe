@@ -4,7 +4,8 @@
  * - Yjs state persists to `chapters.ydoc` / `entries.ydoc`. Chapters also store their word count and
  *   per-author characters; on startup, Chapters stored before those columns existed are backfilled.
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
- *   story's membership, Visibility, status, and (for Chapters) lock state.
+ *   story's membership, Visibility, status, and (for Chapters) lock state. A client whose `?schema=`
+ *   isn't SCHEMA_VERSION is outdated: read-only for as long as it stays connected, and told so.
  * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts), and open Chapters
  *   tell their connections whether taking one would save anything.
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
@@ -26,7 +27,8 @@ import { createHash, timingSafeEqual } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import { Database } from "@hocuspocus/extension-database"
 import { Server, type Hocuspocus } from "@hocuspocus/server"
-import { ACCESS_REVOKED, parseDocumentName, type AccessMessage } from "@coscribe/editor"
+import { ACCESS_REVOKED, parseDocumentName, type AccessMessage, type OutdatedMessage } from "@coscribe/editor"
+import { isOutdated } from "./access"
 import { verifyUser } from "./auth"
 import { env } from "./env"
 import {
@@ -49,7 +51,14 @@ import {
   takeSnapshotNow,
 } from "./snapshots"
 
-type Context = { userId: string | null; storyId: string; document: DocumentRef; member: boolean; socketId: string }
+type Context = {
+  userId: string | null
+  storyId: string
+  document: DocumentRef
+  member: boolean
+  socketId: string
+  outdated: boolean
+}
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
 const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot|feature))?$`, "i")
@@ -71,7 +80,7 @@ const server = new Server<Context>({
     }),
   ],
 
-  async onAuthenticate({ token, documentName, connectionConfig, socketId }) {
+  async onAuthenticate({ token, documentName, connectionConfig, socketId, requestParameters }) {
     const doc = parseDocumentName(documentName)
     if (!doc) throw new Error("unknown document")
 
@@ -79,8 +88,9 @@ const server = new Server<Context>({
     const { storyId, access, member } = await documentAccess(doc, userId)
     if (!storyId || !access) throw new Error("forbidden")
 
-    connectionConfig.readOnly = access === "read"
-    return { userId, storyId, document: doc, member, socketId } satisfies Context
+    const outdated = isOutdated(requestParameters.get("schema"))
+    connectionConfig.readOnly = access === "read" || outdated
+    return { userId, storyId, document: doc, member, socketId, outdated } satisfies Context
   },
 
   async afterLoadDocument({ documentName, document }) {
@@ -90,6 +100,7 @@ const server = new Server<Context>({
 
   async connected({ context, connection }) {
     arrive(context, context)
+    if (context.outdated) connection.sendStateless(JSON.stringify({ type: "outdated" } satisfies OutdatedMessage))
     // Unknown until the Chapter finishes loading; chapterLoaded broadcasts it then.
     const message = context.document.kind === "chapter" ? snapshotMessage(context.document.id) : undefined
     if (message) connection.sendStateless(message)
@@ -165,7 +176,14 @@ async function route(
 }
 
 function serverContext(chapterId: string, storyId: string): Context {
-  return { userId: null, storyId, document: { kind: "chapter", id: chapterId }, member: false, socketId: "server" }
+  return {
+    userId: null,
+    storyId,
+    document: { kind: "chapter", id: chapterId },
+    member: false,
+    socketId: "server",
+    outdated: false,
+  }
 }
 
 async function readJson(request: IncomingMessage): Promise<Record<string, unknown> | null> {
@@ -203,8 +221,8 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
       setMember(context, member)
       if (!access) {
         connection.close({ code: 4403, reason: ACCESS_REVOKED })
-      } else if (connection.readOnly !== (access === "read")) {
-        connection.readOnly = access === "read"
+      } else if (connection.readOnly !== (access === "read" || context.outdated)) {
+        connection.readOnly = access === "read" || context.outdated
         connection.sendStateless(JSON.stringify({ type: "access", readOnly: connection.readOnly } satisfies AccessMessage))
       }
     }

@@ -44,6 +44,13 @@ export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type 
  */
 export const chapterExtensions = [Document, Paragraph, Text, Bold, Italic, SceneBreak, Author, Note, NotePaste]
 
+/**
+ * The shared schema's version. A client on a different one is read-only (see apps/sync), because
+ * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
+ * `chapterExtensions` or `entryExtensions` gains or loses a node, mark or attribute.
+ */
+export const SCHEMA_VERSION = 1
+
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)
 
@@ -87,4 +94,7 @@ export type AccessMessage = { type: "access"; readOnly: boolean }
 /** Stateless message apps/sync sends Chapter connections when taking a Snapshot would (or wouldn't) save anything. */
 export type SnapshotMessage = { type: "snapshot"; changed: boolean; empty: boolean }
 
-export type SyncMessage = AccessMessage | SnapshotMessage
+/** Stateless message apps/sync sends a connection whose SCHEMA_VERSION isn't its own; it stays read-only. */
+export type OutdatedMessage = { type: "outdated" }
+
+export type SyncMessage = AccessMessage | SnapshotMessage | OutdatedMessage

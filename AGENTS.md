@@ -18,6 +18,7 @@ This Next.js has breaking changes from what you were trained on. Check `apps/web
 - Never run anything that touches production without asking first: `supabase db push`, any `supabase` command with `--linked`, `pnpm deploy:sync`, `fly deploy`, `fly secrets`, or `fly machine`/`scale`. Read-only checks (`fly status`, `fly logs`) are fine.
 - Never edit a migration that's already in `supabase/migrations/`; production has applied it. Add a new one.
 - Migrations reach production before the code that uses them, so the deployed code must keep working against the new schema: add columns, tables, and functions rather than renaming or dropping in the same change.
+- Bump `SCHEMA_VERSION` in `packages/editor` with any change to the shared schema (a node, mark or attribute in `chapterExtensions` or `entryExtensions`). apps/sync makes every tab on another version read-only, so releasing it turns every open tab read-only until Vercel finishes deploying.
 - With the suggested commit message, list the database and deploy steps the change needs, in order. On a plan's last phase, list them for every phase in the plan, and say which ones can't be confirmed as done:
   - Local: `pnpm supabase migration up` then `pnpm db:types` for a new migration, saying whether it's already been applied locally.
   - Production, before pushing: `pnpm supabase db push` for a new migration, then `pnpm deploy:sync` for changes to `apps/sync` or `packages/editor`.

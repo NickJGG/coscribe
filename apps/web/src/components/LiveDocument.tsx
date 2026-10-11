@@ -90,6 +90,7 @@ export function LiveDocument({
   const [synced, setSynced] = useState(false);
   const [slow, setSlow] = useState(false);
   const [readOnly, setReadOnly] = useState(true);
+  const [outdated, setOutdated] = useState(false);
   const [showAuthors, setShowAuthors] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const params = useSearchParams();
@@ -143,6 +144,7 @@ export function LiveDocument({
       const message = JSON.parse(payload) as SyncMessage;
       if (message.type === "access") setReadOnly(message.readOnly);
       else if (message.type === "snapshot") reportSnapshot(message);
+      else if (message.type === "outdated") setOutdated(true);
     };
     const onClose = ({ event }: { event: CloseEvent }) => {
       if (event.reason === ACCESS_REVOKED) setConnection("denied");
@@ -160,6 +162,7 @@ export function LiveDocument({
     if (provider.isAuthenticated) setReadOnly(provider.authorizedScope !== "read-write");
     if (provider.isSynced) onSynced({ state: true });
     if (live.snapshot) reportSnapshot(live.snapshot);
+    setOutdated(live.outdated);
     setSession(live);
     /* eslint-enable react-hooks/set-state-in-effect */
     const slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
@@ -196,8 +199,11 @@ export function LiveDocument({
       {!comparing && (
         <DeskToolbar.Fill>
           <div className={styles.toolRow}>
-            {editor && !readOnly && (
-              <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
+            {outdated ? (
+              <Outdated />
+            ) : (
+              editor &&
+              !readOnly && <Toolbar editor={editor} lists={kind === "entry"} onAddNote={notes?.startDraft} />
             )}
             <div className={styles.toolAside}>
               {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
@@ -365,6 +371,18 @@ function renderCaret(user: Record<string, unknown>): HTMLElement {
     caret.append(label);
   }
   return caret;
+}
+
+/** apps/sync runs a newer schema than this tab, which stays read-only until it reloads. */
+function Outdated() {
+  return (
+    <p className={styles.outdated} role="status">
+      Coscribe has been updated. Reload to keep writing.
+      <button type="button" className="button button-primary button-tiny" onClick={() => location.reload()}>
+        Reload
+      </button>
+    </p>
+  );
 }
 
 function Toolbar({ editor, lists, onAddNote }: { editor: Editor; lists: boolean; onAddNote?: () => void }) {

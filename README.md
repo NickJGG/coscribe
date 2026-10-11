@@ -125,7 +125,7 @@ Under **Domains**, `coscribe.ink` serves production, and `www.coscribe.ink` and 
 
 ### Shipping changes
 
-- Pushing to `main` deploys apps/web. apps/sync doesn't deploy on push: run `pnpm deploy:sync` after changing `apps/sync` or `packages/editor`.
+- Pushing to `main` deploys apps/web. apps/sync doesn't deploy on push: run `pnpm deploy:sync` **before** pushing a change to `apps/sync` or `packages/editor`. A tab whose schema version differs from apps/sync's goes read-only and asks to reload.
 - A new migration goes out with `pnpm supabase db push`, before the code that needs it.
 - Debugging: `fly logs --app coscribe-sync`, Vercel's Logs tab, and Supabase **Logs → Auth**.
 
