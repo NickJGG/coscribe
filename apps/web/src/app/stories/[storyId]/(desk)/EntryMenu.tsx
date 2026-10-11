@@ -1,4 +1,4 @@
-import { deleteEntry, editEntry, renameEntry } from "@/lib/actions/entries";
+import { deleteEntry, editEntry, moveEntryTo, renameEntry } from "@/lib/actions/entries";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryType } from "@/lib/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { Dropdown } from "@/components/Dropdown";
@@ -6,8 +6,21 @@ import styles from "./menu.module.css";
 
 type Entry = { id: string; type: EntryType; name: string };
 
-/** An Entry's "···" menu: Rename and Change type for Writers, Delete for those who may. */
-export function EntryMenu({ storyId, entry, deletable }: { storyId: string; entry: Entry; deletable: boolean }) {
+/** An Entry's "···" menu: Rename and Change type for Writers, Move for Co-hosts and up, Delete for those who may. */
+export function EntryMenu({
+  storyId,
+  entry,
+  upAfter,
+  downAfter,
+  deletable,
+}: {
+  storyId: string;
+  entry: Entry;
+  /** Where Move up and Move down land within the Entry's type, as `moveEntryTo`'s `afterId`; `undefined` hides the item. */
+  upAfter?: string | null;
+  downAfter?: string;
+  deletable: boolean;
+}) {
   return (
     <Dropdown
       label={`${entry.name} options`}
@@ -39,6 +52,17 @@ export function EntryMenu({ storyId, entry, deletable }: { storyId: string; entr
           </button>
         </ActionForm>
       ))}
+      {(upAfter !== undefined || downAfter !== undefined) && <hr className={styles.divider} />}
+      {upAfter !== undefined && (
+        <ActionForm action={moveEntryTo.bind(null, storyId, entry.id, upAfter)}>
+          <button className={styles.menuItem}>Move up</button>
+        </ActionForm>
+      )}
+      {downAfter !== undefined && (
+        <ActionForm action={moveEntryTo.bind(null, storyId, entry.id, downAfter)}>
+          <button className={styles.menuItem}>Move down</button>
+        </ActionForm>
+      )}
       {deletable && (
         <>
           <hr className={styles.divider} />

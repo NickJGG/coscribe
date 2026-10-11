@@ -26,3 +26,17 @@ export function CameraIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** A drag handle. Filled on a 16×16 grid, unlike the rest. */
+export function GripIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+      {[3.5, 8, 12.5].map((y) => (
+        <g key={y}>
+          <circle cx="5.5" cy={y} r="1.3" />
+          <circle cx="10.5" cy={y} r="1.3" />
+        </g>
+      ))}
+    </svg>
+  );
+}

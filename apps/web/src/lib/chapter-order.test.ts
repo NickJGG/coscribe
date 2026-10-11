@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { afterId, moveTargets } from "./chapter-order";
+import { afterId, moveTargets, placeAfter } from "./chapter-order";
 
 describe("moveTargets", () => {
   const ids = ["a", "b", "c", "d"];
@@ -32,5 +32,21 @@ describe("afterId", () => {
 
   it("names the Chapter before", () => {
     expect(afterId(["a", "b", "c"], 2)).toBe("b");
+  });
+});
+
+describe("placeAfter", () => {
+  const order = ["character", "place", "item", "lore"];
+
+  it("moves to first when after is null", () => {
+    expect(placeAfter(order, "item", null)).toEqual(["item", "character", "place", "lore"]);
+  });
+
+  it("moves down past its neighbor", () => {
+    expect(placeAfter(order, "character", "place")).toEqual(["place", "character", "item", "lore"]);
+  });
+
+  it("keeps a skipped item's slot", () => {
+    expect(placeAfter(order, "lore", "character")).toEqual(["character", "lore", "place", "item"]);
   });
 });

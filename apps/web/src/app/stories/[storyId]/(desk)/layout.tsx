@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getChapters, getEntries, getOpenNoteCounts, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
-import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX } from "@/lib/entries";
+import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
 import { addChapter } from "@/lib/actions/chapters";
 import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
@@ -18,6 +18,7 @@ import { DeskFrame } from "./DeskFrame";
 import { Breadcrumb, DeskStatus } from "./DeskHeader";
 import { DeskFooter, DeskMain } from "./DeskMain";
 import { EntryMenu } from "./EntryMenu";
+import { EntryTypeMenu } from "./EntryTypeMenu";
 import { Sidebar } from "./Sidebar";
 import styles from "./desk.module.css";
 
@@ -61,14 +62,38 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
         })
       )
     : undefined;
+  const groups = entryGroups(entries, story.entry_type_order);
   const entryMenus = writable
     ? Object.fromEntries(
-        entries.map((entry) => [
-          entry.id,
-          <EntryMenu key={entry.id} storyId={story.id} entry={entry} deletable={canDeleteEntries(myRole)} />,
-        ])
+        groups.flatMap(({ entries: group }) => {
+          const ids = group.map((e) => e.id);
+          return group.map((entry, i) => {
+            const { up, down } = reorderable ? moveTargets(ids, i) : {};
+            return [
+              entry.id,
+              <EntryMenu
+                key={entry.id}
+                storyId={story.id}
+                entry={entry}
+                upAfter={up}
+                downAfter={down}
+                deletable={canDeleteEntries(myRole)}
+              />,
+            ];
+          });
+        })
       )
     : undefined;
+  const types = groups.map((g) => g.type);
+  const typeMenus =
+    reorderable && types.length > 1
+      ? Object.fromEntries(
+          types.map((type, i) => {
+            const { up, down } = moveTargets(types, i);
+            return [type, <EntryTypeMenu key={type} storyId={story.id} type={type} upAfter={up} downAfter={down} />];
+          })
+        )
+      : undefined;
 
   return (
     <SyncSocketProvider>
@@ -112,6 +137,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                 reorderable={reorderable}
                 chapterMenus={chapterMenus}
                 entryMenus={entryMenus}
+                typeMenus={typeMenus}
                 newChapter={
                   writable &&
                   canManageChapters(myRole) && (

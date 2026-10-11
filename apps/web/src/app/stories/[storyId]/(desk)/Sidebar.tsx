@@ -3,10 +3,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ENTRY_GROUP_LABEL, entryGroups, type EntryType } from "@/lib/entries";
+import type { EntryType } from "@/lib/entries";
 import { joinNames } from "@/lib/presence";
 import { Avatar } from "@/components/Avatar";
 import { useHereNow, type HereNow } from "@/components/StoryPresence";
+import { BibleList } from "./BibleList";
 import { ChapterList } from "./ChapterList";
 import { useDeskFrame, type SidebarTab } from "./DeskFrame";
 import styles from "./desk.module.css";
@@ -21,9 +22,10 @@ const TABS: { tab: SidebarTab; label: string }[] = [
 
 /**
  * Navigation through a Story: the Overview, (for members) Settings and Story search, then Chapters and
- * Story Bible tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and
- * each row's "···" menu from `chapterMenus` and `entryMenus`, rendered by the layout and keyed by id. When
- * `reorderable`, Chapters can also be dragged into a new order.
+ * Story Bible tabs, each keeping its own scroll position. Members also see each Chapter's open Notes, from
+ * `noteCounts`. Management lives here too: `newChapter` and `newEntry`, and the "···" menus from `chapterMenus`,
+ * `entryMenus` (keyed by id) and `typeMenus` (keyed by Entry Type), rendered by the layout. When `reorderable`,
+ * Chapters, Entries and Entry Types can also be dragged into a new order.
  */
 export function Sidebar({
   storyId,
@@ -36,6 +38,7 @@ export function Sidebar({
   reorderable,
   chapterMenus,
   entryMenus,
+  typeMenus,
   newChapter,
   newEntry,
 }: {
@@ -49,6 +52,7 @@ export function Sidebar({
   reorderable: boolean;
   chapterMenus?: Record<string, React.ReactNode>;
   entryMenus?: Record<string, React.ReactNode>;
+  typeMenus?: Partial<Record<EntryType, React.ReactNode>>;
   newChapter: React.ReactNode;
   newEntry: React.ReactNode;
 }) {
@@ -211,26 +215,15 @@ export function Sidebar({
             hidden={tab !== "bible"}
             onScroll={(e) => (scrollTops.current.bible = e.currentTarget.scrollTop)}
           >
-            {entryGroups(entries, typeOrder).map(({ type, entries: group }) => (
-              <div key={type} className={styles.group}>
-                <h3 className="smallcaps">{ENTRY_GROUP_LABEL[type]}</h3>
-                <ul className={styles.list}>
-                  {group.map((entry) => (
-                    <li key={entry.id} className={styles.item}>
-                      <Link
-                        href={`/stories/${storyId}/bible/${entry.id}`}
-                        scroll={false}
-                        className={`${styles.row} ${styles.entryRow}`}
-                        aria-current={entry.id === entryId ? "page" : undefined}
-                      >
-                        <span className={styles.name}>{entry.name}</span>
-                      </Link>
-                      {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            <BibleList
+              storyId={storyId}
+              entries={entries}
+              typeOrder={typeOrder}
+              entryId={entryId}
+              entryMenus={entryMenus}
+              typeMenus={typeMenus}
+              reorderable={reorderable}
+            />
             {entries.length === 0 && <p className={`muted ${styles.empty}`}>No Entries yet.</p>}
             {newEntry}
           </div>

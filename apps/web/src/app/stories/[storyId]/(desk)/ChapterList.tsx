@@ -28,7 +28,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { afterId } from "@/lib/chapter-order";
 import { shortWords } from "@/lib/words";
 import { PresenceDots, type HereNow } from "@/components/StoryPresence";
-import { LockIcon, NoteIcon } from "@/components/icons";
+import { GripIcon, LockIcon, NoteIcon } from "@/components/icons";
 import formStyles from "@/components/ActionForm.module.css";
 import styles from "./desk.module.css";
 
@@ -255,18 +255,5 @@ function ChapterRowBody({
         )}
       </span>
     </>
-  );
-}
-
-function GripIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden>
-      {[3.5, 8, 12.5].map((y) => (
-        <g key={y}>
-          <circle cx="5.5" cy={y} r="1.3" />
-          <circle cx="10.5" cy={y} r="1.3" />
-        </g>
-      ))}
-    </svg>
   );
 }
