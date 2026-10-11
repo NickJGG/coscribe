@@ -28,6 +28,7 @@ import { moveEntryTo, moveEntryType } from "@/lib/actions/entries";
 import type { ActionResult } from "@/lib/action-result";
 import { afterId, placeAfter } from "@/lib/chapter-order";
 import { ENTRY_GROUP_LABEL, entryGroups, type EntryType } from "@/lib/entries";
+import { PinButton, PinError } from "@/components/PinnedEntries";
 import { PresenceDots, type HereNow } from "@/components/StoryPresence";
 import { GripIcon } from "@/components/icons";
 import formStyles from "@/components/ActionForm.module.css";
@@ -62,12 +63,14 @@ export function BibleList({ reorderable, ...props }: ListProps & { reorderable: 
             {group.map((entry) => (
               <li key={entry.id} className={styles.item}>
                 <EntryLink storyId={storyId} entry={entry} current={entry.id === entryId} here={here} />
+                <PinButton entryId={entry.id} entryName={entry.name} className={styles.pin} iconOnly />
                 {entryMenus && <span className={styles.itemMenu}>{entryMenus[entry.id]}</span>}
               </li>
             ))}
           </ul>
         </div>
       ))}
+      <PinError className={`${formStyles.error} ${styles.listError}`} />
     </>
   );
 }
@@ -244,6 +247,7 @@ function SortableBibleList({ storyId, entries, typeOrder, entryId, here, entryMe
           {error}
         </p>
       )}
+      <PinError className={`${formStyles.error} ${styles.listError}`} />
     </>
   );
 }
@@ -343,6 +347,7 @@ function SortableEntry({ menu, ...row }: RowProps & { menu?: React.ReactNode }) 
       >
         <GripIcon />
       </button>
+      <PinButton entryId={row.entry.id} entryName={row.entry.name} className={styles.pin} iconOnly />
       {menu && <span className={styles.itemMenu}>{menu}</span>}
     </li>
   );

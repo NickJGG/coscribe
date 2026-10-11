@@ -367,6 +367,48 @@
   opacity: 1;
 }
 
+/* An Entry's Pin toggle: shown like the menu, and always on a pinned row, which it marks. */
+.pin {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--faint);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.pin svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pin:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.pin[aria-pressed="true"] {
+  color: var(--accent);
+}
+
+.item:hover .pin,
+.item:focus-within .pin,
+.pin[aria-pressed="true"] {
+  opacity: 1;
+}
+
 /* A reorderable row: its grip takes the number's place on hover or focus, and always where there's no hover. */
 .sortable {
   position: relative;
@@ -962,6 +1004,7 @@
 
 @media (pointer: coarse) {
   .itemMenu,
+  .pin,
   .grip,
   .groupGrip {
     opacity: 1;

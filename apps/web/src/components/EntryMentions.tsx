@@ -10,6 +10,7 @@ import { findEntryMentions } from "@coscribe/editor";
 import { ENTRY_TYPE_LABEL, type EntryMentionEntry } from "@/lib/entries";
 import { getEntryPreview } from "@/lib/actions/entries";
 import { touchedTextblocks } from "@/lib/touched-textblocks";
+import { PinButton, PinError } from "./PinnedEntries";
 import styles from "./EntryMentions.module.css";
 
 /** Which Entries to underline, and whether Entry Mentions take keyboard focus (only when the text isn't editable). */
@@ -177,9 +178,13 @@ export function EntryMentionCards({
           ) : (
             shown && <p className={styles.preview}>{shown}</p>
           )}
-          <Link href={`/stories/${storyId}/bible/${card.entry.id}`} className={styles.open}>
-            Open Entry &rarr;
-          </Link>
+          <div className={styles.actions}>
+            <Link href={`/stories/${storyId}/bible/${card.entry.id}`} className={styles.open}>
+              Open Entry &rarr;
+            </Link>
+            <PinButton entryId={card.entry.id} entryName={card.entry.name} />
+          </div>
+          <PinError entryId={card.entry.id} className={styles.error} />
         </div>
       )}
     </div>

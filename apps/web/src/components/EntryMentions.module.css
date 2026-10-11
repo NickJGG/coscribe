@@ -71,9 +71,19 @@
   background: var(--wash);
 }
 
-.open {
-  align-self: flex-start;
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.open {
   color: var(--accent);
   font-weight: 600;
+}
+
+.error {
+  color: var(--danger);
 }

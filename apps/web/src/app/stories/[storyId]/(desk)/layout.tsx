@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { getChapters, getEntries, getStory } from "@/lib/story";
+import { getChapters, getEntries, getPins, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites, isWriter } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
@@ -10,6 +10,7 @@ import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { AccountMenus } from "@/components/SiteHeader";
 import { LiveStatusProvider } from "@/components/LiveStatus";
+import { PinnedEntriesProvider } from "@/components/PinnedEntries";
 import { SignInLink } from "@/components/SignInLink";
 import { ChatButton } from "@/components/StoryPanel";
 import { StorySearchProvider } from "@/components/StorySearch";
@@ -36,7 +37,12 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   if (!data) return props.children;
 
   const { story, myRole, viewer } = data;
-  const [chapters, entries, cookieStore] = await Promise.all([getChapters(story.id), getEntries(story.id), cookies()]);
+  const [chapters, entries, pins, cookieStore] = await Promise.all([
+    getChapters(story.id),
+    getEntries(story.id),
+    getPins(story.id),
+    cookies(),
+  ]);
   const writer = isWriter(myRole);
   const writable = writer && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
@@ -128,48 +134,50 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               </div>
             </header>
   
-            <div className={styles.body}>
-              <Sidebar
-                storyId={story.id}
-                storyTitle={story.title}
-                chapters={chapters}
-                entries={entries}
-                typeOrder={story.entry_type_order}
-                member={!!myRole}
-                reorderable={reorderable}
-                chapterMenus={chapterMenus}
-                entryMenus={entryMenus}
-                typeMenus={typeMenus}
-                newChapter={
-                  writable &&
-                  canManageChapters(myRole) && (
-                    <ActionForm action={addChapter.bind(null, story.id)}>
-                      <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
-                      <button className={styles.add}>+ New Chapter</button>
-                    </ActionForm>
-                  )
-                }
-                newEntry={
-                  writable && (
-                    <details className={styles.addEntry}>
-                      <summary className={styles.add}>+ Add Entry</summary>
-                      <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
-                        <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
-                          {ENTRY_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {ENTRY_TYPE_LABEL[t]}
-                            </option>
-                          ))}
-                        </select>
-                        <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
-                        <button className="button button-small">Add</button>
+            <PinnedEntriesProvider storyId={story.id} initialIds={pins} canPin={!!myRole}>
+              <div className={styles.body}>
+                <Sidebar
+                  storyId={story.id}
+                  storyTitle={story.title}
+                  chapters={chapters}
+                  entries={entries}
+                  typeOrder={story.entry_type_order}
+                  member={!!myRole}
+                  reorderable={reorderable}
+                  chapterMenus={chapterMenus}
+                  entryMenus={entryMenus}
+                  typeMenus={typeMenus}
+                  newChapter={
+                    writable &&
+                    canManageChapters(myRole) && (
+                      <ActionForm action={addChapter.bind(null, story.id)}>
+                        <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
+                        <button className={styles.add}>+ New Chapter</button>
                       </ActionForm>
-                    </details>
-                  )
-                }
-              />
-              <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
-            </div>
+                    )
+                  }
+                  newEntry={
+                    writable && (
+                      <details className={styles.addEntry}>
+                        <summary className={styles.add}>+ Add Entry</summary>
+                        <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
+                          <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
+                            {ENTRY_TYPES.map((t) => (
+                              <option key={t} value={t}>
+                                {ENTRY_TYPE_LABEL[t]}
+                              </option>
+                            ))}
+                          </select>
+                          <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
+                          <button className="button button-small">Add</button>
+                        </ActionForm>
+                      </details>
+                    )
+                  }
+                />
+                <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
+              </div>
+            </PinnedEntriesProvider>
           </StorySearchProvider>
         </DeskFrame>
       </LiveStatusProvider>

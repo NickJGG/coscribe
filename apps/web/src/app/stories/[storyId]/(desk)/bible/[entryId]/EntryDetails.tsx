@@ -5,6 +5,7 @@ import { editEntry } from "@/lib/actions/entries";
 import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryPatch, type EntryMentionEntry } from "@/lib/entries";
 import type { ActionResult } from "@/lib/action-result";
 import { InlineEdit } from "@/components/InlineEdit";
+import { PinError } from "@/components/PinnedEntries";
 import { Switch } from "@/components/Switch";
 import styles from "./entry.module.css";
 
@@ -104,6 +105,7 @@ export function EntryDetails({
           {error}
         </p>
       )}
+      <PinError entryId={entry.id} className={styles.error} />
     </>
   );
 }

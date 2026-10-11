@@ -8,6 +8,14 @@ export function NoteIcon({ className }: { className?: string }) {
   );
 }
 
+export function PinIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M7.5 3.5h5M8.5 3.5v5L6 11.5h8l-2.5-3v-5M10 11.5V17" />
+    </svg>
+  );
+}
+
 /** `open` drops the shackle's right leg. */
 export function LockIcon({ open = false, className }: { open?: boolean; className?: string }) {
   return (

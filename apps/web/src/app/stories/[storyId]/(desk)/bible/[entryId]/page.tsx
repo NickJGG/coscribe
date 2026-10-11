@@ -11,6 +11,7 @@ import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
+import { PinButton } from "@/components/PinnedEntries";
 import { EntryDetails } from "./EntryDetails";
 import styles from "./entry.module.css";
 
@@ -48,14 +49,18 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
           entry={entry}
           editable={editable}
           actions={
-            editable &&
-            canDeleteEntries(myRole) && (
-              <ActionForm
-                action={deleteEntry.bind(null, story.id, entry.id)}
-                confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
-              >
-                <button className="button button-ghost button-tiny button-danger">Delete</button>
-              </ActionForm>
+            myRole && (
+              <>
+                <PinButton entryId={entry.id} entryName={entry.name} />
+                {editable && canDeleteEntries(myRole) && (
+                  <ActionForm
+                    action={deleteEntry.bind(null, story.id, entry.id)}
+                    confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
+                  >
+                    <button className="button button-ghost button-tiny button-danger">Delete</button>
+                  </ActionForm>
+                )}
+              </>
             )
           }
         />
