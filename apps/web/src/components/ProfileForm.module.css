@@ -26,6 +26,10 @@
   font: inherit;
 }
 
+.wide {
+  max-width: 40rem;
+}
+
 .input[aria-invalid="true"] {
   border-color: var(--danger);
 }

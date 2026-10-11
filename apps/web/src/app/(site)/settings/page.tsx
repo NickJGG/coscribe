@@ -16,8 +16,13 @@ export default async function SettingsPage() {
     <div className="page">
       <h1>Settings</h1>
       <ProfileForm
-        initial={{ username: viewer.profile.username, authorColor: viewer.profile.author_color }}
+        initial={{
+          username: viewer.profile.username,
+          authorColor: viewer.profile.author_color,
+          bio: viewer.profile.bio ?? "",
+        }}
         submitLabel="Save"
+        showBio
       />
       <section className="section">
         <h2>Theme</h2>

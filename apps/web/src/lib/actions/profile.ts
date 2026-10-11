@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { refresh, revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isAuthorColor, normalizeUsername, usernameError } from "@/lib/profile-rules";
+import { bioError, isAuthorColor, normalizeBio, normalizeUsername, usernameError } from "@/lib/profile-rules";
 import { safeNext } from "@/lib/safe-next";
 import { requireProfile } from "@/lib/viewer";
 import type { Database } from "@/lib/supabase/database.types";
@@ -13,7 +13,9 @@ export type Theme = Database["public"]["Enums"]["theme"];
 export type ProfileFormState = {
   username: string;
   authorColor: string;
+  bio: string;
   usernameError?: string;
+  bioError?: string;
   colorError?: string;
   formError?: string;
 };
@@ -23,10 +25,14 @@ const UNIQUE_VIOLATION = "23505";
 export async function saveProfile(_prev: ProfileFormState, formData: FormData): Promise<ProfileFormState> {
   const username = normalizeUsername(String(formData.get("username") ?? ""));
   const authorColor = String(formData.get("author_color") ?? "");
-  const state: ProfileFormState = { username, authorColor };
+  const hasBio = formData.has("bio");
+  const bio = normalizeBio(String(formData.get("bio") ?? ""));
+  const state: ProfileFormState = { username, authorColor, bio: bio ?? "" };
 
   const nameProblem = usernameError(username);
   if (nameProblem) return { ...state, usernameError: nameProblem };
+  const bioProblem = bioError(bio);
+  if (bioProblem) return { ...state, bioError: bioProblem };
   if (!isAuthorColor(authorColor)) return { ...state, colorError: "Pick one of the colors." };
 
   const supabase = await createClient();
@@ -36,7 +42,7 @@ export async function saveProfile(_prev: ProfileFormState, formData: FormData): 
 
   const { error } = await supabase
     .from("profiles")
-    .upsert({ id: userId, username, author_color: authorColor });
+    .upsert({ id: userId, username, author_color: authorColor, ...(hasBio && { bio }) });
 
   if (error?.code === UNIQUE_VIOLATION) return { ...state, usernameError: "That username is taken." };
   if (error) return { ...state, formError: "Couldn't save your profile. Try again." };

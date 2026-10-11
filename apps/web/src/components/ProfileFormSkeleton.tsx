@@ -3,7 +3,7 @@ import styles from "./ProfileForm.module.css";
 import swatches from "./ColorSwatches.module.css";
 
 /** ProfileForm's layout for a loading.tsx, with its fixed labels as real text. */
-export function ProfileFormSkeleton() {
+export function ProfileFormSkeleton({ showBio = false }: { showBio?: boolean }) {
   return (
     <div className={styles.form}>
       <div className={styles.field}>
@@ -11,6 +11,13 @@ export function ProfileFormSkeleton() {
         <Bar width={320} height={40} />
         <Line className="muted" width="20rem" />
       </div>
+      {showBio && (
+        <div className={styles.field}>
+          <span className={styles.label}>Bio</span>
+          <Bar width="min(100%, 40rem)" height={40} />
+          <Line className="muted" width="24rem" />
+        </div>
+      )}
       <div className={styles.field}>
         <span className={styles.label}>Author color</span>
         <p className="muted">

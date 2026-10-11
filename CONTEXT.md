@@ -60,6 +60,14 @@ _Avoid_: Spectator, reader, guest
 Another **User** with a mutually accepted friend connection.
 _Avoid_: Contact, follower
 
+**Bio**:
+One line a **User** writes about themselves, shown under their name on their profile.
+_Avoid_: About, tagline, description
+
+**Featured Passage**:
+A passage from a **Finished** **Story** that a **User** picks to head their profile.
+_Avoid_: Quote, excerpt, highlight
+
 **Author Color**:
 The color a **User** picks for their live cursor and their text tint, which a **Story** replaces with a free one when another **Writer** there already has it.
 _Avoid_: User color, cursor color

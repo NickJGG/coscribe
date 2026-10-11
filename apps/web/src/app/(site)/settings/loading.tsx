@@ -6,7 +6,7 @@ export default function SettingsLoading() {
     <Loading>
       <div className="page">
         <h1>Settings</h1>
-        <ProfileFormSkeleton />
+        <ProfileFormSkeleton showBio />
         <section className="section">
           <h2>Theme</h2>
           <p className="muted">Auto follows your device&rsquo;s light or dark setting.</p>

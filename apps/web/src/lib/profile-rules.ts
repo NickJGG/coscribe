@@ -63,6 +63,19 @@ export function usernameError(username: string): string | null {
   return null;
 }
 
+export const BIO_MAX = 160;
+
+/** Trims and collapses whitespace to a single line; blank means no Bio. */
+export function normalizeBio(raw: string): string | null {
+  return raw.replace(/\s+/g, " ").trim() || null;
+}
+
+/** Returns an error message, or null when the (normalized) Bio is valid. */
+export function bioError(bio: string | null): string | null {
+  if (bio && bio.length > BIO_MAX) return `Bios can be at most ${BIO_MAX} characters.`;
+  return null;
+}
+
 export function isAuthorColor(value: string): value is AuthorColor {
   return (AUTHOR_COLORS as readonly string[]).includes(value);
 }

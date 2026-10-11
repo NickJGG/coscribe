@@ -301,14 +301,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "author_color": string,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"bio": string | null,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color": string,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"bio"?: string | null,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username": string
                   }
                   Update: {
-                    "author_color"?: string,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
+                    "author_color"?: string,"bio"?: string | null,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
                   }
                   Relationships: [
                     
@@ -560,6 +560,11 @@ isOneToOne: false
                            },
 "writer_mention_text":
 { Args: { "p_body": string }; Returns: string
+                           },
+"writing_now":
+{ Args: { "p_user": string }; Returns: {
+              "chapter_id": string,"chapter_number": number,"chapter_title": string,"story_id": string,"story_title": string
+            }[]
                            }
           }
           Enums: {

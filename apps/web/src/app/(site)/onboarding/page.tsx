@@ -25,7 +25,7 @@ export default async function OnboardingPage(props: PageProps<"/onboarding">) {
         Pick the name your friends will find you by, and the color your words show up in.
       </p>
       <ProfileForm
-        initial={{ username: "", authorColor: defaultColor }}
+        initial={{ username: "", authorColor: defaultColor, bio: "" }}
         next={nextPath && nextPath !== "/" ? nextPath : undefined}
         submitLabel="Start writing"
       />

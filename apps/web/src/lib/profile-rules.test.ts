@@ -3,7 +3,10 @@ import {
   AUTHOR_COLOR_DARK,
   AUTHOR_COLORS,
   authorColorVars,
+  BIO_MAX,
+  bioError,
   isAuthorColor,
+  normalizeBio,
   nextFreeColor,
   normalizeUsername,
   usernameError,
@@ -22,6 +25,27 @@ describe("usernameError", () => {
 describe("normalizeUsername", () => {
   it("trims and lowercases", () => {
     expect(normalizeUsername("  Mia_Writes ")).toBe("mia_writes");
+  });
+});
+
+describe("normalizeBio", () => {
+  it.each([
+    ["  Writes ghost stories. ", "Writes ghost stories."],
+    ["Two\nlines,   one\tline", "Two lines, one line"],
+    ["", null],
+    ["   \n ", null],
+  ])("normalizes %j", (raw, bio) => {
+    expect(normalizeBio(raw)).toBe(bio);
+  });
+});
+
+describe("bioError", () => {
+  it.each([null, "a", "a".repeat(BIO_MAX)])("accepts %j", (bio) => {
+    expect(bioError(bio)).toBeNull();
+  });
+
+  it.each(["a".repeat(BIO_MAX + 1)])("rejects %j", (bio) => {
+    expect(bioError(bio)).not.toBeNull();
   });
 });
 

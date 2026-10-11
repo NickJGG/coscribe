@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { isUsernameAvailable, saveProfile, type ProfileFormState } from "@/lib/actions/profile";
-import { normalizeUsername, usernameError } from "@/lib/profile-rules";
+import { BIO_MAX, normalizeUsername, usernameError } from "@/lib/profile-rules";
 import { ColorSwatches } from "./ColorSwatches";
 import styles from "./ProfileForm.module.css";
 
@@ -12,13 +12,16 @@ export function ProfileForm({
   initial,
   next,
   submitLabel,
+  showBio = false,
 }: {
-  initial: { username: string; authorColor: string };
+  initial: { username: string; authorColor: string; bio: string };
   next?: string;
   submitLabel: string;
+  showBio?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<ProfileFormState, FormData>(saveProfile, initial);
   const [username, setUsername] = useState(state.username);
+  const [bio, setBio] = useState(state.bio);
   const [checked, setChecked] = useState<{ username: string; available: boolean } | null>(null);
 
   const normalized = normalizeUsername(username);
@@ -89,6 +92,27 @@ export function ProfileForm({
           {usernameHint.text}
         </p>
       </div>
+
+      {showBio && (
+        <div className={styles.field}>
+          <label htmlFor="bio" className={styles.label}>
+            Bio
+          </label>
+          <input
+            id="bio"
+            name="bio"
+            className={`${styles.input} ${styles.wide}`}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            maxLength={BIO_MAX}
+            aria-invalid={Boolean(state.bioError)}
+            aria-describedby="bio-hint"
+          />
+          <p id="bio-hint" className={state.bioError ? styles.error : "muted"}>
+            {state.bioError ?? `One line under your name on your profile. ${BIO_MAX - bio.length} characters left.`}
+          </p>
+        </div>
+      )}
 
       <fieldset className={styles.field}>
         <legend className={styles.label}>Author color</legend>
