@@ -9,25 +9,27 @@ import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 const INVALID = "Something went wrong. Try again.";
 const JOIN_FINISHED = "This story is Finished. You can join once it's Reopened.";
 
-export async function inviteFriend(storyId: string, userId: string): Promise<ActionResult> {
-  if (!isUuid(storyId) || !isUuid(userId)) return INVALID;
+export type InviteRole = "writer" | "viewer";
+
+export async function inviteFriend(storyId: string, userId: string, role: InviteRole): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isUuid(userId) || !isInviteRole(role)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("invite_friend", { p_story: storyId, p_user: userId });
-  if (error) return error.message === "already_member" ? "They're already writing in this story." : errorText(error);
+  const { error } = await supabase.rpc("invite_friend", { p_story: storyId, p_user: userId, p_role: role });
+  if (error) return error.message === "already_member" ? "They're already in this story." : errorText(error);
 
   refresh();
   return null;
 }
 
 /** The new link shows up in the settings page's pending list, so there's nothing to return. */
-export async function createInviteLink(storyId: string): Promise<ActionResult> {
-  if (!isUuid(storyId)) return INVALID;
+export async function createInviteLink(storyId: string, role: InviteRole): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isInviteRole(role)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("create_invite_link", { p_story: storyId });
+  const { error } = await supabase.rpc("create_invite_link", { p_story: storyId, p_role: role });
   if (error) return errorText(error);
 
   refresh();
@@ -66,4 +68,8 @@ export async function acceptInviteLink(token: string): Promise<ActionResult> {
   if (error) return error.message === "story_finished" ? JOIN_FINISHED : errorText(error);
 
   redirect(`/stories/${storyId}`);
+}
+
+function isInviteRole(role: unknown): role is InviteRole {
+  return role === "writer" || role === "viewer";
 }

@@ -7,6 +7,7 @@ const RPC_ERRORS: Record<string, string> = {
   not_allowed: "You don't have permission to do that.",
   not_member: "They're no longer in this story.",
   not_friends: "You can only invite Friends.",
+  not_private: "Only Private stories have Viewers.",
   already_member: "You're already writing in this story.",
   invite_not_found: "That invite no longer exists.",
   invite_used: "That Invite Link has already been used.",

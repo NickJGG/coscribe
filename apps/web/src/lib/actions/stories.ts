@@ -68,6 +68,7 @@ export async function setMemberRole(storyId: string, userId: string, role: Membe
   const { error } = await supabase.rpc("set_member_role", { p_story: storyId, p_user: userId, p_role: role });
   if (error) return errorText(error);
 
+  await refreshSyncAccess(storyId);
   refresh();
   return null;
 }

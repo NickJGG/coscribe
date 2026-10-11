@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
-import { canManageInvites } from "@/lib/story-roles";
 import { NavLink } from "@/components/NavLink";
 import styles from "./settings.module.css";
 
@@ -13,13 +12,13 @@ export default async function StorySettingsLayout(props: LayoutProps<"/stories/[
   await requireProfile(`/stories/${storyId}/settings`);
   const data = await getStory(storyId);
   if (!data?.myRole) notFound();
-  const { myRole } = data;
+  const { story, viewers, myRole } = data;
   const base = `/stories/${storyId}/settings`;
 
   const tabs = [
     { slug: "story", label: "Story", shown: myRole === "host" },
     { slug: "writers", label: "Writers", shown: true },
-    { slug: "invites", label: "Invites", shown: canManageInvites(myRole) },
+    { slug: "viewers", label: "Viewers", shown: story.visibility === "private" || viewers.length > 0 },
     { slug: "you", label: "You", shown: true },
   ].filter((t) => t.shown);
 

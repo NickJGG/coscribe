@@ -105,7 +105,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
               <div className={styles.end}>
                 <DeskStatus member={writer} />
                 {canManageInvites(myRole) && (
-                  <Link href={`/stories/${story.id}/settings/invites`} className={`button button-small ${styles.invite}`}>
+                  <Link href={`/stories/${story.id}/settings/writers`} className={`button button-small ${styles.invite}`}>
                     Invite
                   </Link>
                 )}
