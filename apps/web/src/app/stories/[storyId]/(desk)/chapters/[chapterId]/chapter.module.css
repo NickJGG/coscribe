@@ -9,9 +9,11 @@
 }
 
 /* With Show notes on, room on the right for the Note cards, which sit beside the text and size themselves
-   from this container (notes.module.css). An equal empty column on the left keeps the text where it was. The
-   margin only appears once both sides fit (NotesProvider), so the text never moves. */
-.page:has([data-note-margin]) {
+   from this container (notes.module.css); with Pinned Entries, room on the left for theirs. Either way both
+   columns are made, so the text stays where it was. They only appear once both sides fit (useNarrowDesk),
+   so the text never moves. */
+.page:is(:has([data-note-margin]), :has([data-pinned-entries])) {
+  position: relative;
   container-type: inline-size;
   max-width: calc(var(--measure) + 2 * (18rem + 32px) + 2 * var(--gutter));
   display: grid;
@@ -19,8 +21,23 @@
   row-gap: 24px;
 }
 
-.page:has([data-note-margin]) > * {
+.page:is(:has([data-note-margin]), :has([data-pinned-entries])) > * {
   grid-column: 2;
+}
+
+/* The left column, hugging the text, from the top of the page to its bottom (PinnedColumn sticks within it). */
+.page > [data-pinned-entries] {
+  position: absolute;
+  top: 32px;
+  bottom: 64px;
+  right: 32px;
+  /* An absolute item's auto end line is the container's edge, so both lines are needed to stay in column 1. */
+  grid-column: 1 / 2;
+  width: min(18rem, 100% - 32px);
+}
+
+.page:has([data-compare]) > [data-pinned-entries] {
+  display: none;
 }
 
 /* A Snapshot comparison's two columns, kept clear of the History panel laid over the desk on desktop. */

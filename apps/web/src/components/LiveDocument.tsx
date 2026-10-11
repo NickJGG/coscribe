@@ -31,6 +31,7 @@ import { AddNoteIcon, AlignIcon, BlockQuoteIcon, BulletListIcon, NumberedListIco
 import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
+import { PinsToggle } from "./PinnedEntries";
 import { SelectionActions } from "./SelectionActions";
 import { Switch } from "./Switch";
 import { useLiveDocuments, type LiveSession } from "./SyncSocket";
@@ -65,10 +66,13 @@ const SLOW_MS = 1000;
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
- * row's end, before Show authors. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
+ * row's end, before Show pins and Show authors. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
+ *
+ * `embedded` is a Pinned Entry's body beside a Chapter: a reference connection with no toolbar, Notes, find
+ * or Snapshots, which tells the desk nothing and doesn't count as being in the document.
  */
 export function LiveDocument({
   kind,
@@ -77,6 +81,7 @@ export function LiveDocument({
   authors,
   tools,
   entryMentions,
+  embedded = false,
 }: {
   kind: DocumentKind;
   id: string;
@@ -84,9 +89,10 @@ export function LiveDocument({
   authors: StoryAuthor[];
   tools?: React.ReactNode;
   entryMentions?: DocumentEntryMentions;
+  embedded?: boolean;
 }) {
   const documents = useLiveDocuments();
-  const report = useLiveReport();
+  const report = useReport(embedded);
   const [session, setSession] = useState<LiveSession | null>(null);
   const [connection, setConnection] = useState<LiveConnection>("connecting");
   const [synced, setSynced] = useState(false);
@@ -96,10 +102,12 @@ export function LiveDocument({
   const [showAuthors, setShowAuthors] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const params = useSearchParams();
-  const findQuery = params.get("find")?.trim() ?? "";
-  const findCurrent = occurrence(params.get("n"));
-  const notes = useNotes();
-  const compare = useSnapshotCompare();
+  const findQuery = embedded ? "" : (params.get("find")?.trim() ?? "");
+  const findCurrent = embedded ? null : occurrence(params.get("n"));
+  const notesContext = useNotes();
+  const compareContext = useSnapshotCompare();
+  const notes = embedded ? null : notesContext;
+  const compare = embedded ? null : compareContext;
   const attachCompare = compare?.setEditor;
   const comparing = !!compare?.compare;
   const attachNotes = notes?.setEditor;
@@ -127,7 +135,8 @@ export function LiveDocument({
     const name = documentName(kind, id);
     report({ ...NO_DOCUMENT, doc: name });
     const supabase = createClient();
-    const live = documents.open(name, async () => (await supabase.auth.getSession()).data.session?.access_token ?? "");
+    const token = async () => (await supabase.auth.getSession()).data.session?.access_token ?? "";
+    const live = documents.open(name, embedded ? async () => `ref:${await token()}` : token, embedded);
     const { provider } = live;
 
     const onAuthenticated = ({ scope }: { scope: string }) => setReadOnly(scope !== "read-write");
@@ -177,16 +186,16 @@ export function LiveDocument({
       provider.off("status", onStatus);
       provider.off("stateless", onStateless);
       provider.off("close", onClose);
-      documents.close(name);
+      documents.close(name, embedded);
       report(NO_DOCUMENT);
     };
-  }, [kind, id, documents, report]);
+  }, [kind, id, embedded, documents, report]);
 
   useEffect(() => {
     report({ connection, slow, readOnly });
   }, [report, connection, slow, readOnly]);
 
-  usePresence(session?.provider ?? null);
+  usePresence(embedded ? null : (session?.provider ?? null));
 
   if (connection === "denied") {
     return (
@@ -197,8 +206,8 @@ export function LiveDocument({
   }
 
   return (
-    <div className={styles.live} hidden={comparing}>
-      {!comparing && (
+    <div className={embedded ? `${styles.live} ${styles.embedded}` : styles.live} hidden={comparing}>
+      {!comparing && !embedded && (
         <DeskToolbar.Fill>
           <div className={styles.toolRow}>
             {outdated ? (
@@ -211,6 +220,7 @@ export function LiveDocument({
               {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
               {tools}
               {notes && <NotesButton />}
+              {kind === "chapter" && <PinsToggle entries={entryMentions?.entries ?? NO_ENTRY_MENTIONS} />}
               {notes && (
                 <Switch checked={notes.show} onChange={notes.setShow}>
                   Show notes
@@ -239,6 +249,7 @@ export function LiveDocument({
           >
             <LiveEditor
               kind={kind}
+              embedded={embedded}
               session={session}
               writer={writer}
               editable={!readOnly}
@@ -267,6 +278,14 @@ function occurrence(param: string | null): number | null {
 
 const LOADING_LINES = ["100%", "96%", "100%", "88%", "100%", "93%", "62%"];
 
+const ignoreReport: ReturnType<typeof useLiveReport> = () => {};
+
+/** The desk's LiveStatus reporter, or one that drops everything for an embedded document. */
+function useReport(embedded: boolean) {
+  const report = useLiveReport();
+  return embedded ? ignoreReport : report;
+}
+
 function MaybeEntryMentionCards({ entryMentions, children }: { entryMentions?: DocumentEntryMentions; children: React.ReactNode }) {
   if (!entryMentions) return children;
   return (
@@ -280,6 +299,7 @@ const NO_ENTRY_MENTIONS: EntryMentionEntry[] = [];
 
 function LiveEditor({
   kind,
+  embedded,
   session,
   writer,
   editable,
@@ -289,6 +309,7 @@ function LiveEditor({
   onEditor,
 }: {
   kind: DocumentKind;
+  embedded: boolean;
   session: LiveSession;
   writer: Writer | null;
   editable: boolean;
@@ -297,7 +318,7 @@ function LiveEditor({
   find: FindConfig;
   onEditor: (editor: Editor | null) => void;
 }) {
-  const report = useLiveReport();
+  const report = useReport(embedded);
   const { extensions, label, placeholder } = KINDS[kind];
   const editor = useEditor({
     immediatelyRender: false,
@@ -307,7 +328,8 @@ function LiveEditor({
       Collaboration.configure({ document: session.ydoc, field: DOCUMENT_FIELD }),
       CollaborationCaret.configure({
         provider: session.provider,
-        user: writer ?? { viewer: true },
+        // A Pinned Entry's caret still shows, but its Writer isn't counted as here.
+        user: { ...(writer ?? { viewer: true }), ...(embedded && { reference: true }) },
         render: renderCaret,
       }),
       Placeholder.configure({ placeholder }),
@@ -609,7 +631,8 @@ function usePresence(provider: HocuspocusProvider | null) {
       const writers = new Map<string, PresentWriter>();
       let viewers = 0;
       for (const state of awareness.getStates().values()) {
-        const user = state.user as (Partial<Writer> & { viewer?: boolean }) | undefined;
+        const user = state.user as (Partial<Writer> & { viewer?: boolean; reference?: boolean }) | undefined;
+        if (user?.reference) continue;
         if (user?.userId && user.name && user.color) {
           writers.set(user.userId, { id: user.userId, name: user.name, color: user.color });
         } else if (user?.viewer) {

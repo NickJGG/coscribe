@@ -1,0 +1,231 @@
+/* Wide: placed beside the text by chapter.module.css; the cards stay in view and scroll on their own. */
+.column {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(100%, var(--desk-scroll-height, 100dvh) - 24px);
+  padding-bottom: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 24px), transparent);
+}
+
+.column::-webkit-scrollbar {
+  display: none;
+}
+
+.slot {
+  display: contents;
+}
+
+/* Narrower: a panel over the page's left, under the toolbar row, mirroring the right-hand panel. */
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(22rem, 100%);
+  padding: 12px 12px 24px;
+  border-right: 1px solid var(--rule);
+  background: var(--paper);
+  box-shadow: 8px 0 24px rgb(0 0 0 / 0.08);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Phones: a sheet over the whole screen. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--paper-raised);
+}
+
+.sheet[hidden] {
+  display: none;
+}
+
+.sheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 10px 10px 16px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.sheetHeading {
+  font-size: var(--step-0);
+}
+
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.close,
+.unpin {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.close {
+  width: 44px;
+  height: 44px;
+}
+
+.unpin {
+  width: 24px;
+  height: 24px;
+  margin: -4px -6px -4px 0;
+}
+
+.unpin {
+  color: var(--accent);
+}
+
+.close:hover,
+.unpin:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.closeIcon {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.unpin svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (pointer: coarse) {
+  .unpin {
+    width: 44px;
+    height: 44px;
+    margin-block: -14px;
+  }
+}
+
+.card {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-muted);
+}
+
+.name {
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: var(--step-1);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.description {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.aliases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.aliases li {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--wash);
+  font-size: 0.75rem;
+}
+
+.body {
+  margin-top: 4px;
+  font-size: var(--step--1);
+  overflow: hidden;
+}
+
+.body[data-clamped] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 2em), transparent);
+  cursor: text;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.toggle {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--ink);
+}
+
+.open {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.error {
+  color: var(--danger);
+}

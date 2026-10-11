@@ -9,7 +9,7 @@ import { errorText, type ActionResult } from "@/lib/action-result";
 import { useLocalSetting } from "@/lib/local-setting";
 import { canDeleteNote, type MemberRole } from "@/lib/story-roles";
 import { NOTE_COLUMNS, noteQuote, REPLY_COLUMNS, type Note, type NoteReply } from "@/lib/notes";
-import { useDeskScroll } from "../DeskScroll";
+import { useNarrowDesk } from "../DeskScroll";
 import type { StoryAuthor } from "../LiveDocument";
 import { useStoryPanel } from "../StoryPanel";
 import { canAddNote, noteClass, noteDraft, noteHighlightKey, type NoteHighlightMeta } from "./NoteHighlights";
@@ -57,13 +57,6 @@ export function useNotes() {
 const SHOW_KEY = "coscribe:show-notes";
 const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
 const REVEAL_TRIES = 10;
-/**
- * The narrowest page with its margin (chapter.module.css): the text centered between two columns of a gap
- * and the narrowest cards, plus both gutters. Narrower, the text would have to move over to fit them.
- * desk.module.css caps the sidebar's width with the same numbers.
- */
-const MARGIN_PAGE_REM = 40 + 2 * 15;
-const MARGIN_PAGE_PX = 2 * 32 + 2 * 16;
 
 function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
   const byId = new Map(current.map((x) => [x.id, x]));
@@ -102,7 +95,7 @@ export function NotesProvider({
   const known = useRef({ notes: new Set<string>(), replies: new Set<string>() });
   const linked = useSearchParams().get("note");
   const revealed = useRef<string | null>(null);
-  const narrow = useNarrowDesk();
+  const narrow = !!useNarrowDesk();
   const panelOpen = !!useStoryPanel()?.open;
   const collapsed = narrow || panelOpen;
 
@@ -383,24 +376,4 @@ export function NotesProvider({
   );
 
   return <NotesContext value={value}>{children}</NotesContext>;
-}
-
-/** Whether the desk's page is narrower than the text and its margin of cards, as the sidebar and window change. */
-function useNarrowDesk() {
-  const scroll = useDeskScroll();
-  const [narrow, setNarrow] = useState(false);
-
-  useEffect(() => {
-    const el = scroll?.current;
-    if (!el) return;
-    const measure = () => {
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-      setNarrow(el.clientWidth < MARGIN_PAGE_REM * rem + MARGIN_PAGE_PX);
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [scroll]);
-
-  return narrow;
 }

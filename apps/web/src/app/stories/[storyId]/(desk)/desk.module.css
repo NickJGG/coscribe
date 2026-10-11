@@ -770,6 +770,15 @@
   display: none;
 }
 
+/* The scrolling page, with room over its left for Pinned Entries too narrow to sit beside a Chapter. */
+.page {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .scroll {
   flex: 1;
   min-height: 0;
@@ -844,7 +853,7 @@
   }
 
   /*
-   * With room for the margin, the cap is the widest sidebar that keeps it. 70rem + 96px is NotesProvider's
+   * With room for the margin, the cap is the widest sidebar that keeps it. 70rem + 96px is DeskScroll's
    * MARGIN_PAGE_*, measured inside the scrollbar; the 1px is the sidebar's border.
    */
   @media (min-width: calc(86rem + 97px)) {

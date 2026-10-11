@@ -182,7 +182,11 @@ export function EntryMentionCards({
             <Link href={`/stories/${storyId}/bible/${card.entry.id}`} className={styles.open}>
               Open Entry &rarr;
             </Link>
-            <PinButton entryId={card.entry.id} entryName={card.entry.name} />
+            <PinButton
+              entryId={card.entry.id}
+              entryName={card.entry.name}
+              className={`button button-ghost button-tiny with-icon ${styles.pin}`}
+            />
           </div>
           <PinError entryId={card.entry.id} className={styles.error} />
         </div>

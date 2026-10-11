@@ -1,0 +1,22 @@
+.notPhone {
+  display: contents;
+}
+
+.phone {
+  display: none;
+}
+
+.count {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .notPhone {
+    display: none;
+  }
+
+  .phone {
+    display: contents;
+  }
+}

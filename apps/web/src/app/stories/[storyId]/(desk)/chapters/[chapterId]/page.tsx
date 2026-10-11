@@ -15,6 +15,7 @@ import { SnapshotButton } from "@/components/SnapshotButton";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { NotesProvider } from "@/components/notes/NotesProvider";
 import { NotesPanel } from "@/components/notes/NotesPanel";
+import { PinnedColumn } from "@/components/PinnedColumn";
 import { ChapterTitle } from "./ChapterTitle";
 import styles from "./chapter.module.css";
 
@@ -48,6 +49,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const authors = storyAuthors(data);
   const manage = canManageChapters(myRole) && story.status !== "finished";
   const writer = liveWriter(data);
+  const mentionEntries = entryMentionEntries(entries);
 
   const live = (
     <LiveDocument
@@ -56,7 +58,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       id={chapter.id}
       writer={writer}
       authors={authors}
-      entryMentions={{ storyId: story.id, entries: entryMentionEntries(entries) }}
+      entryMentions={{ storyId: story.id, entries: mentionEntries }}
       tools={
         manage && (
           <>
@@ -95,6 +97,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
 
   return (
     <div className={styles.page}>
+      <PinnedColumn storyId={story.id} entries={mentionEntries} writer={writer} authors={authors} />
       <header className={styles.header}>
         <div className={styles.meta}>
           <span className="smallcaps">Chapter {index + 1}</span>

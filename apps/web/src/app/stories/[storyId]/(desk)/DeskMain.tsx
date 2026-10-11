@@ -8,6 +8,7 @@ import { DeskScrollContext } from "@/components/DeskScroll";
 import { DeskToolbar } from "@/components/DeskToolbar";
 import { FIND_CURRENT } from "@/components/Find";
 import { useLiveStatus } from "@/components/LiveStatus";
+import { PinnedSlot, PinnedSlotProvider } from "@/components/PinnedColumn";
 import { useHereNow } from "@/components/StoryPresence";
 import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
 import styles from "./desk.module.css";
@@ -62,7 +63,7 @@ function show(page: HTMLElement, selector: string, all: boolean, otherwise: () =
 
 /**
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
- * the right panel over all three. Each document reopens where this browser tab last left it,
+ * the right panel over all three. Pinned Entries too narrow to sit beside a Chapter go over the page's left. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
  * A `#entry-mention-<entryId>` link opens at that Entry's first Entry Mention instead, a `?find=…&n=` link at that
  * search match (again on every step), and a `?note=` link leaves it to the Note.
@@ -96,11 +97,15 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   }, [doc, ready]);
 
   // The sidebar's widest stops short of folding the Notes margin, which is measured inside the scrollbar.
+  // The Pinned Entries column fits its height to the page's.
   useEffect(() => {
     const page = scroller.current;
     const desk = page?.closest<HTMLElement>("[data-desk]");
     if (!page || !desk) return;
-    const measure = () => desk.style.setProperty("--desk-scrollbar", `${page.offsetWidth - page.clientWidth}px`);
+    const measure = () => {
+      desk.style.setProperty("--desk-scrollbar", `${page.offsetWidth - page.clientWidth}px`);
+      desk.style.setProperty("--desk-scroll-height", `${page.clientHeight}px`);
+    };
     const observer = new ResizeObserver(measure);
     observer.observe(page);
     return () => observer.disconnect();
@@ -115,20 +120,25 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
 
   return (
     <DeskToolbar.Provider>
-      <div className={styles.main}>
-        <DeskToolbar.Target className={styles.toolbarSlot} />
-        <div
-          ref={scroller}
-          className={styles.scroll}
-          onScroll={(e) => {
-            if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
-          }}
-        >
-          <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+      <PinnedSlotProvider>
+        <div className={styles.main}>
+          <DeskToolbar.Target className={styles.toolbarSlot} />
+          <div className={styles.page}>
+            <div
+              ref={scroller}
+              className={styles.scroll}
+              onScroll={(e) => {
+                if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
+              }}
+            >
+              <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+            </div>
+            <PinnedSlot />
+          </div>
+          {footer}
+          <PanelSlot />
         </div>
-        {footer}
-        <PanelSlot />
-      </div>
+      </PinnedSlotProvider>
     </DeskToolbar.Provider>
   );
 }

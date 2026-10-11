@@ -13,13 +13,16 @@ export type LiveSession = {
   outdated: boolean;
 };
 
+/** A `reference` session is a Pinned Entry's body, which apps/sync doesn't count as being in the document. */
 type LiveDocuments = {
   /** The document's session, created on first open. Every open needs a matching close. */
-  open: (name: string, token: () => Promise<string>) => LiveSession;
-  close: (name: string) => void;
+  open: (name: string, token: () => Promise<string>, reference?: boolean) => LiveSession;
+  close: (name: string, reference?: boolean) => void;
 };
 
-type Entry = LiveSession & { holders: number; answered: Promise<void> };
+type Entry = LiveSession & { holders: number; answered: Promise<void>; reference: boolean };
+
+const sessionKey = (name: string, reference = false) => (reference ? `ref:${name}` : name);
 
 /** How long to wait for the server to answer a document's login before closing it anyway. */
 const ANSWER_TIMEOUT_MS = 10_000;
@@ -34,28 +37,38 @@ const LiveDocumentsContext = createContext<LiveDocuments | null>(null);
  * authenticated yet: a close sent before the server answers is replayed right after the next login to
  * that document succeeds, killing the new connection. So a document reopened at once (React remounting
  * in development, quick back-and-forth) reuses its session, and a close waits for the server's answer.
+ *
+ * Reference sessions get a second socket: Hocuspocus allows one session per document on a socket, and an
+ * Entry page opened while its pinned body is still closing must not inherit (or be killed by) that one.
  */
 export function SyncSocketProvider({ children }: { children: React.ReactNode }) {
-  const socket = useRef<HocuspocusProviderWebsocket | null>(null);
+  const sockets = useRef<{ live?: HocuspocusProviderWebsocket; reference?: HocuspocusProviderWebsocket }>({});
   const entries = useRef(new Map<string, Entry>());
   const mounted = useRef(false);
 
   const { documents, closeSocketIfDone } = useMemo(() => {
+    // The live socket stays while the desk is mounted; the reference one only while a Pinned Entry is open.
     const closeSocketIfDone = () => {
-      if (mounted.current || entries.current.size) return;
-      socket.current?.destroy();
-      socket.current = null;
+      const open = [...entries.current.values()];
+      for (const mode of ["live", "reference"] as const) {
+        if (mode === "live" && mounted.current) continue;
+        if (open.some((e) => e.reference === (mode === "reference"))) continue;
+        sockets.current[mode]?.destroy();
+        delete sockets.current[mode];
+      }
     };
     const documents: LiveDocuments = {
-      open(name, token) {
-        let entry = entries.current.get(name);
+      open(name, token, reference = false) {
+        const key = sessionKey(name, reference);
+        let entry = entries.current.get(key);
         if (!entry) {
+          const mode = reference ? "reference" : "live";
           // Every document on the socket comes from this build, so the socket carries the schema version.
-          socket.current ??= new HocuspocusProviderWebsocket({
+          const socket = (sockets.current[mode] ??= new HocuspocusProviderWebsocket({
             url: `${process.env.NEXT_PUBLIC_SYNC_URL!}?schema=${SCHEMA_VERSION}`,
-          });
+          }));
           const ydoc = new Y.Doc();
-          const provider = new HocuspocusProvider({ websocketProvider: socket.current, name, document: ydoc, token });
+          const provider = new HocuspocusProvider({ websocketProvider: socket, name, document: ydoc, token });
           const answered = new Promise<void>((resolve) => {
             provider.on("authenticated", resolve);
             provider.on("authenticationFailed", resolve);
@@ -63,27 +76,28 @@ export function SyncSocketProvider({ children }: { children: React.ReactNode }) 
           });
           // A provider on a shared socket doesn't attach itself.
           provider.attach();
-          const created: Entry = { provider, ydoc, snapshot: null, outdated: false, holders: 0, answered };
+          const created: Entry = { provider, ydoc, snapshot: null, outdated: false, holders: 0, answered, reference };
           provider.on("stateless", ({ payload }: { payload: string }) => {
             const message = JSON.parse(payload) as SyncMessage;
             if (message.type === "snapshot") created.snapshot = message;
             else if (message.type === "outdated") created.outdated = true;
           });
           entry = created;
-          entries.current.set(name, entry);
+          entries.current.set(key, entry);
         }
         entry.holders++;
         return entry;
       },
 
-      close(name) {
-        const entry = entries.current.get(name);
+      close(name, reference = false) {
+        const key = sessionKey(name, reference);
+        const entry = entries.current.get(key);
         if (!entry) return;
         entry.holders--;
         void entry.answered.then(() =>
           setTimeout(() => {
-            if (entry.holders > 0 || entries.current.get(name) !== entry) return;
-            entries.current.delete(name);
+            if (entry.holders > 0 || entries.current.get(key) !== entry) return;
+            entries.current.delete(key);
             entry.provider.destroy();
             entry.ydoc.destroy();
             closeSocketIfDone();

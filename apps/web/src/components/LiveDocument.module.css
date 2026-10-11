@@ -8,6 +8,17 @@
   display: none;
 }
 
+/* A Pinned Entry's body, in a card beside the Chapter. */
+.embedded .prose {
+  min-height: 0;
+  font-size: var(--step--1);
+  line-height: 1.6;
+}
+
+.embedded .loading {
+  font-size: var(--step--1);
+}
+
 .denied {
   color: var(--danger);
 }
