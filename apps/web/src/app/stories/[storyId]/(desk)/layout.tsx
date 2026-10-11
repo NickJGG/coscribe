@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { getChapters, getEntries, getStory } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites, isWriter } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
+import { COLLAPSED_COOKIE, parseCollapsed, parseSidebarWidth, WIDTH_COOKIE } from "@/lib/desk-sidebar";
 import { addChapter } from "@/lib/actions/chapters";
 import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
@@ -34,7 +36,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   if (!data) return props.children;
 
   const { story, myRole, viewer } = data;
-  const [chapters, entries] = await Promise.all([getChapters(story.id), getEntries(story.id)]);
+  const [chapters, entries, cookieStore] = await Promise.all([getChapters(story.id), getEntries(story.id), cookies()]);
   const writer = isWriter(myRole);
   const writable = writer && story.status !== "finished";
   const storyWords = chapters.reduce((sum, c) => sum + c.word_count, 0);
@@ -95,7 +97,11 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
   return (
     <SyncSocketProvider>
       <LiveStatusProvider>
-        <DeskFrame className={styles.desk}>
+        <DeskFrame
+          className={styles.desk}
+          initialWidth={parseSidebarWidth(cookieStore.get(WIDTH_COOKIE)?.value)}
+          initialCollapsed={parseCollapsed(cookieStore.get(COLLAPSED_COOKIE)?.value)}
+        >
           <StorySearchProvider storyId={story.id}>
             <header className={styles.header}>
               <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>

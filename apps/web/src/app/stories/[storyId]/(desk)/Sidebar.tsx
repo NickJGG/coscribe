@@ -10,6 +10,7 @@ import { useHereNow, type HereNow } from "@/components/StoryPresence";
 import { BibleList } from "./BibleList";
 import { ChapterList } from "./ChapterList";
 import { useDeskFrame, type SidebarTab } from "./DeskFrame";
+import { SidebarResize } from "./SidebarResize";
 import styles from "./desk.module.css";
 
 type Chapter = { id: string; title: string; locked: boolean; word_count: number };
@@ -59,6 +60,7 @@ export function Sidebar({
   const panes = useRef<Record<SidebarTab, HTMLDivElement | null>>({ chapters: null, bible: null });
   const scrollTops = useRef<Record<SidebarTab, number>>({ chapters: 0, bible: 0 });
   const tabRefs = useRef<Record<SidebarTab, HTMLButtonElement | null>>({ chapters: null, bible: null });
+  const full = useRef<HTMLDivElement>(null);
   const here = useHereNow();
   const pathname = usePathname();
   const overviewHref = `/stories/${storyId}`;
@@ -167,7 +169,7 @@ export function Sidebar({
           )}
         </div>
 
-        <div className={styles.full}>
+        <div ref={full} className={styles.full}>
           <span className={styles.grab} aria-hidden />
           <div className={styles.top}>
             <div className={styles.titleRow}>
@@ -295,6 +297,7 @@ export function Sidebar({
             </section>
           )}
         </div>
+        <SidebarResize fullRef={full} />
       </aside>
       {overlay && <div className={styles.scrim} onClick={close} aria-hidden />}
     </>

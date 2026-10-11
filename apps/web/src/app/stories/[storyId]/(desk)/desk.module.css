@@ -787,14 +787,97 @@
   display: none;
 }
 
-/* Desktop: the sidebar collapses to the strip by choice. */
+.resize {
+  display: none;
+}
+
+/* Desktop: the sidebar collapses to the strip by choice, and drags wider. */
 @media (min-width: 1025px) {
+  /*
+   * Where the Notes margin is folded even beside a 16rem sidebar, the cap keeps the text column instead.
+   * DeskMain measures --desk-scrollbar.
+   */
+  .desk {
+    --sidebar-max: min(28rem, calc(100vw - 40rem - 2 * var(--gutter) - 1px - var(--desk-scrollbar, 17px)));
+  }
+
+  /*
+   * With room for the margin, the cap is the widest sidebar that keeps it. 70rem + 96px is NotesProvider's
+   * MARGIN_PAGE_*, measured inside the scrollbar; the 1px is the sidebar's border.
+   */
+  @media (min-width: calc(86rem + 97px)) {
+    .desk {
+      --sidebar-max: calc(100vw - 70rem - 97px - var(--desk-scrollbar, 17px));
+    }
+  }
+
+  .full {
+    width: clamp(16rem, var(--sidebar-width, 16rem), var(--sidebar-max));
+  }
+
   .desk[data-collapsed] .full {
     display: none;
   }
 
   .desk[data-collapsed] .strip {
     display: flex;
+  }
+
+  .resize {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    bottom: 0;
+    z-index: 1;
+    display: block;
+    width: 8px;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .resize::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: transparent;
+    transition: background-color 0.15s;
+  }
+
+  .resize:hover::after {
+    background: var(--accent);
+    transition-delay: 0.15s;
+  }
+
+  .resize[data-dragging]::after {
+    background: var(--accent);
+    transition-delay: 0s;
+  }
+
+  .resize:focus-visible {
+    outline: none;
+  }
+
+  .resize:focus-visible::after {
+    background: var(--focus);
+  }
+
+  .desk[data-collapsed] .resize {
+    display: none;
+  }
+
+  .desk[data-resizing],
+  .desk[data-resizing] * {
+    cursor: col-resize;
+    user-select: none;
+  }
+}
+
+@media (min-width: 1025px) and (prefers-reduced-motion: reduce) {
+  .resize::after {
+    transition: none;
   }
 }
 

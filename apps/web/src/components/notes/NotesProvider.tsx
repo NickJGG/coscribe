@@ -60,6 +60,7 @@ const REVEAL_TRIES = 10;
 /**
  * The narrowest page with its margin (chapter.module.css): the text centered between two columns of a gap
  * and the narrowest cards, plus both gutters. Narrower, the text would have to move over to fit them.
+ * desk.module.css caps the sidebar's width with the same numbers.
  */
 const MARGIN_PAGE_REM = 40 + 2 * 15;
 const MARGIN_PAGE_PX = 2 * 32 + 2 * 16;

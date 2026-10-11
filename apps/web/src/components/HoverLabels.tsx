@@ -3,16 +3,20 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const LONG_PRESS_MS = 450;
+const HOVER_DELAY_MS = 500;
 const TOUCH_LINGER_MS = 1500;
 const GAP = 6;
 const EDGE = 8;
 const WRAP_AFTER = 40;
 
-type Tip = { target: HTMLElement; text: string; keys: string | undefined };
+/** `y`: the pointer's height, for a `data-follow` target. */
+type Tip = { target: HTMLElement; text: string; keys: string | undefined; y?: number };
 
 /**
  * The app's one hover label, replacing the browser's `title` tooltips. Any element with `data-tip`
- * gets it, plus `data-keys` for a shortcut and `data-side="right"` to sit beside rather than below.
+ * gets it, plus `data-keys` for a shortcut and `data-side="right"` to sit beside rather than below
+ * (with `data-follow`, at the pointer's height rather than centered). `data-delay` waits a moment on hover,
+ * for a target the pointer often just passes over.
  * Shows instantly on mouse hover and keyboard focus, and on a long-press on touch, which swallows
  * the tap that follows. Stays quiet while the element is `aria-expanded`, so an open menu's own
  * button doesn't label over it.
@@ -25,33 +29,57 @@ export function HoverLabels() {
     let current: HTMLElement | null = null;
     let press: number | undefined;
     let linger: number | undefined;
+    let wait: number | undefined;
+    let waiting: HTMLElement | null = null;
+    let lastY = 0;
     let pressed = false;
 
     const tipOf = (e: Event) => (e.target instanceof Element ? e.target.closest<HTMLElement>("[data-tip]") : null);
 
     const hide = () => {
       clearTimeout(linger);
+      clearTimeout(wait);
+      waiting = null;
       if (!current) return;
       current = null;
       setTip(null);
     };
 
-    const show = (target: HTMLElement) => {
+    const show = (target: HTMLElement, y?: number) => {
       const text = target.dataset.tip;
       if (!text || target.getAttribute("aria-expanded") === "true") return hide();
       clearTimeout(linger);
       current = target;
-      setTip({ target, text, keys: target.dataset.keys });
+      setTip({ target, text, keys: target.dataset.keys, y: target.dataset.follow === undefined ? undefined : y });
     };
 
     const over = (e: PointerEvent) => {
       if (e.pointerType === "touch") return;
       const target = tipOf(e);
-      if (target && target !== current) show(target);
+      if (!target || target === current || target === waiting) return;
+      clearTimeout(wait);
+      waiting = null;
+      if (target.dataset.delay === undefined) return show(target, e.clientY);
+      waiting = target;
+      wait = window.setTimeout(() => {
+        waiting = null;
+        show(target, lastY);
+      }, HOVER_DELAY_MS);
+    };
+
+    const move = (e: PointerEvent) => {
+      lastY = e.clientY;
+      if (e.pointerType === "touch" || current?.dataset.follow === undefined) return;
+      setTip((t) => t && { ...t, y: e.clientY });
     };
 
     const out = (e: PointerEvent) => {
-      if (e.pointerType === "touch" || !current) return;
+      if (e.pointerType === "touch") return;
+      if (waiting && !(e.relatedTarget instanceof Node && waiting.contains(e.relatedTarget))) {
+        clearTimeout(wait);
+        waiting = null;
+      }
+      if (!current) return;
       if (e.relatedTarget instanceof Node && current.contains(e.relatedTarget)) return;
       hide();
     };
@@ -100,6 +128,7 @@ export function HoverLabels() {
 
     document.addEventListener("pointerover", over);
     document.addEventListener("pointerout", out);
+    document.addEventListener("pointermove", move);
     document.addEventListener("pointerdown", down, true);
     document.addEventListener("pointerup", up, true);
     document.addEventListener("pointercancel", up, true);
@@ -112,9 +141,11 @@ export function HoverLabels() {
     window.addEventListener("blur", hide);
     return () => {
       clearTimeout(press);
+      clearTimeout(wait);
       clearTimeout(linger);
       document.removeEventListener("pointerover", over);
       document.removeEventListener("pointerout", out);
+      document.removeEventListener("pointermove", move);
       document.removeEventListener("pointerdown", down, true);
       document.removeEventListener("pointerup", up, true);
       document.removeEventListener("pointercancel", up, true);
@@ -137,7 +168,7 @@ export function HoverLabels() {
     let top: number;
     if (tip.target.dataset.side === "right") {
       left = r.right + GAP;
-      top = r.top + (r.height - h) / 2;
+      top = tip.y === undefined ? r.top + (r.height - h) / 2 : tip.y - h / 2;
     } else {
       left = r.left + (r.width - w) / 2;
       top = r.bottom + GAP;

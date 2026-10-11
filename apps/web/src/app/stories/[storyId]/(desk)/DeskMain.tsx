@@ -95,6 +95,17 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     };
   }, [doc, ready]);
 
+  // The sidebar's widest stops short of folding the Notes margin, which is measured inside the scrollbar.
+  useEffect(() => {
+    const page = scroller.current;
+    const desk = page?.closest<HTMLElement>("[data-desk]");
+    if (!page || !desk) return;
+    const measure = () => desk.style.setProperty("--desk-scrollbar", `${page.offsetWidth - page.clientWidth}px`);
+    const observer = new ResizeObserver(measure);
+    observer.observe(page);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     const page = scroller.current;
     if (!doc || !ready || !finding || !page) return;
