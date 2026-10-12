@@ -171,6 +171,7 @@
   font-size: var(--step-1);
   line-height: 1.75;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 /* Must outrank the global :focus-visible ring; prod CSS chunk order isn't guaranteed. */

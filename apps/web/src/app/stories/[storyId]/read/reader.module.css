@@ -260,6 +260,7 @@
   line-height: 1.8;
   overflow-wrap: break-word;
   hyphens: auto;
+  white-space: pre-wrap;
 }
 
 /* Book-style paragraphs: indented, no gap, except the first after a heading or Scene Break. */

@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { useSearchParams } from "next/navigation";
+import { Extension } from "@tiptap/core";
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
@@ -60,6 +61,18 @@ const KINDS = {
 } satisfies Record<DocumentKind, unknown>;
 
 const SLOW_MS = 1000;
+
+/** Tab types a tab instead of leaving the editor. Below the default priority so Tab still indents list items. */
+const TabKey = Extension.create({
+  name: "tabKey",
+  priority: 50,
+  addKeyboardShortcuts() {
+    return {
+      // Read-only, Tab must still move between focusable Entry Mentions.
+      Tab: ({ editor }) => editor.isEditable && editor.commands.command(({ tr }) => !!tr.insertText("	")),
+    };
+  },
+});
 
 /**
  * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
@@ -339,6 +352,7 @@ function LiveEditor({
       EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
       Find.configure(find),
+      TabKey,
     ],
     editorProps: { attributes: { class: styles.prose, "aria-label": label } },
   });
