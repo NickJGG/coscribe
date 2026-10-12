@@ -72,6 +72,13 @@ describe("findEntryMentions", () => {
     expect(found("Dr. Who? and Dra Who", [entry("dr", "Dr. Who?")])).toEqual([["dr", "Dr. Who?"]])
   })
 
+  it("matches names and Aliases with hyphens and slashes", () => {
+    expect(found("Jean-Luc met the A/B twins", [entry("jl", "Picard", ["Jean-Luc"]), entry("ab", "A/B twins")])).toEqual([
+      ["jl", "Jean-Luc"],
+      ["ab", "A/B twins"],
+    ])
+  })
+
   it("ignores blank Aliases", () => {
     expect(found("a b", [entry("x", "Nobody", ["", "  "])])).toEqual([])
   })

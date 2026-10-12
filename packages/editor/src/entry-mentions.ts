@@ -83,7 +83,7 @@ function nameKey(name: string): string {
 }
 
 function escape(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&")
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
 /** The text of each paragraph (or other text block) in a document, which Entry Mentions never cross. */
