@@ -15,6 +15,7 @@ import {
   type Notification,
 } from "@/lib/notifications";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
+import { acceptFriendRequest, removeFriendship } from "@/lib/actions/friends";
 import { ActionForm } from "./ActionForm";
 import { Avatar } from "./Avatar";
 import { NotificationToasts } from "./NotificationToasts";
@@ -160,24 +161,38 @@ export function useQuietToasts() {
 }
 
 /**
- * One Notification, linking to what it's about while that still exists. Invites carry Join and Decline.
+ * One Notification, linking to what it's about while that still exists. Invites carry Join and Decline,
+ * friend requests Accept and Decline.
  * `highlighted` marks it as new to whoever opened the list, whether or not it has since been read.
  */
 export function NotificationItem({ notification: n, highlighted }: { notification: Notification; highlighted: boolean }) {
   const href = notificationHref(n);
   const inviteId = n.kind === "invite_received" ? n.invite_id : null;
+  const requesterId = n.kind === "friend_request" ? n.friend_requester : null;
   const body = (
     <>
       {n.actor ? <Avatar name={n.actor.username} color={n.actor.author_color} /> : <span />}
       <span className={styles.text}>
         <span>
-          <b>{notificationActor(n)}</b> {notificationVerb(n)}{" "}
-          {inviteId && href ? (
-            <Link href={href} className={styles.story}>
-              {n.story_title}
+          {requesterId && n.actor ? (
+            <Link href={`/u/${n.actor.username}`} className={styles.person}>
+              <b>{n.actor.username}</b>
             </Link>
           ) : (
-            <span className={styles.story}>{n.story_title}</span>
+            <b>{notificationActor(n)}</b>
+          )}{" "}
+          {notificationVerb(n)}
+          {n.story_title !== null && (
+            <>
+              {" "}
+              {inviteId && href ? (
+                <Link href={href} className={styles.story}>
+                  {n.story_title}
+                </Link>
+              ) : (
+                <span className={styles.story}>{n.story_title}</span>
+              )}
+            </>
           )}
         </span>
         <time dateTime={n.created_at} className={styles.when} suppressHydrationWarning>
@@ -202,6 +217,24 @@ export function NotificationItem({ notification: n, highlighted }: { notificatio
             </button>
           </ActionForm>
         </span>
+      </div>
+    );
+  }
+
+  if (requesterId) {
+    return (
+      <div className={styles.item} data-unread={highlighted || undefined}>
+        {body}
+        {n.actor && (
+          <span className={styles.actions}>
+            <ActionForm action={removeFriendship.bind(null, requesterId)}>
+              <button className="button button-ghost button-tiny">Decline</button>
+            </ActionForm>
+            <ActionForm action={acceptFriendRequest.bind(null, requesterId)}>
+              <button className="button button-primary button-tiny">Accept</button>
+            </ActionForm>
+          </span>
+        )}
       </div>
     );
   }

@@ -14,6 +14,8 @@ const base: Notification = {
   story_title: "Gull Point",
   invite_id: null,
   note_id: null,
+  friend_requester: null,
+  friend_addressee: null,
   detail: {},
   created_at: "2026-10-07T10:00:00Z",
   read_at: null,
@@ -53,6 +55,17 @@ describe("notificationVerb", () => {
     expect(notificationVerb({ kind: "role_changed", detail: { role: "host" } })).toBe("handed you Host of");
     expect(notificationVerb({ kind: "role_changed", detail: { role: "nonsense" } })).toBe("changed your role in");
   });
+
+  it("names the new Host", () => {
+    expect(notificationVerb({ kind: "host_changed", detail: { host_username: "juno" } })).toBe("made juno Host of");
+    expect(notificationVerb({ kind: "host_changed", detail: {} })).toBe("changed the Host of");
+  });
+
+  it("covers reopening and friend requests", () => {
+    expect(notificationVerb({ kind: "story_reopened", detail: {} })).toBe("reopened");
+    expect(notificationVerb({ kind: "friend_request", detail: {} })).toBe("sent you a friend request");
+    expect(notificationVerb({ kind: "friend_accepted", detail: {} })).toBe("accepted your friend request");
+  });
 });
 
 describe("notificationActor", () => {
@@ -69,6 +82,15 @@ describe("notificationHref", () => {
       "/stories/s1/chapters/c9"
     );
     expect(notificationHref({ ...base, kind: "story_finished" })).toBe("/stories/s1/read");
+    expect(notificationHref({ ...base, kind: "story_reopened" })).toBe("/stories/s1");
+    expect(notificationHref({ ...base, kind: "host_changed" })).toBe("/stories/s1");
+  });
+
+  it("links an accepted friend request to their profile, and a pending one nowhere", () => {
+    const friend = { ...base, story_id: null, story_title: null, friend_requester: "u2", friend_addressee: "u1" };
+    expect(notificationHref({ ...friend, kind: "friend_accepted" })).toBe("/u/theo");
+    expect(notificationHref({ ...friend, kind: "friend_accepted", actor: null })).toBeNull();
+    expect(notificationHref({ ...friend, kind: "friend_request" })).toBeNull();
   });
 
   it("opens the Chapter with the Note active", () => {

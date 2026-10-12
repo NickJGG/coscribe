@@ -289,14 +289,14 @@ isOneToOne: false
                   ]
                 },"notifications": {
                   Row: {
-                    "actor_id": string | null,"created_at": string,"detail": NonNullable<Json>,"id": string,"invite_id": string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id": string | null,"read_at": string | null,"recipient_id": string,"story_id": string | null,"story_title": string
+                    "actor_id": string | null,"created_at": string,"detail": NonNullable<Json>,"friend_addressee": string | null,"friend_requester": string | null,"id": string,"invite_id": string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id": string | null,"read_at": string | null,"recipient_id": string,"story_id": string | null,"story_title": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id": string,"story_id"?: string | null,"story_title": string
+                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"friend_addressee"?: string | null,"friend_requester"?: string | null,"id"?: string,"invite_id"?: string | null,"kind": Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id": string,"story_id"?: string | null,"story_title"?: string | null
                   }
                   Update: {
-                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"id"?: string,"invite_id"?: string | null,"kind"?: Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id"?: string,"story_id"?: string | null,"story_title"?: string
+                    "actor_id"?: string | null,"created_at"?: string,"detail"?: NonNullable<Json>,"friend_addressee"?: string | null,"friend_requester"?: string | null,"id"?: string,"invite_id"?: string | null,"kind"?: Database["public"]['Enums']["notification_kind"],"note_id"?: string | null,"read_at"?: string | null,"recipient_id"?: string,"story_id"?: string | null,"story_title"?: string | null
                   }
                   Relationships: [
                     {
@@ -305,6 +305,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notifications_friend_requester_friend_addressee_fkey"
+      columns: ["friend_requester","friend_addressee"]
+isOneToOne: false
+      referencedRelation: "friendships"
+      referencedColumns: ["requester_id","addressee_id"]
     },{
       foreignKeyName: "notifications_invite_id_fkey"
       columns: ["invite_id"]
@@ -483,7 +489,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "accept_invite":
+            "accept_friend_request":
+{ Args: { "p_user": string }; Returns: undefined
+                           },
+"accept_invite":
 { Args: { "p_invite": string }; Returns: string
                            },
 "accept_invite_link":
@@ -590,16 +599,25 @@ isOneToOne: false
 "notify":
 { Args: { "p_detail"?: Json,"p_invite"?: string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_note"?: string,"p_recipients": (string)[],"p_story": string }; Returns: undefined
                            },
+"notify_friend":
+{ Args: { "p_addressee": string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_recipient": string,"p_requester": string }; Returns: undefined
+                           },
 "public_stories":
 { Args: Record<PropertyKey, never>; Returns: {
               "blurb": string,"edited_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"viewers": number,"writers": number
             }[]
+                           },
+"remove_friendship":
+{ Args: { "p_user": string }; Returns: undefined
                            },
 "remove_member":
 { Args: { "p_story": string,"p_user": string }; Returns: undefined
                            },
 "reply_note":
 { Args: { "p_body": string,"p_note": string }; Returns: string
+                           },
+"send_friend_request":
+{ Args: { "p_user": string }; Returns: undefined
                            },
 "set_member_role":
 { Args: { "p_role": Database["public"]['Enums']["member_role"],"p_story": string,"p_user": string }; Returns: undefined
@@ -647,7 +665,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "viewer"|"writer"|"cohost"|"host","notification_kind": "invite_received"|"writer_joined"|"chapter_added"|"story_finished"|"story_deleted"|"removed"|"role_changed"|"note_reply"|"note_resolved"|"note_mention"|"chat_mention","story_status": "active"|"finished","story_visibility": "public"|"private","theme": "light"|"dark"|"system"
+            "entry_type": "character"|"place"|"item"|"lore","friendship_status": "pending"|"accepted","member_role": "viewer"|"writer"|"cohost"|"host","notification_kind": "invite_received"|"writer_joined"|"chapter_added"|"story_finished"|"story_deleted"|"removed"|"role_changed"|"note_reply"|"note_resolved"|"note_mention"|"chat_mention"|"friend_request"|"friend_accepted"|"host_changed"|"story_reopened","story_status": "active"|"finished","story_visibility": "public"|"private","theme": "light"|"dark"|"system"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -767,7 +785,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["viewer", "writer", "cohost", "host"],"notification_kind": ["invite_received", "writer_joined", "chapter_added", "story_finished", "story_deleted", "removed", "role_changed", "note_reply", "note_resolved", "note_mention", "chat_mention"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"],"theme": ["light", "dark", "system"]
+            "entry_type": ["character", "place", "item", "lore"],"friendship_status": ["pending", "accepted"],"member_role": ["viewer", "writer", "cohost", "host"],"notification_kind": ["invite_received", "writer_joined", "chapter_added", "story_finished", "story_deleted", "removed", "role_changed", "note_reply", "note_resolved", "note_mention", "chat_mention", "friend_request", "friend_accepted", "host_changed", "story_reopened"],"story_status": ["active", "finished"],"story_visibility": ["public", "private"],"theme": ["light", "dark", "system"]
           }
         }
 } as const

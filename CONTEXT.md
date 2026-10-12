@@ -68,6 +68,10 @@ _Avoid_: Spectator, reader, guest
 Another **User** with a mutually accepted friend connection.
 _Avoid_: Contact, follower
 
+**Friend Request**:
+A pending friend connection one **User** sent another, waiting for them to accept or decline.
+_Avoid_: Friend invite, connection request
+
 **Bio**:
 One line a **User** writes about themselves, shown under their name on their profile.
 _Avoid_: About, tagline, description

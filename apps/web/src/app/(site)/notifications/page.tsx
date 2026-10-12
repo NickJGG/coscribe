@@ -38,7 +38,7 @@ export default async function NotificationsPage(props: PageProps<"/notifications
           ))}
         </div>
       ) : (
-        <p className="muted">{page > 1 ? "Nothing further back." : "Nothing yet. Invites and news from your Stories land here."}</p>
+        <p className="muted">{page > 1 ? "Nothing further back." : "Nothing yet. Invites, friend requests and news from your Stories land here."}</p>
       )}
 
       {(page > 1 || hasNext) && (

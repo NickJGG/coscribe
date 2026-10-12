@@ -48,7 +48,13 @@ a.item:hover {
   text-decoration: none;
 }
 
-a.story:hover {
+.person {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.story:hover,
+a.person:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }

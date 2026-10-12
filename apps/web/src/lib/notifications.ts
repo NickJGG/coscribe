@@ -17,9 +17,11 @@ export type Notification = {
   id: string;
   kind: NotificationKind;
   story_id: string | null;
-  story_title: string;
+  story_title: string | null;
   invite_id: string | null;
   note_id: string | null;
+  friend_requester: string | null;
+  friend_addressee: string | null;
   detail: Json;
   created_at: string;
   read_at: string | null;
@@ -27,7 +29,7 @@ export type Notification = {
 };
 
 export const NOTIFICATION_COLUMNS =
-  "id, kind, story_id, story_title, invite_id, note_id, detail, created_at, read_at, actor:profiles!notifications_actor_id_fkey (id, username, author_color)";
+  "id, kind, story_id, story_title, invite_id, note_id, friend_requester, friend_addressee, detail, created_at, read_at, actor:profiles!notifications_actor_id_fkey (id, username, author_color)";
 
 /** How many the Notifications dropdown shows, and how many each "See all" page shows. */
 export const LATEST_SHOWN = 8;
@@ -64,7 +66,10 @@ export function notificationActor(n: Pick<Notification, "actor">): string {
   return n.actor?.username ?? "Someone";
 }
 
-/** The words between the actor and the Story title: "theo <added “The Tide” to> Gull Point". */
+/**
+ * The words between the actor and the Story title: "theo <added “The Tide” to> Gull Point". Friend
+ * notifications have no Story, so their verb is the whole sentence.
+ */
 export function notificationVerb(n: Pick<Notification, "kind" | "detail">): string {
   switch (n.kind) {
     case "invite_received":
@@ -77,6 +82,16 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
     }
     case "story_finished":
       return "finished";
+    case "story_reopened":
+      return "reopened";
+    case "host_changed": {
+      const host = detailText(n.detail, "host_username");
+      return host ? `made ${host} Host of` : "changed the Host of";
+    }
+    case "friend_request":
+      return "sent you a friend request";
+    case "friend_accepted":
+      return "accepted your friend request";
     case "story_deleted":
       return "deleted";
     case "removed":
@@ -103,8 +118,15 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
   }
 }
 
-/** Where clicking it goes, or null when there's nowhere left to go (Story deleted, or you were removed). */
-export function notificationHref(n: Pick<Notification, "kind" | "story_id" | "note_id" | "detail">): string | null {
+/**
+ * Where clicking it goes, or null when there's nowhere left to go (Story deleted, you were removed, or the
+ * actor's account is gone). A friend request has none: like an Invite, it carries buttons.
+ */
+export function notificationHref(
+  n: Pick<Notification, "kind" | "story_id" | "note_id" | "detail" | "actor">
+): string | null {
+  if (n.kind === "friend_request") return null;
+  if (n.kind === "friend_accepted") return n.actor ? `/u/${n.actor.username}` : null;
   if (!n.story_id || n.kind === "story_deleted" || n.kind === "removed") return null;
   const story = `/stories/${n.story_id}`;
   if (n.kind === "note_reply" || n.kind === "note_mention" || n.kind === "note_resolved") {
