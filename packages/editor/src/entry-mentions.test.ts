@@ -117,6 +117,12 @@ describe("blockTexts", () => {
     const doc = { type: "doc", content: [p("Wren wrote:"), { type: "blockquote", content: [p("Dear Aldous,"), p("Come home.")] }] }
     expect(blockTexts(doc)).toEqual(["Wren wrote:", "Dear Aldous,", "Come home."])
   })
+
+  it("reaches into Scripts, one text per line", () => {
+    const line = (element: string, text: string) => ({ type: "scriptElement", attrs: { element }, content: [{ type: "text", text }] })
+    const doc = { type: "doc", content: [{ type: "script", content: [line("character", "WREN"), line("dialogue", "Aldous?")] }] }
+    expect(blockTexts(doc)).toEqual(["WREN", "Aldous?"])
+  })
 })
 
 describe("entryNameAt", () => {

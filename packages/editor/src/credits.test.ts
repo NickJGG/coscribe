@@ -25,6 +25,22 @@ describe("countAuthorCharacters", () => {
     expect(Object.fromEntries(countAuthorCharacters(doc))).toEqual({ mia: 14, jordan: 4 })
   })
 
+  it("counts Script lines", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "script",
+          content: [
+            { type: "scriptElement", attrs: { element: "character" }, content: [{ type: "text", text: "MIA", marks: by("mia") }] },
+            { type: "scriptElement", attrs: { element: "dialogue" }, content: [{ type: "text", text: "Hi.", marks: by("jordan") }] },
+          ],
+        },
+      ],
+    }
+    expect(Object.fromEntries(countAuthorCharacters(doc))).toEqual({ mia: 3, jordan: 3 })
+  })
+
   it("adds into an existing tally and skips unmarked text", () => {
     const tally = new Map([["mia", 5]])
     countAuthorCharacters({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "anon" }] }] }, tally)

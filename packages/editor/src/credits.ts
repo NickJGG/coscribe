@@ -2,6 +2,7 @@
 export type ContentJSON = {
   type?: string
   text?: string
+  attrs?: Record<string, unknown> | null
   marks?: { type: string; attrs?: Record<string, unknown> | null }[]
   content?: ContentJSON[]
 }

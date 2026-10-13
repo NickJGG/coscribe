@@ -11,8 +11,17 @@ import { Author } from "./author"
 import { Align, ChapterBlockquote, EntryBlockquote } from "./format"
 import { Note, NotePaste } from "./note"
 import { SceneBreak } from "./scene-break"
+import { Script, ScriptElement } from "./script"
 
 export { SceneBreak }
+export {
+  Script,
+  ScriptElement,
+  SCRIPT_ELEMENT_LABELS,
+  SCRIPT_ELEMENTS,
+  scriptCues,
+  type ScriptElementType,
+} from "./script"
 export { type Alignment } from "./format"
 export { countAuthorCharacters, type ContentJSON } from "./credits"
 export {
@@ -57,8 +66,8 @@ export {
 } from "./outline"
 
 /**
- * Paragraphs (left, centered or right-aligned), block quotes of paragraphs, Scene Breaks, and bold, italic and
- * strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
+ * Paragraphs (left, centered or right-aligned), block quotes of paragraphs, Scene Breaks, Scripts of Script
+ * Elements (a `scriptElement` with its kind in `element`), and bold, italic and strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
  * and apps/sync must share this schema: y-tiptap drops text carrying a mark it doesn't know.
  */
 export const chapterExtensions = [
@@ -70,6 +79,8 @@ export const chapterExtensions = [
   Strike,
   SceneBreak,
   ChapterBlockquote,
+  Script,
+  ScriptElement,
   Align,
   Author,
   Note,
@@ -81,14 +92,16 @@ export const chapterExtensions = [
  * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
  * `chapterExtensions`, `entryExtensions` or `outlineExtensions` gains or loses a node, mark or attribute.
  */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)
 
-/** A Chapter's formatting plus bulleted and numbered lists, which block quotes can hold too. */
+/** A Chapter's formatting, less Scripts, plus bulleted and numbered lists, which block quotes can hold too. */
 export const entryExtensions = [
-  ...chapterExtensions.filter((extension) => extension !== ChapterBlockquote),
+  ...chapterExtensions.filter(
+    (extension) => extension !== ChapterBlockquote && extension !== Script && extension !== ScriptElement
+  ),
   EntryBlockquote,
   BulletList,
   OrderedList,

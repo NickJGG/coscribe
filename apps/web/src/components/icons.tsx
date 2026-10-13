@@ -82,6 +82,16 @@ export function BlockQuoteIcon() {
   );
 }
 
+/** A page with a screenplay's indented lines: a cue, then dialogue. */
+export function ScriptIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path d="M5 2.75h10v14.5H5Z" />
+      <path d="M8 6.5h4M7.5 9.5h5M7.5 12h5M7.5 14.5h3" />
+    </svg>
+  );
+}
+
 /** The short lines' starts, for left, centered and right-aligned text. */
 const ALIGN_INDENT = { left: 3, center: 5.5, right: 8 };
 

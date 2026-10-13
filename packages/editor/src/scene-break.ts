@@ -1,4 +1,4 @@
-import { canInsertNode, isNodeSelection, mergeAttributes, Node, nodeInputRule } from "@tiptap/core"
+import { canInsertNode, InputRule, isNodeSelection, mergeAttributes, Node, nodeInputRule } from "@tiptap/core"
 import { NodeSelection, TextSelection } from "@tiptap/pm/state"
 
 declare module "@tiptap/core" {
@@ -64,6 +64,14 @@ export const SceneBreak = Node.create({
   },
 
   addInputRules() {
-    return [nodeInputRule({ find: /^(?:\*\*\*|---)\s$/, type: this.type })]
+    const rule = nodeInputRule({ find: /^(?:\*\*\*|---)\s$/, type: this.type })
+    return [
+      new InputRule({
+        find: rule.find,
+        // Not in a Script line, which would split the Script around the break.
+        handler: (props) =>
+          props.state.doc.resolve(props.range.from).parent.type.name === "scriptElement" ? null : rule.handler(props),
+      }),
+    ]
   },
 })

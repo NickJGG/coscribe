@@ -46,9 +46,13 @@ _Avoid_: Home, story page, dashboard
 The centered `* * *` divider between scenes inside a **Chapter**.
 _Avoid_: Separator, horizontal rule
 
-**Dialogue**:
-Speech in a **Chapter**, recognised by its double quotation marks rather than marked by hand.
-_Avoid_: Speech, quotes, quoted text
+**Script**:
+A passage of a **Chapter** written in screenplay form, made of **Script Elements**. A **Chapter** can be all prose, all **Script**, or both.
+_Avoid_: Screenplay, script block, scene
+
+**Script Element**:
+One line of a **Script**: a Scene Heading, Action, Character, Parenthetical, Dialogue or Transition. The Character element (the "character cue") names who speaks next.
+_Avoid_: Line type, block type, format
 
 ### People and roles
 
@@ -175,6 +179,7 @@ _Avoid_: Alert, activity, update
 - A **Story** has one or more ordered **Chapters** and exactly one **Story Bible**
 - A **Story Bible** has zero or more **Entries**
 - A **Chapter** has zero or more **Snapshots**
+- A **Chapter** has zero or more **Scripts**; a **Script** has one or more **Script Elements**
 - A **Chapter** has exactly one **Outline**, which may be empty; only **Writers** and above see it
 - An **Invite** makes exactly one **User** a **Writer** or **Viewer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
@@ -198,4 +203,5 @@ _Avoid_: Alert, activity, update
 - "watching" could suggest a named audience. Resolved: **Viewers** are anonymous counts everywhere; only **Writers** have **Presence**.
 - "categories" in the **Story Bible** meant its **Entry Type** groups. Resolved: the four types are fixed; a **Story** orders them but can't add or rename them.
 - "pinned" once described where a **Note** sits. Resolved: a **Note** is anchored to a passage; "pin" belongs to the **Pinned Entry**.
+- "Character" is both an **Entry Type** and a **Script Element**. Resolved: a Character **Entry** is a **Story Bible** card; a Character **Script Element** is a cue naming a speaker, which may or may not match one.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.

@@ -87,6 +87,31 @@ describe("chapter content", () => {
     expect(decodeChapter(Y.encodeStateAsUpdate(doc)).toJSON()).toEqual(body)
   })
 
+  it("round-trips a Script, and hashes a change of element alone as a change", () => {
+    const author = { type: "author", attrs: mia }
+    const body = (element: string) => ({
+      type: "doc",
+      content: [
+        {
+          type: "script",
+          content: [
+            { type: "scriptElement", attrs: { element: "sceneHeading" }, content: [{ type: "text", text: "INT. HALL", marks: [author] }] },
+            { type: "scriptElement", attrs: { element }, content: [{ type: "text", text: "MIA", marks: [{ type: "italic" }, author] }] },
+          ],
+        },
+        { type: "paragraph", attrs: { textAlign: null }, content: [{ type: "text", text: "After.", marks: [author] }] },
+      ],
+    })
+    const decode = (element: string) => {
+      const doc = new Y.Doc()
+      prosemirrorJSONToYXmlFragment(chapterSchema, body(element), doc.getXmlFragment(DOCUMENT_FIELD))
+      return decodeChapter(Y.encodeStateAsUpdate(doc))
+    }
+    expect(decode("character").toJSON()).toEqual(body("character"))
+    expect(chapterStats(decode("character"))).toEqual({ words: 4, authorChars: { mia: 18 } })
+    expect(contentHash(decode("action"))).not.toBe(contentHash(decode("character")))
+  })
+
   it("hashes a change of alignment alone as a change", () => {
     const paragraph = (textAlign: string | null) => ({
       type: "paragraph",

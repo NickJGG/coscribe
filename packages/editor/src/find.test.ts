@@ -82,6 +82,14 @@ describe("blockTexts and the editor agree", () => {
           { type: "paragraph" },
           { type: "sceneBreak" },
           p(text("Then the "), text("tide", [{ type: "note", attrs: { id: "n" } }]), text(" went out.")),
+          {
+            type: "script",
+            content: [
+              { type: "scriptElement", attrs: { element: "character" }, content: [text("TIDE")] },
+              { type: "scriptElement", attrs: { element: "dialogue" } },
+              { type: "scriptElement", attrs: { element: "dialogue" }, content: [text("The "), text("tide", [{ type: "bold" }])] },
+            ],
+          },
         ],
       },
     ],

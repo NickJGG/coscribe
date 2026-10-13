@@ -5,8 +5,16 @@ import { chapterExtensions, countWords, documentName, entryExtensions, parseDocu
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
 
-  it("allows only paragraphs, block quotes, Scene Breaks, bold, italic, strikethrough, authorship, and Notes", () => {
-    expect(Object.keys(schema.nodes).sort()).toEqual(["blockquote", "doc", "paragraph", "sceneBreak", "text"])
+  it("allows only paragraphs, block quotes, Scene Breaks, Scripts, bold, italic, strikethrough, authorship, and Notes", () => {
+    expect(Object.keys(schema.nodes).sort()).toEqual([
+      "blockquote",
+      "doc",
+      "paragraph",
+      "sceneBreak",
+      "script",
+      "scriptElement",
+      "text",
+    ])
     expect(Object.keys(schema.marks).sort()).toEqual(["author", "bold", "italic", "note", "strike"])
     expect(Object.keys(schema.nodes.paragraph!.spec.attrs ?? {})).toEqual(["textAlign"])
   })
@@ -15,6 +23,25 @@ describe("chapter schema", () => {
     expect(() =>
       schema.nodeFromJSON({ type: "doc", content: [{ type: "blockquote", content: [{ type: "sceneBreak" }] }] }).check()
     ).toThrow()
+  })
+
+  it("accepts a Script of marked lines between paragraphs", () => {
+    const doc = schema.nodeFromJSON({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Before" }] },
+        {
+          type: "script",
+          content: [
+            { type: "scriptElement", attrs: { element: "character" }, content: [{ type: "text", text: "MIA" }] },
+            { type: "scriptElement", attrs: { element: "dialogue" }, content: [{ type: "text", text: "Hi.", marks: [{ type: "bold" }] }] },
+          ],
+        },
+        { type: "paragraph", content: [{ type: "text", text: "After" }] },
+      ],
+    })
+    expect(() => doc.check()).not.toThrow()
+    expect(countWords(doc)).toBe(4)
   })
 
   it("accepts a Chapter with a Scene Break between paragraphs", () => {

@@ -23,7 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers";
 import { CSS } from "@dnd-kit/utilities";
-import type { Alignment } from "@coscribe/editor";
+import { SCRIPT_ELEMENT_LABELS, SCRIPT_ELEMENTS, type Alignment, type ScriptElementType } from "@coscribe/editor";
 import { setToolbarLayout } from "@/lib/actions/profile";
 import {
   DEFAULT_TOOLBAR_LAYOUT,
@@ -40,6 +40,7 @@ import {
   GripIcon,
   NumberedListIcon,
   SceneBreakIcon,
+  ScriptIcon,
 } from "./icons";
 import { canAddNote } from "./notes/NoteHighlights";
 import styles from "./LiveDocument.module.css";
@@ -53,6 +54,9 @@ type Active = {
   bulletList: boolean;
   orderedList: boolean;
   note: boolean;
+  script: boolean;
+  canScript: boolean;
+  scriptElement: ScriptElementType | null;
 };
 
 type Tool = {
@@ -99,6 +103,13 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
     pressed: (a) => a.blockquote,
     run: (editor) => editor.chain().focus().toggleBlockquote().run(),
   },
+  script: {
+    label: "Script",
+    keys: "Type INT. or EXT. and a space",
+    icon: () => <ScriptIcon />,
+    pressed: (a) => a.script,
+    run: (editor) => editor.chain().focus().toggleScript().run(),
+  },
   bulletList: {
     label: "Bulleted list",
     keys: "Type - and a space",
@@ -129,6 +140,14 @@ const GROUP_LABELS: Record<GroupId, string> = {
   note: "Notes",
 };
 
+/** Tools that don't apply inside a Script. */
+const NOT_IN_SCRIPT = new Set<ToolId>(["sceneBreak", "blockquote", "align"]);
+
+function toolDisabled(tool: ToolId, active: Active): boolean {
+  if (active.script && NOT_IN_SCRIPT.has(tool)) return true;
+  return (tool === "addNote" && !active.note) || (tool === "script" && !active.canScript);
+}
+
 const labelOf = (tool: ToolId) => (tool === "align" ? "Alignment" : TOOLS[tool].label);
 
 const ALIGNMENTS = [
@@ -139,6 +158,21 @@ const ALIGNMENTS = [
 
 const keepEditorFocus = (e: React.MouseEvent) => e.preventDefault();
 
+/** How to reach each Script Element from the keyboard. */
+const ELEMENT_KEYS: Record<ScriptElementType, string> = {
+  sceneHeading: "Type INT. or EXT. and a space · Enter after a Transition",
+  action: "Enter after a Scene Heading or Dialogue",
+  character: "Tab on an Action line",
+  parenthetical: "Tab on a Character or Dialogue line",
+  dialogue: "Enter after a Character",
+  transition: "Tab on an empty Character line",
+};
+
+function scriptElementOf(editor: Editor): ScriptElementType | null {
+  const { parent } = editor.state.selection.$from;
+  return parent.type.name === "scriptElement" ? parent.attrs.element : null;
+}
+
 function alignmentOf(editor: Editor): Alignment {
   if (editor.isActive({ textAlign: "center" })) return "center";
   return editor.isActive({ textAlign: "right" }) ? "right" : "left";
@@ -148,12 +182,14 @@ function alignmentOf(editor: Editor): Alignment {
  * The desk's Formatting toolbar, in the signed-in account's order. `customizing` is started from the View options
  * menu: it reorders groups by their grips and tools within their group, and the order is saved once, on Done.
  * Cancel, Escape or unmounting drops the draft. Either way it ends with `onFinish`.
- * Lists show only on an Entry, and Add Note only with `onAddNote`.
+ * Lists show only on an Entry, the Script tool only on a Chapter, and Add Note only with `onAddNote`. While the
+ * caret is in a Script, its element picker heads the toolbar.
  */
 export function FormattingToolbar({
   editor,
   layout,
   lists,
+  scripts,
   onAddNote,
   customizing,
   onFinish,
@@ -161,6 +197,7 @@ export function FormattingToolbar({
   editor: Editor;
   layout: ToolbarLayout;
   lists: boolean;
+  scripts: boolean;
   onAddNote?: () => void;
   customizing: boolean;
   onFinish: () => void;
@@ -176,6 +213,9 @@ export function FormattingToolbar({
       bulletList: editor.isActive("bulletList"),
       orderedList: editor.isActive("orderedList"),
       note: canAddNote(editor),
+      script: editor.isActive("script"),
+      canScript: scripts && editor.can().toggleScript(),
+      scriptElement: scriptElementOf(editor),
     }),
   });
   const [saved, setSaved] = useOptimistic(layout);
@@ -185,7 +225,9 @@ export function FormattingToolbar({
   const [, startTransition] = useTransition();
   const toolbarRef = useRef<HTMLDivElement>(null);
   const layoutShown = customizing ? (draft ?? saved) : saved;
-  const shown = layoutShown.filter(([group]) => (group !== "lists" || lists) && (group !== "note" || onAddNote));
+  const shown = layoutShown
+    .filter(([group]) => (group !== "lists" || lists) && (group !== "note" || onAddNote))
+    .map(([group, tools]): [GroupId, ToolId[]] => [group, tools.filter((tool) => tool !== "script" || scripts)]);
 
   useEffect(() => {
     if (customizing) toolbarRef.current?.querySelector<HTMLElement>("[data-grip]")?.focus();
@@ -216,25 +258,33 @@ export function FormattingToolbar({
       {customizing ? (
         <CustomizeGroups layout={layoutShown} shown={shown} active={active} onChange={setDraft} onDragging={setDragging} />
       ) : (
-        shown.map(([group, tools], i) => (
-          <Fragment key={group}>
-            {i > 0 && <span className={styles.toolSep} aria-hidden />}
-            {tools.map((tool) =>
-              tool === "align" ? (
-                <AlignTool key={tool} editor={editor} align={active.align} />
-              ) : (
-                <ToolButton
-                  key={tool}
-                  tool={TOOLS[tool]}
-                  active={active}
-                  disabled={tool === "addNote" && !active.note}
-                  onMouseDown={tool === "addNote" ? keepEditorFocus : undefined}
-                  onClick={() => TOOLS[tool].run(editor, onAddNote)}
-                />
-              )
-            )}
-          </Fragment>
-        ))
+        <>
+          {active.scriptElement && (
+            <>
+              <ElementTool editor={editor} element={active.scriptElement} />
+              <span className={styles.toolSep} aria-hidden />
+            </>
+          )}
+          {shown.map(([group, tools], i) => (
+            <Fragment key={group}>
+              {i > 0 && <span className={styles.toolSep} aria-hidden />}
+              {tools.map((tool) =>
+                tool === "align" ? (
+                  <AlignTool key={tool} editor={editor} align={active.align} disabled={toolDisabled(tool, active)} />
+                ) : (
+                  <ToolButton
+                    key={tool}
+                    tool={TOOLS[tool]}
+                    active={active}
+                    disabled={toolDisabled(tool, active)}
+                    onMouseDown={tool === "addNote" ? keepEditorFocus : undefined}
+                    onClick={() => TOOLS[tool].run(editor, onAddNote)}
+                  />
+                )
+              )}
+            </Fragment>
+          ))}
+        </>
       )}
       {customizing && (
         <>
@@ -439,15 +489,11 @@ function SortableTool({ tool, group, active }: { tool: ToolId; group: GroupId; a
   return <ToolButton tool={TOOLS[tool]} active={active} {...props} />;
 }
 
-/**
- * One button showing the paragraph's alignment, opening a row of the three. Clicks keep focus in the
- * editor; Escape, a click outside, or tabbing away closes it.
- */
-function AlignTool({ editor, align }: { editor: Editor; align: Alignment }) {
+/** A toolbar button's popover: Escape, a click outside, or tabbing away closes it. */
+function usePopover() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const rowId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -467,14 +513,24 @@ function AlignTool({ editor, align }: { editor: Editor; align: Alignment }) {
     };
   }, [open]);
 
+  const onBlur = (e: React.FocusEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && !e.currentTarget.contains(next)) setOpen(false);
+  };
+
+  return { open, setOpen, wrapRef, buttonRef, onBlur };
+}
+
+/** One button showing the paragraph's alignment, opening a row of the three. Clicks keep focus in the editor. */
+function AlignTool({ editor, align, disabled }: { editor: Editor; align: Alignment; disabled: boolean }) {
+  const { open, setOpen, wrapRef, buttonRef, onBlur } = usePopover();
+  const rowId = useId();
+
   return (
     <span
       ref={wrapRef}
       className={styles.alignTool}
-      onBlur={(e) => {
-        const next = e.relatedTarget as Node | null;
-        if (next && !e.currentTarget.contains(next)) setOpen(false);
-      }}
+      onBlur={onBlur}
     >
       <button
         ref={buttonRef}
@@ -485,6 +541,7 @@ function AlignTool({ editor, align }: { editor: Editor; align: Alignment }) {
         aria-expanded={open}
         aria-controls={rowId}
         data-tip="Alignment"
+        disabled={disabled}
         onMouseDown={keepEditorFocus}
         onClick={() => setOpen(!open)}
       >
@@ -507,6 +564,58 @@ function AlignTool({ editor, align }: { editor: Editor; align: Alignment }) {
             }}
           >
             <AlignIcon align={option.align} />
+          </button>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * The caret line's Script Element, opening a list of all six; picking one changes the selected lines. The way
+ * between elements where there's no Tab key, as on a phone.
+ */
+function ElementTool({ editor, element }: { editor: Editor; element: ScriptElementType }) {
+  const { open, setOpen, wrapRef, buttonRef, onBlur } = usePopover();
+  const listId = useId();
+
+  return (
+    <span
+      ref={wrapRef}
+      className={styles.alignTool}
+      onBlur={onBlur}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className={`${styles.tool} ${styles.elementTool}`}
+        aria-label={`Script Element: ${SCRIPT_ELEMENT_LABELS[element]}`}
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls={listId}
+        data-tip="Script Element"
+        onMouseDown={keepEditorFocus}
+        onClick={() => setOpen(!open)}
+      >
+        {SCRIPT_ELEMENT_LABELS[element]} <span aria-hidden>&#9662;</span>
+      </button>
+      <span id={listId} className={styles.elementList} role="group" aria-label="Script Element" hidden={!open}>
+        {SCRIPT_ELEMENTS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={styles.tool}
+            aria-pressed={element === option}
+            data-tip={SCRIPT_ELEMENT_LABELS[option]}
+            data-keys={ELEMENT_KEYS[option]}
+            data-side="right"
+            onMouseDown={keepEditorFocus}
+            onClick={() => {
+              editor.chain().focus().setScriptElement(option).run();
+              setOpen(false);
+            }}
+          >
+            {SCRIPT_ELEMENT_LABELS[option]}
           </button>
         ))}
       </span>

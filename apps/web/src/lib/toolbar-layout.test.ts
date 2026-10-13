@@ -11,7 +11,7 @@ describe("resolveToolbarLayout", () => {
       ["note", ["addNote"]],
       ["lists", ["orderedList", "bulletList"]],
       ["inline", ["strike", "bold", "italic"]],
-      ["block", ["align", "sceneBreak", "blockquote"]],
+      ["block", ["align", "script", "sceneBreak", "blockquote"]],
     ];
     expect(resolveToolbarLayout(custom)).toEqual(custom);
   });
@@ -23,10 +23,17 @@ describe("resolveToolbarLayout", () => {
         ["inline", ["italic", "bold", "strike"]],
       ])
     ).toEqual([
-      ["block", ["blockquote", "sceneBreak", "align"]],
+      ["block", ["blockquote", "sceneBreak", "script", "align"]],
       ["inline", ["italic", "bold", "strike"]],
       ["lists", ["bulletList", "orderedList"]],
       ["note", ["addNote"]],
+    ]);
+  });
+
+  it("adds the Script tool to a layout saved before it existed", () => {
+    expect(resolveToolbarLayout([["block", ["align", "sceneBreak", "blockquote"]]])[0]).toEqual([
+      "block",
+      ["align", "sceneBreak", "blockquote", "script"],
     ]);
   });
 

@@ -178,6 +178,7 @@ export function LiveDocument({
                 editor={editor}
                 layout={toolbarLayout}
                 lists={kind === "entry"}
+                scripts={kind === "chapter"}
                 onAddNote={notes?.startDraft}
                 customizing={customizing}
                 onFinish={() => {

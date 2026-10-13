@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Literata } from "next/font/google";
+import { Courier_Prime, Inter, Literata } from "next/font/google";
 import { getViewer } from "@/lib/viewer";
 import { createClient } from "@/lib/supabase/server";
 import { loadLatestNotifications } from "@/lib/notifications";
@@ -10,6 +10,12 @@ import "./globals.css";
 
 const ui = Inter({ subsets: ["latin"], variable: "--font-ui" });
 const prose = Literata({ subsets: ["latin"], style: ["normal", "italic"], variable: "--font-prose" });
+const script = Courier_Prime({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-script",
+});
 
 export const metadata: Metadata = {
   title: { default: "Coscribe", template: "%s · Coscribe" },
@@ -29,7 +35,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ui.variable} ${prose.variable}`}
+      className={`${ui.variable} ${prose.variable} ${script.variable}`}
       data-theme={theme && theme !== "system" ? theme : undefined}
     >
       <body>
