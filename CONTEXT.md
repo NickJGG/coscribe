@@ -127,6 +127,21 @@ _Avoid_: Book view, export
 **Credits**:
 The page in the **Reader View** listing each **Writer** and their contribution.
 
+**Export**:
+A downloadable copy of a **Story** as EPUB or Markdown, or printed to PDF; a **Draft Export** if the **Story** isn't **Finished**.
+_Avoid_: Backup, download (as a noun)
+
+**Draft Export**:
+An **Export** of a **Story** that isn't **Finished**, available only to **Writers** and above.
+_Avoid_: Working copy, backup
+
+**Import**:
+Creating **Story** content from a Markdown or text file, such as an **Export** or a manuscript written elsewhere.
+_Avoid_: Restore, upload
+
+**Imported Text**:
+Text brought in by an **Import** that nobody chose to be credited for, shown as its own line in **Credits** but never in the byline.
+
 **Story Chat**:
 The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
@@ -205,3 +220,4 @@ _Avoid_: Alert, activity, update
 - "pinned" once described where a **Note** sits. Resolved: a **Note** is anchored to a passage; "pin" belongs to the **Pinned Entry**.
 - "Character" is both an **Entry Type** and a **Script Element**. Resolved: a Character **Entry** is a **Story Bible** card; a Character **Script Element** is a cue naming a speaker, which may or may not match one.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.
+- "restoring a backup" for bringing an **Export** back in. Resolved: that is an **Import**; **Restore** only ever means returning a **Chapter** to a **Snapshot**.
