@@ -2,9 +2,9 @@ import type { JSONContent } from "@tiptap/core";
 
 /**
  * Renders stored Chapter or Entry JSON as plain markup, server-side, matching the editor's output
- * (`span[data-author]` runs, `hr[data-scene-break]`, `p` with `text-align`) so LiveDocument's prose and authorship styles apply.
- * `positions` numbers the top-level blocks with `data-block` (a block quote, not its paragraphs), for mapping
- * a selection back to the JSON.
+ * (`span[data-author]` runs, `hr[data-scene-break]`, `p` with `text-align`, `div[data-script]` of `p[data-element]`)
+ * so LiveDocument's prose, Script and authorship styles apply. `positions` numbers the top-level blocks with
+ * `data-block` (a block quote or Script, not its lines), for mapping a selection back to the JSON.
  */
 export function ProseView({ content, positions = false }: { content: JSONContent; positions?: boolean }) {
   return content.content?.map((node, i) => <Node key={i} node={node} block={positions ? i : undefined} />);
@@ -27,6 +27,18 @@ function Node({ node, block }: { node: JSONContent; block?: number }) {
         <blockquote data-block={block}>
           <Children nodes={node.content} />
         </blockquote>
+      );
+    case "script":
+      return (
+        <div data-script="" data-block={block}>
+          <Children nodes={node.content} />
+        </div>
+      );
+    case "scriptElement":
+      return (
+        <p data-element={node.attrs?.element ?? "action"}>
+          <Children nodes={node.content} />
+        </p>
       );
     case "sceneBreak":
       return <hr data-scene-break="" data-block={block} />;

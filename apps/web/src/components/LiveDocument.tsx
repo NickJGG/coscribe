@@ -28,6 +28,7 @@ import { NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlight
 import { NoteLayer } from "./notes/NoteMargin";
 import { NotesButton } from "./notes/NotesPanel";
 import { useNotes } from "./notes/NotesProvider";
+import scriptStyles from "./Script.module.css";
 import styles from "./LiveDocument.module.css";
 
 /** The signed-in Writer, shown to others as a named caret. Null for Viewers. */
@@ -312,7 +313,7 @@ function LiveEditor({
       Find.configure(find),
       TabKey,
     ],
-    editorProps: { attributes: { class: styles.prose, "aria-label": label } },
+    editorProps: { attributes: { class: `${styles.prose} ${scriptStyles.scripts}`, "aria-label": label } },
   });
 
   useEffect(() => {

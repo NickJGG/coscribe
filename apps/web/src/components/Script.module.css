@@ -1,0 +1,59 @@
+/*
+ * A Script, in screenplay form, inside any `.scripts` container: the Desk, Reader View, Featured Passages and
+ * Snapshot compare. Indents are the standard page's, as shares of the measure: cue 37%, dialogue 17% / 25%,
+ * parenthetical 27% / 30%. Caps are CSS only; the text stays as typed.
+ */
+.scripts :global(div[data-script]) {
+  font-family: var(--font-script), "Courier New", monospace;
+  /* Reader View's text size, 1rem elsewhere. */
+  font-size: calc(1rem * var(--reader-scale, 1));
+  font-variant-numeric: normal;
+  line-height: 1.5;
+  hanging-punctuation: none;
+}
+
+.scripts :global(div[data-script]) > p {
+  text-indent: 0;
+}
+
+.scripts :global(div[data-script]) > p + p {
+  margin-top: 1.5em;
+}
+
+.scripts :global(div[data-script]) > p:is([data-element="dialogue"], [data-element="parenthetical"]) {
+  margin-top: 0;
+}
+
+.scripts :global(div[data-script]) > p:is([data-element="sceneHeading"], [data-element="character"], [data-element="transition"]) {
+  text-transform: uppercase;
+}
+
+.scripts :global(div[data-script]) > p[data-element="character"] {
+  padding-left: 37%;
+}
+
+.scripts :global(div[data-script]) > p[data-element="dialogue"] {
+  padding: 0 25% 0 17%;
+}
+
+.scripts :global(div[data-script]) > p[data-element="parenthetical"] {
+  padding: 0 30% 0 27%;
+}
+
+.scripts :global(div[data-script]) > p[data-element="transition"] {
+  text-align: right;
+}
+
+@media (max-width: 700px) {
+  .scripts :global(div[data-script]) > p[data-element="character"] {
+    padding-left: 24%;
+  }
+
+  .scripts :global(div[data-script]) > p[data-element="dialogue"] {
+    padding: 0 8% 0 10%;
+  }
+
+  .scripts :global(div[data-script]) > p[data-element="parenthetical"] {
+    padding: 0 12% 0 16%;
+  }
+}

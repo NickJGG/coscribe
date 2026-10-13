@@ -24,6 +24,7 @@ import { usePhone, useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
 import { usePanelOpen, useStoryPanel } from "./StoryPanel";
 import { Switch } from "./Switch";
 import liveStyles from "./LiveDocument.module.css";
+import scriptStyles from "./Script.module.css";
 import styles from "./SnapshotCompare.module.css";
 
 type Side = { kind: "current" } | { kind: "snapshot"; snapshot: Snapshot };
@@ -346,7 +347,7 @@ function Comparison({
                   </div>
                 ))}
               </div>
-              <div className={`${liveStyles.prose} ${styles.body} ${styles.inline}`} data-compare="">
+              <div className={`${liveStyles.prose} ${scriptStyles.scripts} ${styles.body} ${styles.inline}`} data-compare="">
                 {same ? (
                   <NoDifferences />
                 ) : (
@@ -367,7 +368,7 @@ function Comparison({
               </div>
             </>
           ) : (
-            <div className={`${liveStyles.prose} ${styles.body} ${styles.grid}`} data-compare="">
+            <div className={`${liveStyles.prose} ${scriptStyles.scripts} ${styles.body} ${styles.grid}`} data-compare="">
               {sides.map((side, column) => (
                 <Column
                   key={column}
@@ -507,6 +508,15 @@ function Segments({ segments }: { segments: DiffSegment[] }) {
 
 function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSegment[] }) {
   if (block.type === "sceneBreak") return <hr data-scene-break="" />;
+  if (block.element) {
+    return (
+      <div data-script="">
+        <p data-element={block.element}>
+          <Segments segments={segments ?? block.segments} />
+        </p>
+      </div>
+    );
+  }
   return (
     <p className={block.quoted ? styles.quoted : undefined} style={block.align && { textAlign: block.align }}>
       <Segments segments={segments ?? block.segments} />
@@ -790,7 +800,7 @@ function selectedRange(doc: PMNode, column: HTMLElement): [number, number] | nul
 
 /**
  * A DOM point inside one of the column's cells, as a position in its doc: the cell's block (the n-th paragraph
- * or Scene Break, at any depth, as DiffBlocks count them), plus the text before it.
+ * Script line or Scene Break, at any depth, as DiffBlocks count them), plus the text before it.
  */
 function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, offset: number): number | null {
   const cell = (node instanceof Element ? node : node.parentElement)?.closest<HTMLElement>("[data-block]");

@@ -21,6 +21,13 @@ function aligned(textAlign: string, paragraph: JSONContent): JSONContent {
   return { ...paragraph, attrs: { textAlign } }
 }
 
+function script(...lines: [string, string][]): JSONContent {
+  return {
+    type: "script",
+    content: lines.map(([element, text]) => ({ type: "scriptElement", attrs: { element }, content: [{ type: "text", text }] })),
+  }
+}
+
 function doc(...blocks: JSONContent[]): JSONContent {
   return { type: "doc", content: blocks }
 }
@@ -173,6 +180,38 @@ describe("diffChapters", () => {
     expect(diff.left[0]).toMatchObject({ align: "right" })
     expect(diff.left[0]!.quoted).toBeUndefined()
     expect(diff.right[0]).toMatchObject({ align: "center", quoted: true })
+  })
+
+  it("flattens a Script into rows of its lines, each with its element", () => {
+    const chapter = doc(p("Before."), script(["sceneHeading", "INT. LIGHTHOUSE"], ["character", "Ann"], ["dialogue", "Hello."]), hr)
+    const diff = diffChapters(chapter, chapter)
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same", "same", "same"])
+    expect(diff.right.map((block) => [show(block), block.element])).toEqual([
+      ["Before.", undefined],
+      ["INT. LIGHTHOUSE", "sceneHeading"],
+      ["Ann", "character"],
+      ["Hello.", "dialogue"],
+      ["", undefined],
+    ])
+  })
+
+  it("doesn't count a Script element change alone as a difference, but shows each side's element", () => {
+    const diff = diffChapters(
+      doc(p("The door opens."), script(["action", "Ann"])),
+      doc(script(["action", "The door opens."], ["character", "Ann"]))
+    )
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same"])
+    expect(diff.additions + diff.removals).toBe(0)
+    expect(diff.left.map((block) => block.element)).toEqual([undefined, "action"])
+    expect(diff.right.map((block) => block.element)).toEqual(["action", "character"])
+  })
+
+  it("diffs text inside a Script line, keeping its element", () => {
+    const diff = diffChapters(doc(script(["dialogue", "Come home now."])), doc(script(["parenthetical", "(Come home soon.)"])))
+    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0 }])
+    expect(diff.left[0]).toMatchObject({ element: "dialogue" })
+    expect(diff.right[0]).toMatchObject({ element: "parenthetical" })
+    expect(show(diff.right[0]!)).toContain("{+")
   })
 
   it("handles empty Chapters", () => {

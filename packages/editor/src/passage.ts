@@ -3,7 +3,7 @@ import { countAuthorCharacters } from "./credits"
 
 /**
  * A place in a Chapter: a top-level block's index, and a UTF-16 offset into that block's text. A block
- * quote's text is its paragraphs' run together.
+ * quote's text is its paragraphs' run together, and a Script's its lines'.
  */
 export type TextPoint = { block: number; offset: number }
 
@@ -12,7 +12,7 @@ export const FEATURE_MAX_CHARS = 500
 /**
  * The top-level blocks of `doc` between two points (in either order), cut to the points. Text keeps its
  * marks (including `author`) and paragraphs stay separate. Blocks left with no text at either end are dropped,
- * and so are a block quote's paragraphs outside the points.
+ * and so are a block quote's paragraphs or a Script's lines outside the points.
  */
 export function sliceChapter(doc: JSONContent, a: TextPoint, b: TextPoint): JSONContent {
   const [from, to] = before(a, b) ? [a, b] : [b, a]

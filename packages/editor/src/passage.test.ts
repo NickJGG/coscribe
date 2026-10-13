@@ -9,6 +9,8 @@ const text = (text: string, userId: string, ...marks: { type: string }[]) => ({
 const paragraph = (...runs: ReturnType<typeof text>[]) => ({ type: "paragraph", content: runs })
 const doc = (...content: object[]) => ({ type: "doc", content })
 const quote = (...paragraphs: object[]) => ({ type: "blockquote", content: paragraphs })
+const line = (element: string, ...runs: ReturnType<typeof text>[]) => ({ type: "scriptElement", attrs: { element }, content: runs })
+const script = (...lines: object[]) => ({ type: "script", content: lines })
 
 const chapter = doc(
   paragraph(text("Once upon ", "mia"), text("a time", "jordan", { type: "italic" })),
@@ -44,6 +46,16 @@ describe("sliceChapter", () => {
     )
     expect(sliceChapter(letter, { block: 0, offset: 5 }, { block: 0, offset: 9 })).toEqual(
       doc(quote(paragraph(text("Ann,", "mia"))))
+    )
+  })
+
+  it("slices from inside a Script to after it, keeping each line's element", () => {
+    const scene = doc(
+      script(line("sceneHeading", text("INT. LIGHTHOUSE", "jordan")), line("character", text("Ann", "mia")), line("dialogue", text("Come home.", "mia"))),
+      paragraph(text("She burned it.", "jordan"))
+    )
+    expect(sliceChapter(scene, { block: 0, offset: 16 }, { block: 1, offset: 3 })).toEqual(
+      doc(script(line("character", text("nn", "mia")), line("dialogue", text("Come home.", "mia"))), paragraph(text("She", "jordan")))
     )
   })
 })

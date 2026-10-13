@@ -4,6 +4,7 @@ import { removeFeaturedPassage } from "@/lib/actions/passages";
 import { authorColorCss } from "@/lib/profile-rules";
 import { ActionForm } from "@/components/ActionForm";
 import { ProseView } from "@/components/ProseView";
+import scriptStyles from "@/components/Script.module.css";
 import styles from "./profile.module.css";
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
@@ -65,7 +66,7 @@ export function FeaturedPassage({
   return (
     <figure className={styles.passage}>
       {HEX_COLOR.test(passage.color) && <style>{`${mine}{--run:${authorColorCss(passage.color)};color:var(--ink)}`}</style>}
-      <blockquote>
+      <blockquote className={scriptStyles.scripts}>
         <ProseView content={passage.content} />
       </blockquote>
       <figcaption>

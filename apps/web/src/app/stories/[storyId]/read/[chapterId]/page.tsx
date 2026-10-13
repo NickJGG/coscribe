@@ -9,6 +9,7 @@ import { ShowAuthors } from "@/components/ShowAuthors";
 import { FeaturePassage } from "@/components/FeaturePassage";
 import { readingTime } from "@/lib/words";
 import { Unavailable } from "../Unavailable";
+import scriptStyles from "@/components/Script.module.css";
 import styles from "../reader.module.css";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read/[chapterId]">): Promise<Metadata> {
@@ -48,7 +49,7 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
       ) : text?.content?.length ? (
         <div>
           <ShowAuthors authors={authors} toggleClassName={styles.tools}>
-            <div className={styles.text}>
+            <div className={`${styles.text} ${scriptStyles.scripts}`}>
               {isWriter(myRole) && viewer?.profile ? (
                 <FeaturePassage
                   storyId={story.id}

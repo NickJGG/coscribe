@@ -208,7 +208,9 @@
 }
 
 .passage > blockquote * + blockquote,
-.passage > blockquote blockquote + * {
+.passage > blockquote blockquote + *,
+.passage > blockquote * + :global(div[data-script]),
+.passage > blockquote :global(div[data-script]) + * {
   margin-top: 0.6em;
 }
 

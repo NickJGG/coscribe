@@ -1,5 +1,6 @@
 import type { JSONContent } from "@tiptap/core"
 import { diffArrays, diffWordsWithSpace } from "diff"
+import type { ScriptElementType } from "./script"
 
 export type DiffOp = "same" | "del" | "ins"
 
@@ -8,13 +9,14 @@ export type DiffSegment = { text: string; marks?: JSONContent["marks"]; op: Diff
 
 /**
  * A paragraph or Scene Break of one side, cut into segments (a Scene Break has none). A block quote's
- * paragraphs are blocks of their own, marked `quoted`.
+ * paragraphs are blocks of their own, marked `quoted`, and so are a Script's lines, with their `element`.
  */
 export type DiffBlock = {
   type: "paragraph" | "sceneBreak"
   segments: DiffSegment[]
   quoted?: boolean
   align?: "center" | "right"
+  element?: ScriptElementType
 }
 
 /**
@@ -40,22 +42,36 @@ const PAIR_SIMILARITY = 0.5
 const SCENE_BREAK_KEY = "\u0000sceneBreak"
 
 type Run = { text: string; marks?: JSONContent["marks"] }
-type Block = Pick<DiffBlock, "type" | "quoted" | "align"> & { runs: Run[]; text: string; key: string }
+type Block = Pick<DiffBlock, "type" | "quoted" | "align" | "element"> & { runs: Run[]; text: string; key: string }
 type Range = { length: number; op: DiffOp }
 
 function blocksOf(doc: JSONContent): Block[] {
   return (doc.content ?? []).flatMap((node): Block[] => {
     if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }]
     if (node.type === "blockquote") return blocksOf(node).map((block) => ({ ...block, quoted: true }))
+    if (node.type === "script") return blocksOf(node)
     const runs = (node.content ?? []).flatMap((n) => (n.type === "text" && n.text ? [{ text: n.text, marks: n.marks }] : []))
     const text = runs.map((r) => r.text).join("")
     const align = node.attrs?.textAlign
-    return [{ type: "paragraph", runs, text, key: text, ...((align === "center" || align === "right") && { align }) }]
+    return [
+      {
+        type: "paragraph",
+        runs,
+        text,
+        key: text,
+        ...((align === "center" || align === "right") && { align }),
+        ...(node.type === "scriptElement" && { element: node.attrs?.element ?? "action" }),
+      },
+    ]
   })
 }
 
-function look(block: Block): Pick<DiffBlock, "quoted" | "align"> {
-  return { ...(block.quoted && { quoted: true }), ...(block.align && { align: block.align }) }
+function look(block: Block): Pick<DiffBlock, "quoted" | "align" | "element"> {
+  return {
+    ...(block.quoted && { quoted: true }),
+    ...(block.align && { align: block.align }),
+    ...(block.element && { element: block.element }),
+  }
 }
 
 function similarity(a: Block, b: Block): number {
@@ -105,7 +121,7 @@ function changeRuns(ranges: Range[], op: DiffOp): number {
 /**
  * What changed from `left` to `right`, two Chapters' ProseMirror JSON. Blocks are aligned first (equal
  * text anchors, then leftover paragraphs paired by word similarity), then words are diffed inside each
- * pair. Only text counts: formatting, quoting, alignment, `author` and `note` changes are not differences,
+ * pair. Only text counts: formatting, quoting, alignment, Script elements, `author` and `note` changes are not differences,
  * and each side's blocks and segments keep that side's own look and marks.
  */
 export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff {
