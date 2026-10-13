@@ -87,7 +87,6 @@ export function InlineEdit({
               settled.current = false;
               setEditing(true);
             }}
-            data-tip={`Edit ${label.toLowerCase()}`}
           >
             {value || placeholder}
           </button>
