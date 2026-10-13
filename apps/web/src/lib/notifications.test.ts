@@ -66,6 +66,14 @@ describe("notificationVerb", () => {
     expect(notificationVerb({ kind: "friend_request", detail: {} })).toBe("sent you a friend request");
     expect(notificationVerb({ kind: "friend_accepted", detail: {} })).toBe("accepted your friend request");
   });
+
+  it("names what went to and came back from the Trash", () => {
+    expect(notificationVerb({ kind: "moved_to_trash", detail: { title: "The Tide" } })).toBe(
+      "moved “The Tide” to the Trash in"
+    );
+    expect(notificationVerb({ kind: "restored", detail: { title: "Juno" } })).toBe("restored “Juno” in");
+    expect(notificationVerb({ kind: "story_restored", detail: {} })).toBe("restored");
+  });
 });
 
 describe("notificationActor", () => {

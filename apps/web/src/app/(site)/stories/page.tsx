@@ -60,7 +60,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
       null
     );
     const chapterNumbers = new Map(
-      story.chapters.toSorted((a, b) => a.position - b.position).map((c, i) => [c.id, i + 1])
+      story.chapters.toSorted((a, b) => (a.position ?? 0) - (b.position ?? 0)).map((c, i) => [c.id, i + 1])
     );
     const writing = writingLine(
       presentWriters(story.presence, me.userId).flatMap((w) => {

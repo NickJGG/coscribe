@@ -122,7 +122,7 @@ type FeaturedRow = {
   story_id: string;
   chapter_id: string;
   content: unknown;
-  story: { title: string; status: string; chapters: { id: string; position: number }[] };
+  story: { title: string; status: string; chapters: { id: string; position: number | null }[] };
 };
 
 function featuredPassage(
@@ -131,7 +131,7 @@ function featuredPassage(
   profile: { id: string; author_color: string }
 ): Passage {
   const member = rows.find((r) => r.story.id === row.story_id)?.story.members.find((m) => m.profile?.id === profile.id);
-  const chapters = row.story.chapters.toSorted((a, b) => a.position - b.position);
+  const chapters = row.story.chapters.toSorted((a, b) => (a.position ?? 0) - (b.position ?? 0));
   return {
     storyId: row.story_id,
     storyTitle: row.story.title,

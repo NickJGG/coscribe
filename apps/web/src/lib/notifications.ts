@@ -94,6 +94,16 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
       return "accepted your friend request";
     case "story_deleted":
       return "deleted";
+    case "story_restored":
+      return "restored";
+    case "moved_to_trash": {
+      const title = detailText(n.detail, "title");
+      return title ? `moved “${title}” to the Trash in` : "moved something to the Trash in";
+    }
+    case "restored": {
+      const title = detailText(n.detail, "title");
+      return title ? `restored “${title}” in` : "restored something in";
+    }
     case "removed":
       return "removed you from";
     case "note_reply": {
