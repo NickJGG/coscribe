@@ -67,12 +67,12 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
             <div>
               <h3>Delete story</h3>
               <p className="muted">
-                Removes it for everyone. Can&rsquo;t be undone. To leave instead, hand off Host first.
+                Removes it for everyone. It waits in your Trash for 30 days, where you can restore it. To leave instead, hand off Host first.
               </p>
             </div>
             <ActionForm
               action={deleteStory.bind(null, story.id)}
-              confirm={`Delete "${story.title}" for everyone? This can't be undone.`}
+              confirm={`Delete “${story.title}” for everyone? It goes to your Trash for 30 days, where you can restore it.`}
             >
               <button className="button button-danger">Delete story</button>
             </ActionForm>

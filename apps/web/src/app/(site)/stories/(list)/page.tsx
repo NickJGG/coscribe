@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer, requireProfile } from "@/lib/viewer";
-import { formerWriterNames } from "@/lib/story";
+import { formerWriterNames, getStoryTrash } from "@/lib/story";
 import { getPendingInvites } from "@/lib/connections";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { presentWriters, writingLine } from "@/lib/presence";
 import { relativeTime } from "@/lib/relative-time";
 import { byProfileOrder } from "@/lib/profile";
 import { isWriter } from "@/lib/story-roles";
-import { createStory } from "@/lib/actions/stories";
+import { parseTrashed } from "@/lib/trash";
+import { createStory, restoreStory } from "@/lib/actions/stories";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 import { StoryFields } from "@/components/StoryFields";
 import { finishedFoot, StoryCard, StorySection } from "@/components/StoryCard";
+import { TrashUndo } from "@/components/TrashUndo";
+import { NewStoryButton } from "./NewStoryButton";
 import { PublicStories } from "./PublicStories";
 import styles from "./stories.module.css";
 
@@ -25,11 +28,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function StoriesPage(props: PageProps<"/stories">) {
   if (!(await getViewer())) return <PublicStories />;
   const me = await requireProfile("/stories");
-  const { new: wantsNew } = await props.searchParams;
+  const { new: wantsNew, trashed: trashedParam } = await props.searchParams;
   const supabase = await createClient();
 
-  const [invites, { data: memberships }] = await Promise.all([
+  const [invites, trash, { data: memberships }] = await Promise.all([
     getPendingInvites(me.userId),
+    getStoryTrash(),
     supabase
       .from("story_members")
       .select(`
@@ -82,6 +86,9 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
     };
   });
 
+  const trashed = parseTrashed(trashedParam);
+  const undoable = trashed?.kind === "story" ? trash.find((s) => s.id === trashed.id) : undefined;
+
   const formerNames = await formerWriterNames(
     stories.flatMap((s) => {
       const memberIds = new Set(s.members.map((m) => m.id));
@@ -120,7 +127,35 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
 
   return (
     <div className={styles.page}>
-      <h1>Your stories</h1>
+      <div className={styles.header}>
+        <h1>Your stories</h1>
+        <div className={styles.headerActions}>
+          {trash.length > 0 && (
+            <Link href="/stories/trash" className="button button-ghost button-small">
+              Trash &middot; {trash.length}
+            </Link>
+          )}
+          <NewStoryButton />
+        </div>
+      </div>
+
+      {!stories.length && (
+        <p className="muted">You&rsquo;re not in any stories yet. Start one, or ask a friend for an Invite.</p>
+      )}
+
+      <details id="new" className={styles.new} open={Boolean(wantsNew) || !stories.length}>
+        <summary>New Story</summary>
+        <div className={styles.newBody}>
+          <h2>Start a story</h2>
+          <p className="muted">You&rsquo;ll be its Host. You can invite Writers once it&rsquo;s created.</p>
+          <ActionForm action={createStory} className={styles.form}>
+            <StoryFields />
+            <div>
+              <button className="button button-primary">Create story</button>
+            </div>
+          </ActionForm>
+        </div>
+      </details>
 
       {invites.map((invite) => (
         <div key={invite.id} className={styles.invite}>
@@ -161,23 +196,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         </StorySection>
       )}
 
-      {!stories.length && (
-        <p className="muted">You&rsquo;re not in any stories yet. Start one, or ask a friend for an Invite.</p>
-      )}
-
-      <details id="new" className={styles.new} open={Boolean(wantsNew) || !stories.length}>
-        <summary className="button">New Story</summary>
-        <div className={styles.newBody}>
-          <h2>Start a story</h2>
-          <p className="muted">You&rsquo;ll be its Host. You can invite Writers once it&rsquo;s created.</p>
-          <ActionForm action={createStory} className={styles.form}>
-            <StoryFields />
-            <div>
-              <button className="button button-primary">Create story</button>
-            </div>
-          </ActionForm>
-        </div>
-      </details>
+      {undoable && <TrashUndo key={undoable.id} title={undoable.title} undo={restoreStory.bind(null, undoable.id)} />}
     </div>
   );
 }

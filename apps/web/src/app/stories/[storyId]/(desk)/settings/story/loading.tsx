@@ -42,7 +42,7 @@ export default function StorySettingsStoryLoading() {
           <div className={styles.inlineRow}>
             <div>
               <h3>Delete story</h3>
-              <p className="muted">Removes it for everyone. Can&rsquo;t be undone. To leave instead, hand off Host first.</p>
+              <p className="muted">Removes it for everyone. It waits in your Trash for 30 days, where you can restore it. To leave instead, hand off Host first.</p>
             </div>
             <Bar width={120} height={40} />
           </div>
