@@ -1,6 +1,6 @@
 "use server";
 
-import { blockTexts, type ContentJSON } from "@coscribe/editor";
+import { blockTexts, scriptCues, type ContentJSON } from "@coscribe/editor";
 import { fetchStoryContent } from "@/lib/sync";
 import { getChapters, getEntries, getStory } from "@/lib/story";
 import { isUuid } from "@/lib/action-result";
@@ -13,13 +13,13 @@ export type SearchText = {
   entries: { id: string; type: EntryType; name: string; aliases: string[]; description: string; blocks: string[] }[];
 };
 
-type Bodies = { chapter: Record<string, string[]>; entry: Record<string, string[]> };
+type Bodies = { chapter: Record<string, string[]>; entry: Record<string, string[]>; cues: Record<string, string[]> };
 
 const FRESH_MS = 15_000;
 const bodies = new Map<string, { at: number; text: Promise<Bodies | null> }>();
 
 /**
- * Every Story's flattened text is shared by all its readers for a few seconds, so however many people
+ * Every Story's flattened text (and Character cues) is shared by all its readers for a few seconds, so however many people
  * search (or one person hammers the action), apps/sync is asked at most once per window.
  */
 function storyBodies(storyId: string): Promise<Bodies | null> {
@@ -35,7 +35,8 @@ function storyBodies(storyId: string): Promise<Bodies | null> {
     }
     const flatten = (docs: Record<string, unknown>) =>
       Object.fromEntries(Object.entries(docs).map(([id, doc]) => [id, blockTexts(doc as ContentJSON)]));
-    return { chapter: flatten(content.chapter), entry: flatten(content.entry) };
+    const cues = Object.fromEntries(Object.entries(content.chapter).map(([id, doc]) => [id, scriptCues(doc as ContentJSON)]));
+    return { chapter: flatten(content.chapter), entry: flatten(content.entry), cues };
   });
   bodies.set(storyId, { at: now, text });
   return text;
@@ -60,4 +61,15 @@ export async function getSearchText(storyId: string): Promise<SearchText | null>
       blocks: text.entry[e.id] ?? [],
     })),
   };
+}
+
+/** The Character cues typed in each of a Story's Chapters, in Chapter order, skipping Chapters with none. */
+export async function getStoryCues(storyId: string): Promise<{ chapterId: string; title: string; cues: string[] }[]> {
+  const data = isUuid(storyId) ? await getStory(storyId) : null;
+  if (!data) return [];
+  const [chapters, text] = await Promise.all([getChapters(storyId), storyBodies(storyId)]);
+  if (!text) return [];
+  return chapters
+    .map((c) => ({ chapterId: c.id, title: c.title, cues: text.cues[c.id] ?? [] }))
+    .filter((c) => c.cues.length);
 }

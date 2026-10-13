@@ -13,6 +13,7 @@ import { authorColorCss } from "@/lib/profile-rules";
 import type { EntryMentionEntry } from "@/lib/entries";
 import { DEFAULT_TOOLBAR_LAYOUT, type ToolbarLayout } from "@/lib/toolbar-layout";
 import { Authorship, HEX_COLOR, type StoryAuthor } from "./Authorship";
+import { CueSuggestionList, CueSuggestions } from "./CueSuggestions";
 import { DeskToolbar } from "./DeskToolbar";
 import { FormattingToolbar } from "./FormattingToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
@@ -215,6 +216,9 @@ export function LiveDocument({
                 <>
                   {notes && <NoteLayer editor={editor} />}
                   <SelectionActions editor={editor} entryMentions={entryMentions} onAddNote={notes?.startDraft} />
+                  {kind === "chapter" && !embedded && entryMentions && (
+                    <CueSuggestionList editor={editor} storyId={entryMentions.storyId} chapterId={id} />
+                  )}
                 </>
               )
             }
@@ -311,6 +315,7 @@ function LiveEditor({
       EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
       Find.configure(find),
+      ...(kind === "chapter" && !embedded ? [CueSuggestions] : []),
       TabKey,
     ],
     editorProps: { attributes: { class: `${styles.prose} ${scriptStyles.scripts}`, "aria-label": label } },

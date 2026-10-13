@@ -20,6 +20,8 @@ export {
   SCRIPT_ELEMENT_LABELS,
   SCRIPT_ELEMENTS,
   scriptCues,
+  scriptEnter,
+  scriptTab,
   type ScriptElementType,
 } from "./script"
 export { type Alignment } from "./format"

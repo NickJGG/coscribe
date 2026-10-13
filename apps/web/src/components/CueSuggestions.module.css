@@ -1,0 +1,53 @@
+/* Over the Authorship box; only the list takes clicks. Looks like the Writer Mention list. */
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.list {
+  position: absolute;
+  z-index: 5;
+  min-width: 12rem;
+  max-width: min(22rem, 100%);
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  list-style: none;
+  pointer-events: auto;
+}
+
+.list[data-above] {
+  transform: translateY(-100%);
+}
+
+.option {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: var(--step--1);
+  cursor: pointer;
+}
+
+.option[aria-selected="true"] {
+  background: var(--wash);
+}
+
+.cue {
+  font-family: var(--font-script), "Courier New", monospace;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.note {
+  overflow: hidden;
+  color: var(--ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
