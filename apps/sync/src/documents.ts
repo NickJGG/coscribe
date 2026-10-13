@@ -1,5 +1,16 @@
-import type * as Y from "yjs"
-import { documentName, outlineHasContent, stripNoteMarks, type DocumentKind } from "@coscribe/editor"
+import { yXmlFragmentToProseMirrorRootNode } from "@tiptap/y-tiptap"
+import * as Y from "yjs"
+import {
+  addedFields,
+  documentName,
+  fieldFragment,
+  OUTLINE_FIELDS,
+  outlineCharacters,
+  outlineHasContent,
+  outlineSchema,
+  stripNoteMarks,
+  type DocumentKind,
+} from "@coscribe/editor"
 import { decideAccess, type Access, type AccessFacts } from "./access"
 import { chapterContent, chapterStats, decodeChapter } from "./chapter-content"
 import { sql } from "./db"
@@ -106,7 +117,11 @@ export async function backfillChapterStats(): Promise<number> {
 
 type ContentKind = "chapter" | "entry"
 
-export type StoryContent = Record<ContentKind, Record<string, Record<string, unknown>>>
+type JSONObject = Record<string, unknown>
+
+export type OutlineContent = { fields: { id: string; label: string; content: JSONObject }[]; characters: string[] }
+
+export type StoryContent = Record<ContentKind, Record<string, JSONObject>> & { outline?: Record<string, OutlineContent> }
 
 /**
  * Every Chapter and Entry body in a story as ProseMirror JSON, keyed by id. Documents open in `loaded`
@@ -126,4 +141,36 @@ export async function storyContent(storyId: string, loaded: (name: string) => Y.
     content[kind][id] = node ? stripNoteMarks(node.toJSON()) : { type: "doc" }
   }
   return content
+}
+
+/**
+ * Every Outline with content in a story, keyed by Chapter id: its non-empty fields (the defaults, then added
+ * ones) and its Characters' Entry ids. Read live when open, like `storyContent`.
+ */
+export async function storyOutlines(
+  storyId: string,
+  loaded: (name: string) => Y.Doc | undefined
+): Promise<Record<string, OutlineContent>> {
+  const rows = await sql<{ chapter_id: string; ydoc: Uint8Array | null }[]>`
+    select o.chapter_id, o.ydoc from public.chapter_outlines o
+    join public.chapters c on c.id = o.chapter_id
+    where o.story_id = ${storyId} and c.deleted_at is null
+  `
+  const outlines: Record<string, OutlineContent> = {}
+  for (const { chapter_id, ydoc } of rows) {
+    const live = loaded(documentName("outline", chapter_id))
+    const doc = live ?? new Y.Doc()
+    try {
+      if (!live && ydoc) Y.applyUpdate(doc, ydoc)
+      const fields = [...OUTLINE_FIELDS, ...addedFields(doc)].flatMap(({ id, label }) => {
+        const node = yXmlFragmentToProseMirrorRootNode(doc.getXmlFragment(fieldFragment(id)), outlineSchema)
+        return node.textContent.trim() ? [{ id, label, content: node.toJSON() as JSONObject }] : []
+      })
+      const characters = outlineCharacters(doc)
+      if (fields.length || characters.length) outlines[chapter_id] = { fields, characters }
+    } finally {
+      if (!live) doc.destroy()
+    }
+  }
+  return outlines
 }

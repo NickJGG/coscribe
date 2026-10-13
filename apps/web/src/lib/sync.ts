@@ -55,12 +55,20 @@ export async function takeSnapshotLive(chapterId: string, name: string | null): 
   return "taken";
 }
 
-export type StoryContent = Record<"chapter" | "entry", Record<string, JSONContent>>;
+/** An Outline's non-empty fields, defaults first, and its Characters' Entry ids. */
+export type OutlineContent = { fields: { id: string; label: string; content: JSONContent }[]; characters: string[] };
 
-/** Every Chapter and Entry body in a story, keyed by id. Null if the sync server can't be reached. */
-export async function fetchStoryContent(storyId: string): Promise<StoryContent | null> {
+export type StoryContent = Record<"chapter" | "entry", Record<string, JSONContent>> & {
+  outline?: Record<string, OutlineContent>;
+};
+
+/**
+ * Every Chapter and Entry body in a story, keyed by id, and with `outlines` every Outline with content, keyed by
+ * Chapter id. Null if the sync server can't be reached.
+ */
+export async function fetchStoryContent(storyId: string, { outlines = false } = {}): Promise<StoryContent | null> {
   try {
-    const response = await syncFetch(`/stories/${storyId}/content`);
+    const response = await syncFetch(`/stories/${storyId}/content${outlines ? "?outlines=1" : ""}`);
     if (!response.ok) throw new Error(`story content failed: ${response.status}`);
     return (await response.json()) as StoryContent;
   } catch (error) {

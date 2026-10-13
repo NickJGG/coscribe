@@ -4,6 +4,7 @@ import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { storyRibbon } from "@/lib/contribution";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
+import { ExportMenu } from "@/components/ExportMenu";
 import { readingTime } from "@/lib/words";
 import styles from "../reader.module.css";
 
@@ -18,7 +19,7 @@ const listFormat = new Intl.ListFormat("en", { type: "conjunction" });
 /** The Reader View's title page: who wrote it, and the table of contents. */
 export default async function ReaderPage(props: PageProps<"/stories/[storyId]/read">) {
   const { storyId } = await props.params;
-  const { story, chapters, credits, members } = await requireReader(storyId, `/stories/${storyId}/read`);
+  const { story, chapters, entries, credits, members } = await requireReader(storyId, `/stories/${storyId}/read`);
   const first = chapters[0];
   const storyTime = readingTime(chapters.reduce((sum, c) => sum + c.word_count, 0));
 
@@ -57,11 +58,14 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
             {storyTime && ` · ${storyTime} read`}
           </p>
         )}
-        {first && (
-          <Link href={`/stories/${story.id}/read/${first.id}`} className="button button-primary">
-            Start reading
-          </Link>
-        )}
+        <div className={`row-actions ${styles.titleActions}`}>
+          {first && (
+            <Link href={`/stories/${story.id}/read/${first.id}`} className="button button-primary">
+              Start reading
+            </Link>
+          )}
+          <ExportMenu storyId={story.id} finished hasEntries={entries.length > 0} />
+        </div>
       </header>
 
       <section className="section" aria-labelledby="contents-heading">

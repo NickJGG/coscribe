@@ -15,7 +15,7 @@
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
  *   - `GET /stories/<id>/content` returns every Chapter and Entry body as ProseMirror JSON, for the
- *     Reader View and Credits.
+ *     Reader View, Credits and Export. With `?outlines=1` it adds every Outline with content, for a Draft Export.
  *   - `GET /snapshots/<id>` returns a Snapshot's content as ProseMirror JSON.
  *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
  *   - `POST /chapters/<id>/snapshot` takes a Snapshot of the live Chapter, with body `{ name: string | null }`:
@@ -44,6 +44,7 @@ import {
   fetchDocument,
   storeDocument,
   storyContent,
+  storyOutlines,
   type DocumentRef,
 } from "./documents"
 import { featurePassage, isTextPoint } from "./passages"
@@ -69,7 +70,7 @@ type Context = {
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot|feature))?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot|feature))?(?:[?].*)?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -164,7 +165,11 @@ async function route(
     await refreshStory(instance, id)
     response.writeHead(204).end()
   } else if (method === "GET" && resource === "stories" && action === "content") {
-    const content = await storyContent(id, (name) => instance.documents.get(name))
+    const loaded = (name: string) => instance.documents.get(name)
+    const content = await storyContent(id, loaded)
+    if (new URL(request.url!, "http://sync").searchParams.get("outlines") === "1") {
+      content.outline = await storyOutlines(id, loaded)
+    }
     response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(content))
   } else if (method === "GET" && resource === "snapshots" && !action) {
     const content = await snapshotPreview(id)

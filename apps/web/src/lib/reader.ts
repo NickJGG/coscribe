@@ -31,7 +31,8 @@ export const getReader = cache(async (storyId: string) => {
   return { ...data, finished: true as const, chapters, entries, content, credits, authors };
 });
 
-async function withFormerWriters(people: { id: string; username: string; author_color: string }[], authors: string[]) {
+/** Adds the names and colors of anyone in `authors` not already in `people`. */
+export async function withFormerWriters(people: { id: string; username: string; author_color: string }[], authors: string[]) {
   const known = new Set(people.map((p) => p.id));
   const former = authors.filter((id) => !known.has(id));
   if (!former.length) return people;

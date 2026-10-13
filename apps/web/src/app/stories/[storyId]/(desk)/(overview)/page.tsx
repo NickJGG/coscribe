@@ -15,6 +15,7 @@ import { restoreEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar, AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
+import { ExportMenu } from "@/components/ExportMenu";
 import { ChapterPresence } from "@/components/StoryPresence";
 import { TrashUndo } from "@/components/TrashUndo";
 import { BrowseButton, HereDot, WritingNow } from "./Overview";
@@ -60,6 +61,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
       : Promise.resolve({ data: null }),
   ]);
   const finished = story.status === "finished";
+  const canExport = finished || isWriter(myRole);
 
   const members = data.members
     .map((m) => ({
@@ -135,7 +137,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
             {time && ` · ${time} read`}
           </span>
         </span>
-        {(primary || finished) && (
+        {(primary || canExport) && (
           <div className={`row-actions ${styles.actions}`}>
             {primary && (
               <Link href={primary.href} className="button button-primary">
@@ -147,6 +149,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
                 Credits
               </Link>
             )}
+            {canExport && <ExportMenu storyId={story.id} finished={finished} hasEntries={entries.length > 0} />}
           </div>
         )}
       </header>

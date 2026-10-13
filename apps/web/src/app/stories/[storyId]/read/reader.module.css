@@ -158,6 +158,10 @@
   text-align: center;
 }
 
+.titleActions {
+  justify-content: center;
+}
+
 .eyebrow {
   color: var(--ink-muted);
   font-size: var(--step--1);

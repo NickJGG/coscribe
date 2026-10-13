@@ -11,6 +11,9 @@ export type StoryFile = {
   chapters: ChapterFile[];
   entries: EntryFile[];
   credits?: CreditFile[];
+  /** Export only, for the title page: who wrote it, most first, and the Finished date (`YYYY-MM-DD`). */
+  byline?: string[];
+  finished?: string;
 };
 
 export type ChapterFile = { title: string; content: JSONContent; outline?: OutlineFile };
