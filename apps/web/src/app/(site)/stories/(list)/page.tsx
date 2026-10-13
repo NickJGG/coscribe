@@ -15,8 +15,6 @@ import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
 import { finishedFoot, StoryCard, StorySection } from "@/components/StoryCard";
 import { TrashUndo } from "@/components/TrashUndo";
-import { NewStoryButton } from "./NewStoryButton";
-import { NewStoryForm } from "./NewStoryForm";
 import { PublicStories } from "./PublicStories";
 import styles from "./stories.module.css";
 
@@ -28,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function StoriesPage(props: PageProps<"/stories">) {
   if (!(await getViewer())) return <PublicStories />;
   const me = await requireProfile("/stories");
-  const { new: wantsNew, trashed: trashedParam } = await props.searchParams;
+  const { trashed: trashedParam } = await props.searchParams;
   const supabase = await createClient();
 
   const [invites, trash, { data: memberships }] = await Promise.all([
@@ -135,22 +133,30 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
               Trash &middot; {trash.length}
             </Link>
           )}
-          <NewStoryButton />
+          {stories.length > 0 && (
+            <Link href="/stories/new" className="button button-primary button-small">
+              New Story
+            </Link>
+          )}
         </div>
       </div>
 
       {!stories.length && (
-        <p className="muted">You&rsquo;re not in any stories yet. Start one, or ask a friend for an Invite.</p>
-      )}
-
-      <details id="new" className={styles.new} open={Boolean(wantsNew) || !stories.length}>
-        <summary>New Story</summary>
-        <div className={styles.newBody}>
-          <h2>Start a story</h2>
-          <p className="muted">You&rsquo;ll be its Host. You can invite Writers once it&rsquo;s created.</p>
-          <NewStoryForm />
+        <div className={styles.empty}>
+          <h2>Start your first story</h2>
+          <p className="muted">
+            You&rsquo;ll be its Host, and can invite Writers once it&rsquo;s created. Or ask a friend for an Invite.
+          </p>
+          <div className={styles.emptyActions}>
+            <Link href="/stories/new" className="button button-primary">
+              Start a story
+            </Link>
+            <Link href="/stories/new?from=file" className={`muted ${styles.emptyImport}`}>
+              or import one from a file
+            </Link>
+          </div>
         </div>
-      </details>
+      )}
 
       {invites.map((invite) => (
         <div key={invite.id} className={styles.invite}>

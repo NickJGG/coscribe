@@ -1,0 +1,128 @@
+.back {
+  align-self: flex-start;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px;
+  border: 1.5px dashed var(--rule);
+  border-radius: 10px;
+  background: var(--paper-raised);
+  font-size: 0.875rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.drop:hover {
+  border-color: var(--faint);
+}
+
+.drop[data-dragging] {
+  border-style: solid;
+  border-color: var(--ink);
+  background: var(--wash);
+}
+
+.drop[data-dragging] .dropButton {
+  visibility: hidden;
+}
+
+.drop > svg {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 2px;
+  fill: none;
+  stroke: var(--ink-muted);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dropButton {
+  margin: 8px 0 6px;
+}
+
+.dropHint {
+  max-width: 34ch;
+  font-size: var(--step--1);
+  text-wrap: balance;
+}
+
+/* The file input is sr-only beside the visuals, so its keyboard focus shows on them. */
+.fileInput:focus-visible + .drop,
+.fileInput:focus-visible + .card {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--paper-raised);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.fileName {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fileSize {
+  margin-right: auto;
+  font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+.cardHead > :global(.button) {
+  flex: none;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+}
+
+.cardBody ul {
+  padding-left: 1.2em;
+}
+
+.cardBody p {
+  font-size: var(--step--1);
+}
+
+.cardBody p.error {
+  color: var(--danger);
+  font-size: inherit;
+}

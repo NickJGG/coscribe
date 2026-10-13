@@ -7,7 +7,7 @@ import { finishedFoot, StoryCard, StoryGrid } from "@/components/StoryCard";
 import { AuthorsDemo, BibleDemo, NotesDemo, WritingDemo } from "@/components/WritingDemo";
 import styles from "./home.module.css";
 
-const START_HREF = `/login?next=${encodeURIComponent("/stories?new=1#new")}`;
+const START_HREF = `/login?next=${encodeURIComponent("/stories/new")}`;
 
 export default async function Home() {
   if (await getViewer()) redirect("/stories");

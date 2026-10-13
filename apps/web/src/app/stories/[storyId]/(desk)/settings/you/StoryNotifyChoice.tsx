@@ -58,7 +58,7 @@ export function StoryNotifyChoice({
         </h3>
       </legend>
       {(viewer ? VIEWER_CHOICES : WRITER_CHOICES).map((c) => (
-        <label key={c.value} className={styles.choice}>
+        <label key={c.value} className="choice">
           <input
             type="radio"
             name="notify"

@@ -40,13 +40,13 @@ export function StoryFields({
 
       <fieldset className={styles.field}>
         <legend className={styles.label}>Visibility</legend>
-        <label className={styles.choice}>
+        <label className="choice">
           <input type="radio" name="visibility" value="private" defaultChecked={visibility === "private"} />
           <span>
             <strong>Private</strong> <span className="muted">Only its Writers can see it.</span>
           </span>
         </label>
-        <label className={styles.choice}>
+        <label className="choice">
           <input type="radio" name="visibility" value="public" defaultChecked={visibility === "public"} />
           <span>
             <strong>Public</strong> <span className="muted">Anyone with the link can watch it being written.</span>

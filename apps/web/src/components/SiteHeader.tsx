@@ -45,7 +45,7 @@ export async function SiteHeader() {
       <div className={styles.end}>
         {profile ? (
           <>
-            <Link href="/stories?new=1#new" className={`button button-small ${styles.newStory}`}>
+            <Link href="/stories/new" className={`button button-small ${styles.newStory}`}>
               New Story
             </Link>
             <AccountMenus profile={profile} />
@@ -64,7 +64,7 @@ export async function SiteHeader() {
             <Link href="/login" className="button button-ghost button-small">
               Sign in
             </Link>
-            <Link href={`/login?next=${encodeURIComponent("/stories?new=1#new")}`} className="button button-primary button-small">
+            <Link href={`/login?next=${encodeURIComponent("/stories/new")}`} className="button button-primary button-small">
               Start a story
             </Link>
           </>

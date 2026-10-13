@@ -1,27 +1,5 @@
 .tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 4px;
   margin-top: -8px;
-  border-bottom: 1px solid var(--rule);
-}
-
-.tab {
-  margin-bottom: -1px;
-  padding: 8px 12px;
-  border-bottom: 2px solid transparent;
-  color: var(--ink-muted);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.tab:hover {
-  color: var(--ink);
-}
-
-.tab[aria-current="page"] {
-  border-color: var(--accent);
-  color: var(--ink);
 }
 
 .card {
@@ -154,13 +132,6 @@
 
 .choices legend {
   margin-bottom: 4px;
-}
-
-.choice {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  cursor: pointer;
 }
 
 .trashTitle {

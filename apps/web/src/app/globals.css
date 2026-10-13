@@ -340,6 +340,124 @@ a {
   font: inherit;
 }
 
+/* A radio or checkbox, then its label: <strong>…</strong> and an optional muted hint. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.choice input {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  font: inherit;
+  margin-top: calc((1lh - 16px) / 2);
+  border: 1.5px solid var(--faint);
+  background: var(--paper-raised);
+  cursor: pointer;
+}
+
+.choice:hover input:not(:disabled) {
+  border-color: var(--ink-muted);
+}
+
+.choice input:checked {
+  border-color: var(--ink);
+}
+
+.choice input:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.choice input[type="radio"] {
+  border-radius: 50%;
+}
+
+.choice input[type="radio"]::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink);
+  transform: scale(0);
+  transition: transform 120ms ease-out;
+}
+
+.choice input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+
+.choice input[type="checkbox"] {
+  border-radius: 4px;
+}
+
+.choice input[type="checkbox"]:checked {
+  background: var(--ink);
+}
+
+.choice input[type="checkbox"]::before {
+  content: "";
+  width: 4px;
+  height: 8px;
+  margin-top: -2px;
+  border: solid var(--paper);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 120ms ease-out;
+}
+
+.choice input[type="checkbox"]:checked::before {
+  transform: rotate(45deg) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice input::before {
+    transition: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .choice {
+    min-height: 44px;
+  }
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tab {
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-muted);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--ink);
+}
+
+.tab[aria-current="page"],
+.tab[aria-selected="true"] {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
 .section {
   display: flex;
   flex-direction: column;

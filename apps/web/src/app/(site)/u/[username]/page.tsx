@@ -105,7 +105,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
             <p className={`muted ${styles.empty}`}>
               {self ? (
                 <>
-                  Stories you write will show here. <Link href="/stories?new=1#new">Start a Story</Link>
+                  Stories you write will show here. <Link href="/stories/new">Start a Story</Link>
                 </>
               ) : (
                 "No stories to show yet."

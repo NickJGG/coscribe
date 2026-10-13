@@ -26,9 +26,9 @@ export default async function StorySettingsLayout(props: LayoutProps<"/stories/[
   return (
     <div className="page">
       <h1>Settings</h1>
-      <nav className={styles.tabs} aria-label="Settings">
+      <nav className={`tabs ${styles.tabs}`} aria-label="Settings">
         {tabs.map(({ slug, label }) => (
-          <NavLink key={slug} href={`${base}/${slug}`} className={styles.tab}>
+          <NavLink key={slug} href={`${base}/${slug}`} className="tab">
             {label}
           </NavLink>
         ))}
