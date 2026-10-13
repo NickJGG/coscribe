@@ -4,11 +4,15 @@ import { redirect } from "next/navigation";
 import { refresh } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
-import { refreshSyncAccess } from "@/lib/sync";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
+import { importStoryContent, refreshSyncAccess } from "@/lib/sync";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
 import { readStoryForm } from "@/lib/story-form";
 import type { MemberRole } from "@/lib/story-roles";
 import { isStoryNotify } from "@/lib/notifications";
+import { fromMarkdown } from "@/lib/story-file/markdown";
+import { IMPORT_MAX_BYTES, IMPORT_MAX_CHAPTERS, importContent } from "@/lib/story-file/import";
+import type { StoryFile } from "@/lib/story-file/types";
 
 const INVALID = "Something went wrong. Try again.";
 
@@ -25,6 +29,49 @@ export async function createStory(_prev: ActionResult, formData: FormData): Prom
   });
   if (error) return errorText(error);
 
+  redirect(`/stories/${storyId}`);
+}
+
+/**
+ * A new Story from a Markdown or plain-text file, parsed again here rather than trusting the browser's parse. With
+ * `mine` the text is credited to the importer, else it's Imported Text. If sync can't take it, the Story goes to the
+ * Trash.
+ */
+export async function importStory(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const me = await requireProfile("/stories");
+  const { title, visibility, blurb, error: formError } = readStoryForm(formData);
+  if (formError) return formError;
+
+  const upload = formData.get("file");
+  if (!(upload instanceof File) || !upload.size) return "Choose a file to import.";
+  if (upload.size > IMPORT_MAX_BYTES) return "That file is over 2 MB, too big to import.";
+  let file: StoryFile;
+  try {
+    file = fromMarkdown(await upload.text(), upload.name).file;
+  } catch {
+    return "Couldn't read that file. Import a Markdown (.md) or plain text (.txt) file.";
+  }
+  if (file.chapters.length > IMPORT_MAX_CHAPTERS) {
+    return `That file has ${file.chapters.length} Chapters. A Story can import up to ${IMPORT_MAX_CHAPTERS}.`;
+  }
+  const author = { userId: formData.get("mine") ? me.userId : IMPORTED_AUTHOR, at: Date.now() };
+
+  const supabase = await createClient();
+  const { data: storyId, error } = await supabase.rpc("create_story", {
+    p_title: title,
+    p_visibility: visibility,
+    p_blurb: blurb ?? undefined,
+  });
+  if (error) return errorText(error);
+
+  try {
+    await importStoryContent(storyId, me.userId, importContent(file, author));
+  } catch (importError) {
+    console.error(`import into ${storyId} failed`, importError);
+    await supabase.rpc("delete_story", { p_story: storyId });
+    await refreshSyncAccess(storyId);
+    return "Couldn't import that file. Nothing was kept.";
+  }
   redirect(`/stories/${storyId}`);
 }
 

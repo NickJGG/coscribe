@@ -121,7 +121,7 @@ export default async function PrintPage(props: PageProps<"/stories/[storyId]/pri
               <li key={j} className={reader.creditName}>
                 <span>
                   {credit.name}
-                  {credit.role !== "Writer" && <span className="muted"> · {credit.role}</span>}
+                  {credit.role && credit.role !== "Writer" && <span className="muted"> · {credit.role}</span>}
                 </span>
                 <span className={reader.share}>{percent.format(credit.share)}</span>
               </li>

@@ -61,6 +61,6 @@ export function chapterStats(content: ChapterContent): ChapterStats {
 }
 
 /** Rewrites the doc to `target` as a diff, so unchanged paragraphs (and carets in them) stay put. */
-export function replaceChapterContent(doc: Y.Doc, target: ChapterContent): void {
-  updateYFragment(doc, doc.getXmlFragment(DOCUMENT_FIELD), target, { mapping: new Map(), isOMark: new Map() })
+export function replaceChapterContent(doc: Y.Doc, target: ChapterContent, fragment = DOCUMENT_FIELD): void {
+  updateYFragment(doc, doc.getXmlFragment(fragment), target, { mapping: new Map(), isOMark: new Map() })
 }

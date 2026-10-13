@@ -18,7 +18,7 @@ import {
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
 import { authorColorCss } from "@/lib/profile-rules";
 import { DeskToolbar } from "./DeskToolbar";
-import { Authorship, type StoryAuthor } from "./Authorship";
+import { Authorship, authorName, type StoryAuthor } from "./Authorship";
 import { Text } from "./ProseView";
 import { usePhone, useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
 import { usePanelOpen, useStoryPanel } from "./StoryPanel";
@@ -421,7 +421,7 @@ function Summary({
       }
     }
     const byId = new Map(authors.map((a) => [a.id, a]));
-    return [...ids].map((id) => byId.get(id) ?? { id, name: "A former Writer", color: "" });
+    return [...ids].map((id) => byId.get(id) ?? { id, name: authorName(byId, id), color: "" });
   }, [diff, authors]);
 
   if (!diff.additions && !diff.removals) return <span className={styles.counts}>No differences</span>;

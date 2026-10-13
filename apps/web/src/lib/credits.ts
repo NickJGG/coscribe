@@ -1,11 +1,11 @@
-import { countAuthorCharacters } from "@coscribe/editor";
+import { countAuthorCharacters, IMPORTED_AUTHOR } from "@coscribe/editor";
 import type { StoryContent } from "./sync";
 
 export type Tally = { chapters: Map<string, number>; bible: Map<string, number> };
 
 type Person = { id: string; username: string; author_color: string };
 
-/** One Credits line. `person` is null for a deleted account. */
+/** One Credits line. `person` is null for a deleted account, and for Imported Text (`id` is `IMPORTED_AUTHOR`). */
 export type Credit = { id: string; person: Person | null; chapters: number; bible: number };
 
 /** Characters per author across the story's Chapters, and separately across its Story Bible. */
@@ -17,17 +17,19 @@ export function tallyAuthors(content: StoryContent): Tally {
   return { chapters, bible };
 }
 
+/** Every account with surviving text, leaving out Imported Text. */
 export function authorIds({ chapters, bible }: Tally): string[] {
-  return [...new Set([...chapters.keys(), ...bible.keys()])];
+  return [...new Set([...chapters.keys(), ...bible.keys()])].filter((id) => id !== IMPORTED_AUTHOR);
 }
 
 /**
  * Every current Writer (even with nothing written) and anyone else whose text survives (former Writers, and
- * Writers since made Viewers), most Chapter text first.
+ * Writers since made Viewers), plus a line for any Imported Text, most Chapter text first.
  */
 export function creditLines(tally: Tally, writerIds: string[], people: Person[]): Credit[] {
   const byId = new Map(people.map((p) => [p.id, p]));
-  return [...new Set([...writerIds, ...authorIds(tally)])]
+  const imported = tally.chapters.has(IMPORTED_AUTHOR) || tally.bible.has(IMPORTED_AUTHOR) ? [IMPORTED_AUTHOR] : [];
+  return [...new Set([...writerIds, ...authorIds(tally), ...imported])]
     .map((id) => ({
       id,
       person: byId.get(id) ?? null,

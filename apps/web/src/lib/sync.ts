@@ -1,16 +1,17 @@
 import type { JSONContent } from "@tiptap/core";
 import type { TextPoint } from "@coscribe/editor";
+import type { StoryFile } from "@/lib/story-file/types";
 
 /** A server-to-server call to apps/sync, authorized with SYNC_SECRET. Callers check permissions first. */
-async function syncFetch(path: string, init: RequestInit = {}): Promise<Response> {
+async function syncFetch(path: string, init: RequestInit = {}, timeout = 5000): Promise<Response> {
   const url = process.env.NEXT_PUBLIC_SYNC_URL?.replace(/^ws/, "http");
   const secret = process.env.SYNC_SECRET;
   if (!url || !secret) throw new Error("NEXT_PUBLIC_SYNC_URL and SYNC_SECRET must be set");
 
   return fetch(`${url}${path}`, {
     ...init,
-    headers: { authorization: `Bearer ${secret}` },
-    signal: AbortSignal.timeout(5000),
+    headers: { authorization: `Bearer ${secret}`, ...(init.body && { "content-type": "application/json" }) },
+    signal: AbortSignal.timeout(timeout),
   });
 }
 
@@ -75,6 +76,18 @@ export async function fetchStoryContent(storyId: string, { outlines = false } = 
     console.error(`story content for ${storyId} failed`, error);
     return null;
   }
+}
+
+export type ImportContent = Pick<StoryFile, "chapters" | "entries">;
+
+/** Fills a just-created Story, Hosted by `userId`, with an imported file's Chapters, Outlines and Entries. */
+export async function importStoryContent(storyId: string, userId: string, content: ImportContent): Promise<void> {
+  const response = await syncFetch(
+    `/stories/${storyId}/import`,
+    { method: "POST", body: JSON.stringify({ userId, ...content }) },
+    60_000
+  );
+  if (!response.ok) throw new Error(`story import failed: ${response.status}`);
 }
 
 /** Saves the User's Featured Passage from a Chapter. The reason it can't be featured, "gone", or null when saved. */

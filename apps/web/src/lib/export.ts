@@ -1,3 +1,4 @@
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { getChapters, getEntries, getStory } from "@/lib/story";
 import { fetchStoryContent } from "@/lib/sync";
 import { authorIds, creditLines, tallyAuthors } from "@/lib/credits";
@@ -71,6 +72,7 @@ export async function getExport(
       : [],
     credits: credits.map((c) => {
       const role = roles.get(c.id);
+      if (c.id === IMPORTED_AUTHOR) return { name: "Imported text", role: "", share: total ? c.chapters / total : 0 };
       return {
         name: c.person?.username ?? "A deleted account",
         role: role ? ROLE_LABEL[role] : "Former Writer",

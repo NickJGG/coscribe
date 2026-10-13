@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { storyRibbon } from "@/lib/contribution";
@@ -36,7 +37,7 @@ export default async function ReaderPage(props: PageProps<"/stories/[storyId]/re
         role: m.role,
         joinedAt: m.joined_at,
       })),
-      [Object.fromEntries(credits.map((c) => [c.id, c.chapters]))],
+      [Object.fromEntries(credits.flatMap((c) => (c.id === IMPORTED_AUTHOR ? [] : [[c.id, c.chapters]])))],
       new Map(credits.flatMap((c) => (c.person ? [[c.id, c.person.username] as const] : [])))
     );
 

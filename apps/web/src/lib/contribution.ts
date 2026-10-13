@@ -1,3 +1,4 @@
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import type { MemberRole } from "@/lib/story-roles";
 import type { RibbonSegment } from "@/components/ContributionRibbon";
 
@@ -8,11 +9,13 @@ export function byJoinOrder(a: { role: MemberRole; joinedAt: string }, b: { role
   return Number(b.role === "host") - Number(a.role === "host") || a.joinedAt.localeCompare(b.joinedAt);
 }
 
-/** A `chapters.author_chars` value, keeping only well-formed counts. */
+/** A `chapters.author_chars` value, keeping only well-formed counts by accounts (not Imported Text). */
 export function readAuthorChars(json: unknown): Record<string, number> {
   if (!json || typeof json !== "object" || Array.isArray(json)) return {};
   return Object.fromEntries(
-    Object.entries(json).filter((e): e is [string, number] => typeof e[1] === "number" && e[1] > 0)
+    Object.entries(json).filter(
+      (e): e is [string, number] => e[0] !== IMPORTED_AUTHOR && typeof e[1] === "number" && e[1] > 0
+    )
   );
 }
 

@@ -145,7 +145,8 @@ function bibleBody(entries: EntryFile[]): string {
 
 function creditsBody(title: string, credits: NonNullable<StoryFile["credits"]>): string {
   const items = credits.map(
-    (c) => `<li>${escapeXml(c.name)} <span class="muted">· ${escapeXml(c.role)}</span> · ${Math.round(c.share * 100)}%</li>`
+    (c) =>
+      `<li>${escapeXml(c.name)}${c.role ? ` <span class="muted">· ${escapeXml(c.role)}</span>` : ""} · ${Math.round(c.share * 100)}%</li>`
   );
   return `<h1>${escapeXml(title)}</h1>\n<ol class="credits">\n${items.join("\n")}\n</ol>`;
 }

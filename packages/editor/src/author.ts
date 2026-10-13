@@ -4,6 +4,9 @@ import { Plugin, PluginKey, type EditorState, type Transaction } from "@tiptap/p
 
 export type AuthorAttrs = { userId: string; at: number }
 
+/** The `userId` of Imported Text: text brought in from a file that no Writer claimed. Credited to no one's account. */
+export const IMPORTED_AUTHOR = "imported"
+
 /** Who wrote a run of text, and when (epoch ms). Credits sum marked text length per `userId`. */
 export const Author = Mark.create({
   name: "author",

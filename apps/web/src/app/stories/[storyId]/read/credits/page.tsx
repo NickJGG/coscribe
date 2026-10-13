@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { authorColorCss } from "@/lib/profile-rules";
@@ -40,15 +41,26 @@ export default async function ReaderCreditsPage(props: PageProps<"/stories/[stor
           {credits.map((c) => {
             const role = roles.get(c.id);
             const share = total ? c.chapters / total : 0;
+            const imported = c.id === IMPORTED_AUTHOR;
             return (
               <li
                 key={c.id}
                 className={styles.credit}
-                style={{ "--author": c.person && authorColorCss(c.person.author_color) } as React.CSSProperties}
+                style={
+                  {
+                    "--author": imported ? "var(--faint)" : c.person && authorColorCss(c.person.author_color),
+                  } as React.CSSProperties
+                }
               >
                 <div className={styles.creditName}>
                   <span>
-                    {c.person ? <PersonLink person={c.person} /> : <span className="muted">A deleted account</span>}
+                    {c.person ? (
+                      <PersonLink person={c.person} />
+                    ) : imported ? (
+                      "Imported text"
+                    ) : (
+                      <span className="muted">A deleted account</span>
+                    )}
                     {role && role !== "writer" && <span className="muted"> · {ROLE_LABEL[role]}</span>}
                     {!role && c.person && <span className="muted"> · Former Writer</span>}
                   </span>

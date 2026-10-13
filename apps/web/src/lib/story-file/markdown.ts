@@ -50,7 +50,7 @@ export function toMarkdown(file: StoryFile, { bible, outlines }: MarkdownOptions
       "<!-- coscribe:credits -->",
       file.status === "finished" ? "# Credits" : "# Credits so far",
       file.credits
-        .map((c) => `- ${escapeMarkdown(c.name)}, ${escapeMarkdown(c.role)}, ${Math.round(c.share * 100)}%`)
+        .map((c) => `- ${[c.name, c.role].filter(Boolean).map(escapeMarkdown).join(", ")}, ${Math.round(c.share * 100)}%`)
         .join("\n")
     );
   }

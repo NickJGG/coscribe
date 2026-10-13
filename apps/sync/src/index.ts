@@ -20,6 +20,9 @@
  *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
  *   - `POST /chapters/<id>/snapshot` takes a Snapshot of the live Chapter, with body `{ name: string | null }`:
  *     201 when taken, 409 when nothing changed since the last one, 404 when the Chapter is gone.
+ *   - `POST /stories/<id>/import` fills a just-created Story from an imported file (see import.ts), with body
+ *     `{ userId, chapters, entries }`: 204 when imported, 400 when the body doesn't fit the schemas, 409 when the
+ *     Story isn't fresh.
  *   - `POST /chapters/<id>/feature` saves a User's Featured Passage from the Chapter, with body
  *     `{ userId, from, to }` (TextPoints): 204 when saved, 422 with the reason it can't be featured, 404
  *     when the Chapter is gone.
@@ -33,6 +36,7 @@ import {
   DOCUMENT_TRASHED,
   parseDocumentName,
   type AccessMessage,
+  type DocumentKind,
   type OutdatedMessage,
 } from "@coscribe/editor"
 import { isOutdated, parseToken } from "./access"
@@ -47,6 +51,8 @@ import {
   storyOutlines,
   type DocumentRef,
 } from "./documents"
+import { importStory } from "./import"
+import { parseImportBody } from "./import-body"
 import { featurePassage, isTextPoint } from "./passages"
 import { arrive, clearPresence, depart, setMember } from "./presence"
 import {
@@ -70,7 +76,7 @@ type Context = {
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|snapshot|feature))?(?:[?].*)?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|import|snapshot|feature))?(?:[?].*)?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -171,6 +177,11 @@ async function route(
       content.outline = await storyOutlines(id, loaded)
     }
     response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(content))
+  } else if (method === "POST" && resource === "stories" && action === "import") {
+    const body = parseImportBody(await readJson(request))
+    if (!body) return response.writeHead(400).end()
+    const result = await importStory(instance, id, body, (doc, storyId) => serverContext(doc.id, storyId, doc.kind))
+    response.writeHead(result === "imported" ? 204 : 409).end()
   } else if (method === "GET" && resource === "snapshots" && !action) {
     const content = await snapshotPreview(id)
     if (!content) return response.writeHead(404).end()
@@ -197,11 +208,11 @@ async function route(
   }
 }
 
-function serverContext(chapterId: string, storyId: string): Context {
+function serverContext(id: string, storyId: string, kind: DocumentKind = "chapter"): Context {
   return {
     userId: null,
     storyId,
-    document: { kind: "chapter", id: chapterId },
+    document: { kind, id },
     member: false,
     socketId: "server",
     outdated: false,

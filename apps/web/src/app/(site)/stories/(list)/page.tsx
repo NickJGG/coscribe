@@ -10,13 +10,13 @@ import { relativeTime } from "@/lib/relative-time";
 import { byProfileOrder } from "@/lib/profile";
 import { isWriter } from "@/lib/story-roles";
 import { parseTrashed } from "@/lib/trash";
-import { createStory, restoreStory } from "@/lib/actions/stories";
+import { restoreStory } from "@/lib/actions/stories";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
-import { StoryFields } from "@/components/StoryFields";
 import { finishedFoot, StoryCard, StorySection } from "@/components/StoryCard";
 import { TrashUndo } from "@/components/TrashUndo";
 import { NewStoryButton } from "./NewStoryButton";
+import { NewStoryForm } from "./NewStoryForm";
 import { PublicStories } from "./PublicStories";
 import styles from "./stories.module.css";
 
@@ -148,12 +148,7 @@ export default async function StoriesPage(props: PageProps<"/stories">) {
         <div className={styles.newBody}>
           <h2>Start a story</h2>
           <p className="muted">You&rsquo;ll be its Host. You can invite Writers once it&rsquo;s created.</p>
-          <ActionForm action={createStory} className={styles.form}>
-            <StoryFields />
-            <div>
-              <button className="button button-primary">Create story</button>
-            </div>
-          </ActionForm>
+          <NewStoryForm />
         </div>
       </details>
 

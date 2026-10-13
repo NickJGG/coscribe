@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { paragraphShares, readAuthorChars, storyRibbon, type RibbonMember } from "./contribution";
 
 const host: RibbonMember = { id: "h", name: "nick", color: "#d93f4c", role: "host", joinedAt: "2026-03-01" };
@@ -37,6 +38,7 @@ describe("storyRibbon", () => {
 describe("readAuthorChars", () => {
   it("keeps positive numeric counts only", () => {
     expect(readAuthorChars({ a: 3, b: "4", c: 0, d: -1 })).toEqual({ a: 3 });
+    expect(readAuthorChars({ a: 3, [IMPORTED_AUTHOR]: 50 })).toEqual({ a: 3 });
   });
 
   it("treats anything but an object as empty", () => {

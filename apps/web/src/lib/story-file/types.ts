@@ -23,5 +23,5 @@ export type OutlineFile = { fields: { label: string; content: JSONContent }[]; c
 
 export type EntryFile = { type: EntryType; name: string; description: string; aliases: string[]; body: JSONContent };
 
-/** `share` is the fraction (0–1) of the Story's credited text. */
+/** `share` is the fraction (0–1) of the Story's credited text. `role` is empty for Imported Text. */
 export type CreditFile = { name: string; role: string; share: number };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { relativeTime } from "@/lib/relative-time";
 import { authorColorCss } from "@/lib/profile-rules";
 import { paragraphShares, type AuthorRun } from "@/lib/contribution";
@@ -11,6 +12,12 @@ import styles from "./LiveDocument.module.css";
 export type StoryAuthor = { id: string; name: string; color: string };
 
 export const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+/** Who an `author` mark's `userId` names, for a tooltip or legend. */
+export function authorName(byId: ReadonlyMap<string, StoryAuthor>, userId: string): string {
+  if (userId === IMPORTED_AUTHOR) return "Imported text";
+  return byId.get(userId)?.name ?? "A former Writer";
+}
 
 type Tip = { text: string; x: number; y: number };
 
@@ -50,14 +57,14 @@ export function Authorship({
       authors
         .filter((a) => HEX_COLOR.test(a.color))
         .map((a) => `span[data-author="${a.id}"]{--author-tint:${authorColorCss(a.color)}}`)
-        .join(""),
+        .join("") + `span[data-author="${IMPORTED_AUTHOR}"]{--author-tint:var(--faint)}`,
     [authors]
   );
 
   function onMouseOver(event: React.MouseEvent<HTMLDivElement>) {
     const span = (event.target as Element).closest<HTMLElement>("span[data-author]");
     if (!span || !clip.current) return setTip(null);
-    const name = byId.get(span.dataset.author!)?.name ?? "A former Writer";
+    const name = authorName(byId, span.dataset.author!);
     const at = Number(span.dataset.at);
     const origin = clip.current.getBoundingClientRect();
     // A run can wrap across lines; anchor to the line under the pointer.
@@ -72,6 +79,7 @@ export function Authorship({
   }
 
   function barColor(author: string) {
+    if (author === IMPORTED_AUTHOR) return "var(--faint)";
     const color = byId.get(author)?.color;
     return color && HEX_COLOR.test(color) ? authorColorCss(color) : undefined;
   }

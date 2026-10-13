@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { IMPORTED_AUTHOR } from "@coscribe/editor";
 import { authorIds, creditLines, tallyAuthors } from "./credits";
 
 const text = (text: string, userId: string) => ({ type: "text", text, marks: [{ type: "author", attrs: { userId, at: 1 } }] });
@@ -34,5 +35,14 @@ describe("credits", () => {
   it("lists Viewers only when their text survives", () => {
     const lines = creditLines(tallyAuthors(content), ["mia"], [mia, jordan, sam]);
     expect(lines.map((l) => l.id)).toEqual(["mia", "gone", "jordan"]);
+  });
+
+  it("gives Imported Text its own line, never an account", () => {
+    const tally = tallyAuthors({ chapter: { c1: doc(text("Long ago", IMPORTED_AUTHOR), text("!", "mia")) }, entry: {} });
+    expect(authorIds(tally)).toEqual(["mia"]);
+    expect(creditLines(tally, ["mia"], [mia]).map((l) => [l.id, l.chapters, l.person])).toEqual([
+      [IMPORTED_AUTHOR, 8, null],
+      ["mia", 1, mia],
+    ]);
   });
 });
