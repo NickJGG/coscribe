@@ -1,16 +1,16 @@
 /**
- * Hocuspocus server for live Chapter and Entry documents.
+ * Hocuspocus server for live Chapter, Entry and Outline documents.
  *
- * - Yjs state persists to `chapters.ydoc` / `entries.ydoc`. Chapters also store their word count and
+ * - Yjs state persists to `chapters.ydoc` / `entries.ydoc` / `chapter_outlines.ydoc`. Chapters also store their word count and
  *   per-author characters; on startup, Chapters stored before those columns existed are backfilled.
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
- *   story's membership, Visibility, status, and (for Chapters) lock state. A client whose `?schema=`
+ *   story's membership, Visibility, status, and (for Chapters and their Outlines) lock state. A client whose `?schema=`
  *   isn't SCHEMA_VERSION is outdated: read-only for as long as it stays connected, and told so.
  * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts), and open Chapters
  *   tell their connections whether taking one would save anything.
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
  *   cleared before the server starts listening. Reference connections (Pinned Entry bodies, whose token
- *   starts `ref:`) don't count.
+ *   starts `ref:`) and Outlines don't count.
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
@@ -93,7 +93,15 @@ const server = new Server<Context>({
 
     const outdated = isOutdated(requestParameters.get("schema"))
     connectionConfig.readOnly = access === "read" || outdated
-    return { userId, storyId, document: doc, member, socketId, outdated, reference } satisfies Context
+    return {
+      userId,
+      storyId,
+      document: doc,
+      member,
+      socketId,
+      outdated,
+      reference: reference || doc.kind === "outline",
+    } satisfies Context
   },
 
   async afterLoadDocument({ documentName, document }) {

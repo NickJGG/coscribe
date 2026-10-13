@@ -2,7 +2,7 @@
  * Mirrors open connections into `story_presence` (Writers, by name) and `story_activity` (counts).
  * Keyed by the connection's context object, which Hocuspocus passes unchanged to every hook. Writes run
  * one at a time, so the tables always end up matching what's in memory. Reference visits (a Pinned
- * Entry's body beside a Chapter) are tracked but never show up in either table.
+ * Entry's body beside a Chapter, or an Outline) are tracked but never show up in either table.
  */
 import { sql } from "./db"
 import type { DocumentRef } from "./documents"

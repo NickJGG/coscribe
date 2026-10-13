@@ -18,7 +18,6 @@ import {
   entryExtensions,
   type SnapshotMessage,
   type SyncMessage,
-  type DocumentKind,
 } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
 import { authorColorCss } from "@/lib/profile-rules";
@@ -50,6 +49,8 @@ export type DocumentEntryMentions = { storyId: string; entries: EntryMentionEntr
 
 export type { StoryAuthor } from "./Authorship";
 
+type LiveKind = "chapter" | "entry";
+
 const KINDS = {
   chapter: { extensions: chapterExtensions, noun: "Chapter", label: "Chapter text", placeholder: "Start writing…" },
   entry: {
@@ -58,7 +59,7 @@ const KINDS = {
     label: "Entry body",
     placeholder: "Everything the Writers should keep straight…",
   },
-} satisfies Record<DocumentKind, unknown>;
+} satisfies Record<LiveKind, unknown>;
 
 const SLOW_MS = 1000;
 
@@ -97,7 +98,7 @@ export function LiveDocument({
   entryMentions,
   embedded = false,
 }: {
-  kind: DocumentKind;
+  kind: LiveKind;
   id: string;
   writer: Writer | null;
   authors: StoryAuthor[];
@@ -330,7 +331,7 @@ function LiveEditor({
   find,
   onEditor,
 }: {
-  kind: DocumentKind;
+  kind: LiveKind;
   embedded: boolean;
   session: LiveSession;
   writer: Writer | null;

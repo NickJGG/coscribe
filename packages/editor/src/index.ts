@@ -1,4 +1,4 @@
-/** Shared Tiptap/ProseMirror schemas for Chapters and Entry bodies. Used by the web editor and apps/sync. */
+/** Shared Tiptap/ProseMirror schemas for Chapters, Entry bodies and Outlines. Used by the web editor and apps/sync. */
 import { getSchema } from "@tiptap/core"
 import Bold from "@tiptap/extension-bold"
 import Document from "@tiptap/extension-document"
@@ -39,6 +39,18 @@ export {
 export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs } from "./author"
 export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from "./passage"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
+export {
+  addedFields,
+  addField,
+  discardField,
+  fieldFragment,
+  OUTLINE_FIELDS,
+  outlineHasContent,
+  removeField,
+  restoreField,
+  type OutlineField,
+  type RemovedField,
+} from "./outline"
 
 /**
  * Paragraphs (left, centered or right-aligned), block quotes of paragraphs, Scene Breaks, and bold, italic and
@@ -63,7 +75,7 @@ export const chapterExtensions = [
 /**
  * The shared schema's version. A client on a different one is read-only (see apps/sync), because
  * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
- * `chapterExtensions` or `entryExtensions` gains or loses a node, mark or attribute.
+ * `chapterExtensions`, `entryExtensions` or `outlineExtensions` gains or loses a node, mark or attribute.
  */
 export const SCHEMA_VERSION = 2
 
@@ -83,17 +95,34 @@ export const entryExtensions = [
 /** Server-side (apps/sync) view of an Entry body, for the Reader View. */
 export const entrySchema = getSchema(entryExtensions)
 
+/** An Outline box: bold, italic, strikethrough and lists. No authorship, Notes or Scene Breaks. */
+export const outlineExtensions = [
+  Document,
+  Paragraph,
+  Text,
+  Bold,
+  Italic,
+  Strike,
+  BulletList,
+  OrderedList,
+  ListItem,
+  ListKeymap,
+]
+
+/** Server-side (apps/sync) view of an Outline box. */
+export const outlineSchema = getSchema(outlineExtensions)
+
 /** The Yjs XmlFragment that holds the text (Tiptap Collaboration's default field). */
 export const DOCUMENT_FIELD = "default"
 
-export type DocumentKind = "chapter" | "entry"
+export type DocumentKind = "chapter" | "entry" | "outline"
 
-/** Hocuspocus document names: `chapter:<uuid>` and `entry:<uuid>`. */
+/** Hocuspocus document names: `chapter:<uuid>`, `entry:<uuid>` and `outline:<chapter uuid>`. */
 export function documentName(kind: DocumentKind, id: string): string {
   return `${kind}:${id}`
 }
 
-const DOCUMENT_NAME = /^(chapter|entry):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+const DOCUMENT_NAME = /^(chapter|entry|outline):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
 
 export function parseDocumentName(name: string): { kind: DocumentKind; id: string } | null {
   const match = DOCUMENT_NAME.exec(name)

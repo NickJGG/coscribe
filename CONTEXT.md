@@ -18,6 +18,10 @@ _Avoid_: Description, summary, tagline
 One live-edited section of a **Story**'s prose.
 _Avoid_: Page, section, part
 
+**Outline**:
+A **Chapter**'s plan, written in labelled fields (Summary, Characters, Plot progression, Foreshadowing and setups, and so on) and edited live by its **Writers**. **Viewers** never see it.
+_Avoid_: Plan, beat sheet, notes
+
 **Story Bible**:
 A **Story**'s shared reference of **Entries** that keeps writers consistent.
 _Avoid_: Wiki, notes, lore doc
@@ -171,6 +175,7 @@ _Avoid_: Alert, activity, update
 - A **Story** has one or more ordered **Chapters** and exactly one **Story Bible**
 - A **Story Bible** has zero or more **Entries**
 - A **Chapter** has zero or more **Snapshots**
+- A **Chapter** has exactly one **Outline**, which may be empty; only **Writers** and above see it
 - An **Invite** makes exactly one **User** a **Writer** or **Viewer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
 - An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Entry Mentions**

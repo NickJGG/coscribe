@@ -1,8 +1,9 @@
-import { SCHEMA_VERSION } from "@coscribe/editor"
+import { SCHEMA_VERSION, type DocumentKind } from "@coscribe/editor"
 
 export type Access = "write" | "read" | null
 
 export interface AccessFacts {
+  kind: DocumentKind
   visibility: "public" | "private"
   status: "active" | "finished"
   locked: boolean
@@ -13,10 +14,12 @@ export interface AccessFacts {
 
 /**
  * Writers and up edit unless the Chapter is locked or the Story is Finished. Everyone else may watch when
- * can_view_story() would let them (Public, a pending Invite, or an invited Viewer), read-only.
+ * can_view_story() would let them (Public, a pending Invite, or an invited Viewer), read-only. Outlines are for
+ * Writers and up only, so everyone else is turned away.
  */
 export function decideAccess(facts: AccessFacts | null): Access {
   if (!facts) return null
+  if (facts.kind === "outline" && (!facts.role || facts.role === "viewer")) return null
   if (facts.role === "viewer") return "read"
   if (facts.role) return facts.locked || facts.status === "finished" ? "read" : "write"
   return facts.visibility === "public" || facts.invited ? "read" : null

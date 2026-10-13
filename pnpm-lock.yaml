@@ -315,6 +315,9 @@ importers:
       diff:
         specifier: ^8.0.4
         version: 8.0.4
+      yjs:
+        specifier: ^13.6.33
+        version: 13.6.33
 
 packages:
 

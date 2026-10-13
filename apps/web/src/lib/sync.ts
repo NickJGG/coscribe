@@ -1,5 +1,5 @@
 import type { JSONContent } from "@tiptap/core";
-import type { DocumentKind, TextPoint } from "@coscribe/editor";
+import type { TextPoint } from "@coscribe/editor";
 
 /** A server-to-server call to apps/sync, authorized with SYNC_SECRET. Callers check permissions first. */
 async function syncFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -55,7 +55,7 @@ export async function takeSnapshotLive(chapterId: string, name: string | null): 
   return "taken";
 }
 
-export type StoryContent = Record<DocumentKind, Record<string, JSONContent>>;
+export type StoryContent = Record<"chapter" | "entry", Record<string, JSONContent>>;
 
 /** Every Chapter and Entry body in a story, keyed by id. Null if the sync server can't be reached. */
 export async function fetchStoryContent(storyId: string): Promise<StoryContent | null> {

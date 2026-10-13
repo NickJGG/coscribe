@@ -18,6 +18,7 @@
     "@tiptap/extension-text": "^3.31.4",
     "@tiptap/extension-text-align": "^3.31.4",
     "@tiptap/pm": "^3.31.4",
-    "diff": "^8.0.4"
+    "diff": "^8.0.4",
+    "yjs": "^13.6.33"
   }
 }
