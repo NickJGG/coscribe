@@ -19,6 +19,7 @@ export default async function StorySettingsLayout(props: LayoutProps<"/stories/[
     { slug: "story", label: "Story", shown: myRole === "host" },
     { slug: "writers", label: "Writers", shown: true },
     { slug: "viewers", label: "Viewers", shown: story.visibility === "private" || viewers.length > 0 },
+    { slug: "trash", label: "Trash", shown: myRole !== "viewer" },
     { slug: "you", label: "You", shown: true },
   ].filter((t) => t.shown);
 

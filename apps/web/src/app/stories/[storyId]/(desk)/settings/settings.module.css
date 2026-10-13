@@ -162,3 +162,12 @@
   gap: 8px;
   cursor: pointer;
 }
+
+.trashTitle {
+  font-weight: 500;
+}
+
+.trashMeta {
+  margin-top: 2px;
+  font-size: var(--step--1);
+}

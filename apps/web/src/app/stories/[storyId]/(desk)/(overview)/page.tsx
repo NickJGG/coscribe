@@ -2,17 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { formerWriterNames, getChapters, getEntries, getStory } from "@/lib/story";
+import { formerWriterNames, getChapters, getEntries, getStory, getTrash } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { byJoinOrder, readAuthorChars, storyRibbon } from "@/lib/contribution";
 import { monthYear, recentlyEdited } from "@/lib/overview";
 import { relativeTime } from "@/lib/relative-time";
+import { parseTrashed } from "@/lib/trash";
 import { isWriter, ROLE_LABEL, type MemberRole } from "@/lib/story-roles";
 import { acceptInvite, deleteInvite } from "@/lib/actions/invites";
+import { restoreChapter } from "@/lib/actions/chapters";
+import { restoreEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { Avatar, AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { ChapterPresence } from "@/components/StoryPresence";
+import { TrashUndo } from "@/components/TrashUndo";
 import { BrowseButton, HereDot, WritingNow } from "./Overview";
 import { readingTime } from "@/lib/words";
 import styles from "./overview.module.css";
@@ -81,6 +85,12 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
   ].filter(Boolean);
   const primary = primaryAction(story.id, chapters, myRole, finished);
   const recent = finished ? [] : recentlyEdited(chapters);
+  const trashed = parseTrashed((await props.searchParams).trashed);
+  // Only the deleter can Undo, and only while it's still in the Trash.
+  const undoable =
+    trashed &&
+    viewer &&
+    (await getTrash(story.id)).find((t) => t.kind === trashed.kind && t.id === trashed.id && t.deleted_by === viewer.userId);
 
   return (
     <div className={styles.page}>
@@ -198,6 +208,13 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
           </ul>
         </section>
       </div>
+      {undoable && (
+        <TrashUndo
+          key={undoable.id}
+          title={undoable.title}
+          undo={(undoable.kind === "chapter" ? restoreChapter : restoreEntry).bind(null, story.id, undoable.id, true)}
+        />
+      )}
     </div>
   );
 }

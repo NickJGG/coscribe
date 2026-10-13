@@ -12,6 +12,7 @@ import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
+import { trashedDocument } from "@/components/TrashedDocument";
 import { PinButton, PinError } from "@/components/PinnedEntries";
 import { EntryDetails, EntryName } from "@/components/EntryDetails";
 import { EntryTypePicker } from "./EntryTypePicker";
@@ -34,6 +35,8 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   const { storyId, entryId } = await props.params;
   const data = await load(storyId, entryId);
   if (!data) {
+    const trashed = await trashedDocument(storyId, "entry", entryId);
+    if (trashed) return trashed;
     if (!(await getViewer())) {
       redirect(`/login?next=${encodeURIComponent(`/stories/${storyId}/bible/${entryId}`)}`);
     }
@@ -55,7 +58,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
               {editable && canDeleteEntries(myRole) && (
                 <ActionForm
                   action={deleteEntry.bind(null, story.id, entry.id)}
-                  confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
+                  confirm={`Delete “${entry.name}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
                 >
                   <button className="button button-ghost button-tiny button-danger">Delete</button>
                 </ActionForm>

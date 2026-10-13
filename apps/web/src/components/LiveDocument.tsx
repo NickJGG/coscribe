@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Extension } from "@tiptap/core";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -68,7 +68,8 @@ const TabKey = Extension.create({
 
 /**
  * A live Chapter or Entry body. Edit rights come from apps/sync, not props: it can switch this editor
- * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
+ * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private,
+ * moved to the Trash).
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, then `outline` (shown even when read-only), before the View options menu; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
@@ -109,6 +110,7 @@ export function LiveDocument({
   const asideRef = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const params = useSearchParams();
+  const router = useRouter();
   const findQuery = embedded ? "" : (params.get("find")?.trim() ?? "");
   const findCurrent = embedded ? null : occurrence(params.get("n"));
   const notesContext = useNotes();
@@ -161,10 +163,22 @@ export function LiveDocument({
 
   usePresence(embedded ? null : (session?.provider ?? null));
 
+  // The page re-renders as the Trash notice, with who did it and Restore.
+  useEffect(() => {
+    if (connection === "trashed") router.refresh();
+  }, [connection, router]);
+
   if (connection === "denied") {
     return (
       <p className={styles.denied} role="status">
         You can no longer open this {KINDS[kind].noun}.
+      </p>
+    );
+  }
+  if (connection === "trashed") {
+    return (
+      <p className={styles.denied} role="status">
+        This {KINDS[kind].noun} was moved to the Trash.
       </p>
     );
   }

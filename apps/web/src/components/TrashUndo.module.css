@@ -1,0 +1,23 @@
+.dock {
+  position: fixed;
+  right: var(--gutter);
+  bottom: 24px;
+  left: var(--gutter);
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dock > * {
+  pointer-events: auto;
+}
+
+.error {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  box-shadow: var(--shadow);
+  font-size: 0.85rem;
+}

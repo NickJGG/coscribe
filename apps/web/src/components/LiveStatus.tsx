@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 
-export type LiveConnection = "connecting" | "live" | "offline" | "denied";
+/** `denied` is losing access to the document; `trashed` is the document (or its Chapter) moving to the Trash. */
+export type LiveConnection = "connecting" | "live" | "offline" | "denied" | "trashed";
 
 /** A Writer in the open document right now: one entry per person, however many tabs. */
 export type PresentWriter = { id: string; name: string; color: string };

@@ -55,7 +55,8 @@ export function OutlineDialog({
   onClose: () => void;
 }) {
   const { session, connection, synced, readOnly } = useLiveSession(documentName("outline", chapterId));
-  const live = connection !== "denied" && session && synced ? session : null;
+  const gone = connection === "denied" || connection === "trashed";
+  const live = !gone && session && synced ? session : null;
   const lists = useOutlineLists(live?.ydoc ?? null);
   const [openId, setOpenId] = useState<string | null>(null);
   const openEntry = openId && lists.characterIds.includes(openId) ? characters.find((c) => c.id === openId) : undefined;
@@ -107,7 +108,7 @@ export function OutlineDialog({
         return true;
       }}
     >
-      {connection === "denied" ? (
+      {gone ? (
         <p className={styles.denied} role="status">
           You can no longer open this Outline.
         </p>

@@ -60,7 +60,7 @@ export function ChapterMenu({
           <hr className={styles.divider} />
           <ActionForm
             action={deleteChapter.bind(null, storyId, chapter.id)}
-            confirm={`Delete "${chapter.title}" and everything written in it? This can't be undone.`}
+            confirm={`Delete “${chapter.title}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
           >
             <button className={`${styles.menuItem} ${styles.danger}`}>Delete</button>
           </ActionForm>

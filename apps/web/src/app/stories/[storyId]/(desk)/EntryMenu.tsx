@@ -68,7 +68,7 @@ export function EntryMenu({
           <hr className={styles.divider} />
           <ActionForm
             action={deleteEntry.bind(null, storyId, entry.id)}
-            confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
+            confirm={`Delete “${entry.name}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
           >
             <button className={`${styles.menuItem} ${styles.danger}`}>Delete</button>
           </ActionForm>

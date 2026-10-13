@@ -10,6 +10,7 @@ import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LockIcon } from "@/components/icons";
 import { LiveDocument } from "@/components/LiveDocument";
+import { trashedDocument } from "@/components/TrashedDocument";
 import { SnapshotCompareProvider } from "@/components/SnapshotCompare";
 import { SnapshotCompareView } from "@/components/SnapshotCompareView";
 import { SnapshotButton } from "@/components/SnapshotButton";
@@ -40,6 +41,8 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const { storyId, chapterId } = await props.params;
   const data = await load(storyId, chapterId);
   if (!data) {
+    const trashed = await trashedDocument(storyId, "chapter", chapterId);
+    if (trashed) return trashed;
     if (!(await getViewer())) {
       redirect(`/login?next=${encodeURIComponent(`/stories/${storyId}/chapters/${chapterId}`)}`);
     }

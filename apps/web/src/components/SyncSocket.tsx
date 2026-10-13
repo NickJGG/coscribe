@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { HocuspocusProvider, HocuspocusProviderWebsocket } from "@hocuspocus/provider";
 import * as Y from "yjs";
-import { ACCESS_REVOKED, SCHEMA_VERSION, type SnapshotMessage, type SyncMessage } from "@coscribe/editor";
+import { ACCESS_REVOKED, DOCUMENT_TRASHED, SCHEMA_VERSION, type SnapshotMessage, type SyncMessage } from "@coscribe/editor";
 import { createClient } from "@/lib/supabase/client";
 import type { LiveConnection } from "./LiveStatus";
 
@@ -131,7 +131,8 @@ export function useLiveDocuments() {
 
 /**
  * Holds one live document open while mounted, and follows what apps/sync says about it: whether it's
- * read-only (which can change at any time), outdated, cut off, and (for Chapters) the latest Snapshot state.
+ * read-only (which can change at any time), outdated, cut off or moved to the Trash, and (for Chapters)
+ * the latest Snapshot state.
  */
 export function useLiveSession(name: string, { reference = false }: { reference?: boolean } = {}) {
   const documents = useLiveDocuments();
@@ -156,7 +157,7 @@ export function useLiveSession(name: string, { reference = false }: { reference?
       setSynced(true);
     };
     const onStatus = ({ status }: { status: string }) => {
-      if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
+      if (status === "disconnected") setConnection((s) => (s === "denied" || s === "trashed" ? s : "offline"));
     };
     const onStateless = ({ payload }: { payload: string }) => {
       const message = JSON.parse(payload) as SyncMessage;
@@ -166,6 +167,7 @@ export function useLiveSession(name: string, { reference = false }: { reference?
     };
     const onClose = ({ event }: { event: CloseEvent }) => {
       if (event.reason === ACCESS_REVOKED) setConnection("denied");
+      else if (event.reason === DOCUMENT_TRASHED) setConnection("trashed");
     };
     provider.on("authenticated", onAuthenticated);
     provider.on("authenticationFailed", onAuthenticationFailed);
