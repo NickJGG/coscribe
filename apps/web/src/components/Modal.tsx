@@ -6,7 +6,8 @@ import { CloseIcon } from "./icons";
 import styles from "./Modal.module.css";
 
 /**
- * A modal dialog on native `<dialog>`: focus stays inside, the page behind is inert, and Esc or × closes it.
+ * A modal dialog on native `<dialog>`: focus stays inside, the page behind is inert, and Esc, ×, or a click
+ * outside it closes it.
  * Focus goes back to whatever opened it. Full screen on phones. Its children render only while it's open.
  */
 export function Modal({
@@ -24,6 +25,7 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
+  const pressedOutside = useRef(false);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -47,6 +49,14 @@ export function Modal({
       onClose={(e) => {
         // A close queued by the effect's cleanup can land after it has reopened (StrictMode remounts).
         if (!e.currentTarget.open) onClose();
+      }}
+      onPointerDown={(e) => {
+        pressedOutside.current = isOutside(e);
+      }}
+      onClick={(e) => {
+        // Both ends outside, so a text selection dragged past the edge doesn't close it.
+        if (pressedOutside.current && isOutside(e)) onClose();
+        pressedOutside.current = false;
       }}
       onKeyDown={(e) => {
         // Not the desk's Escape (find, comparison).
@@ -72,4 +82,11 @@ export function Modal({
     </dialog>,
     document.body
   );
+}
+
+/** The backdrop belongs to the dialog itself, so a click there targets the dialog, outside its box. */
+function isOutside(e: React.MouseEvent<HTMLDialogElement>): boolean {
+  if (e.target !== e.currentTarget) return false;
+  const box = e.currentTarget.getBoundingClientRect();
+  return e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom;
 }
