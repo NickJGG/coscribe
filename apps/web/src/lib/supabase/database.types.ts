@@ -371,14 +371,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "author_color": string,"bio": string | null,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"bio": string | null,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"toolbar_layout": Json | null,"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color": string,"bio"?: string | null,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username": string
+                    "author_color": string,"bio"?: string | null,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"toolbar_layout"?: Json | null,"username": string
                   }
                   Update: {
-                    "author_color"?: string,"bio"?: string | null,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"username"?: string
+                    "author_color"?: string,"bio"?: string | null,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"toolbar_layout"?: Json | null,"username"?: string
                   }
                   Relationships: [
                     

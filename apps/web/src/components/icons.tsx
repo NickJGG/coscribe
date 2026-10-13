@@ -112,3 +112,13 @@ export function NumberedListIcon() {
     </svg>
   );
 }
+
+export function SlidersIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path d="M3 6h7.5M14.5 6H17M3 14h2.5M9.5 14H17" />
+      <circle cx="12.5" cy="6" r="2" />
+      <circle cx="7.5" cy="14" r="2" />
+    </svg>
+  );
+}

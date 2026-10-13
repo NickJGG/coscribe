@@ -6,6 +6,7 @@ import { countEntryMentions } from "@coscribe/editor";
 import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
 import { canDeleteEntries, isWriter } from "@/lib/story-roles";
+import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { entryMentionEntries, type EntryMentionEntry } from "@/lib/entries";
 import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
@@ -39,6 +40,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   }
   const { story, entries, entry, myRole } = data;
   const editable = isWriter(myRole) && story.status !== "finished";
+  const viewer = await getViewer();
 
   return (
     <div className={styles.page}>
@@ -72,6 +74,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
         id={entry.id}
         writer={liveWriter(data)}
         authors={storyAuthors(data)}
+        toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
         entryMentions={{ storyId: story.id, entries: entries.map((e) => (e.id === entry.id ? { ...e, linkEntryMentions: false } : e)) }}
       />
 

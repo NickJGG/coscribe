@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { bioError, isAuthorColor, normalizeBio, normalizeUsername, usernameError } from "@/lib/profile-rules";
 import { safeNext } from "@/lib/safe-next";
 import { requireProfile } from "@/lib/viewer";
+import { isDefaultLayout, resolveToolbarLayout } from "@/lib/toolbar-layout";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type Theme = Database["public"]["Enums"]["theme"];
@@ -82,5 +83,17 @@ export async function setShowOnline(show: boolean): Promise<void> {
   const me = await requireProfile("/settings");
   const supabase = await createClient();
   await supabase.from("profiles").update({ show_online: show === true }).eq("id", me.userId);
+  refresh();
+}
+
+/** Saves the Formatting toolbar's order; the default is stored as null. */
+export async function setToolbarLayout(input: unknown): Promise<void> {
+  const me = await requireProfile("/settings");
+  const layout = resolveToolbarLayout(input);
+  const supabase = await createClient();
+  await supabase
+    .from("profiles")
+    .update({ toolbar_layout: isDefaultLayout(layout) ? null : layout })
+    .eq("id", me.userId);
   refresh();
 }

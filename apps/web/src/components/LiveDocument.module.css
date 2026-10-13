@@ -155,9 +155,72 @@
   background: var(--rule);
 }
 
+/* Customizing: each group in a dashed outline with a grip, its tools dragged in place. */
+.customizing {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.toolGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 3px 1px 1px;
+  border: 1px dashed var(--rule);
+  border-radius: 7px;
+  background: var(--paper);
+}
+
+.customizing .toolGroup .tool {
+  cursor: grab;
+  touch-action: none;
+}
+
+.toolGrip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: var(--faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.toolGrip:hover {
+  color: var(--ink);
+}
+
+.toolGrip svg {
+  width: 12px;
+  height: 12px;
+}
+
+.dragging {
+  position: relative;
+  z-index: 1;
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.customizeActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media (pointer: coarse) {
   .tool {
     min-width: 44px;
+    height: 44px;
+  }
+
+  .toolGrip {
+    width: 28px;
     height: 44px;
   }
 }

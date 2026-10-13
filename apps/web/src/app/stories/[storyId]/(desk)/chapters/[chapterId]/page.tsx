@@ -5,6 +5,7 @@ import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/l
 import { entryMentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters } from "@/lib/story-roles";
+import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
 import { LockIcon } from "@/components/icons";
@@ -50,6 +51,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const manage = canManageChapters(myRole) && story.status !== "finished";
   const writer = liveWriter(data);
   const mentionEntries = entryMentionEntries(entries);
+  const viewer = await getViewer();
 
   const live = (
     <LiveDocument
@@ -59,6 +61,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       writer={writer}
       authors={authors}
       entryMentions={{ storyId: story.id, entries: mentionEntries }}
+      toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
       tools={
         manage && (
           <>
