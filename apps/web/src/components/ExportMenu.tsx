@@ -11,8 +11,9 @@ const FORMATS = [
 ] as const;
 
 /**
- * The Download menu: the Story as EPUB or Markdown, with or without its Story Bible, and for a Draft Export its
- * Outlines. Fetched rather than linked, so a failure shows here instead of as a bare error page.
+ * The Download menu: the Story as EPUB or Markdown, or the print page in a new tab, with or without its Story Bible,
+ * and for a Draft Export its Outlines. Downloads are fetched rather than linked, so a failure shows here instead of as a
+ * bare error page.
  */
 export function ExportMenu({
   storyId,
@@ -30,15 +31,13 @@ export function ExportMenu({
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  const options = { bible: bible && hasEntries ? "1" : "0", outlines: outlines && !finished ? "1" : "0" };
+
   async function download(format: "epub" | "md") {
     setBusy(true);
     setFailed(false);
     try {
-      const query = new URLSearchParams({
-        format,
-        bible: bible && hasEntries ? "1" : "0",
-        outlines: outlines && !finished ? "1" : "0",
-      });
+      const query = new URLSearchParams({ format, ...options });
       const response = await fetch(`/stories/${storyId}/export?${query}`);
       if (!response.ok) throw new Error(`export failed: ${response.status}`);
       const name = /filename="([^"]+)"/.exec(response.headers.get("content-disposition") ?? "")?.[1];
@@ -82,6 +81,13 @@ export function ExportMenu({
             <span className={styles.hint}>{hint}</span>
           </button>
         ))}
+        <a
+          href={`/stories/${storyId}/print?${new URLSearchParams(options)}`}
+          target="_blank"
+          className={styles.row}
+        >
+          Print or save as PDF
+        </a>
         {(hasEntries || !finished) && <hr className={styles.divider} />}
         {hasEntries && (
           <Switch checked={bible} onChange={setBible} className={styles.row}>

@@ -1,0 +1,79 @@
+/* The Reader's page and text styles (reader.module.css), laid out as one long book that prints a section per sheet. */
+.book {
+  gap: 48px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.titlePage {
+  padding-top: 15vh;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.outline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outline .fieldText {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.entry {
+  break-inside: avoid-page;
+}
+
+@page {
+  margin: 2cm 2.2cm;
+}
+
+@media print {
+  .toolbar {
+    display: none;
+  }
+
+  .book {
+    max-width: none;
+    padding: 0;
+    gap: 0;
+  }
+
+  .titlePage {
+    padding-top: 30vh;
+  }
+
+  .sheet {
+    break-before: page;
+  }
+
+  .book :is(h2, h3, h4) {
+    break-after: avoid-page;
+  }
+
+  .book :global(div[data-script]) > p {
+    break-inside: avoid-page;
+  }
+
+  .book :global(p) {
+    orphans: 2;
+    widows: 2;
+  }
+}
