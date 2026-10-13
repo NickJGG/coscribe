@@ -140,10 +140,22 @@ export async function deleteEntry(storyId: string, entryId: string): Promise<Act
   await requireProfile(`/stories/${storyId}/bible/${entryId}`);
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("entries").delete().eq("id", entryId).select("id");
+  const { error } = await supabase.rpc("trash_entry", { p_entry: entryId });
   if (error) return errorText(error);
-  if (!data.length) return NOT_ALLOWED;
 
   await refreshSyncAccess(storyId);
-  redirect(`/stories/${storyId}`);
+  redirect(`/stories/${storyId}?trashed=entry:${entryId}`);
+}
+
+/** `undo` is the deleter taking it straight back, which withdraws the Trash notifications instead of following them up. */
+export async function restoreEntry(storyId: string, entryId: string, undo = false): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isUuid(entryId)) return INVALID;
+  await requireProfile(`/stories/${storyId}`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("restore_entry", { p_entry: entryId, p_undo: undo });
+  if (error) return errorText(error);
+
+  revalidatePath(`/stories/${storyId}`, "layout");
+  return null;
 }

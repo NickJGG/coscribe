@@ -57,7 +57,45 @@ export async function deleteStory(storyId: string): Promise<ActionResult> {
   if (error) return errorText(error);
 
   await refreshSyncAccess(storyId);
-  redirect("/stories");
+  redirect(`/stories?trashed=story:${storyId}`);
+}
+
+/** Host only, from their Trash or the Undo after deleting. */
+export async function restoreStory(storyId: string): Promise<ActionResult> {
+  if (!isUuid(storyId)) return INVALID;
+  await requireProfile("/stories");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("restore_story", { p_story: storyId });
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
+}
+
+/** Host only. Purges the Story's trashed Chapters and Entries, even once it's Finished. */
+export async function emptyTrash(storyId: string): Promise<ActionResult> {
+  if (!isUuid(storyId)) return INVALID;
+  await requireProfile(`/stories/${storyId}/settings/trash`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("empty_trash", { p_story: storyId });
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
+}
+
+/** Purges every Story in the caller's Trash. */
+export async function emptyStoryTrash(): Promise<ActionResult> {
+  await requireProfile("/stories/trash");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("empty_story_trash");
+  if (error) return errorText(error);
+
+  refresh();
+  return null;
 }
 
 export async function setMemberRole(storyId: string, userId: string, role: MemberRole): Promise<ActionResult> {

@@ -20,7 +20,7 @@ export async function featurePassage(
   loaded: (name: string) => Y.Doc | undefined
 ): Promise<FeatureResult> {
   const [row] = await sql<{ story_id: string; ydoc: Uint8Array | null }[]>`
-    select story_id, ydoc from public.chapters where id = ${chapterId}
+    select story_id, ydoc from public.chapters where id = ${chapterId} and deleted_at is null
   `
   if (!row) return { saved: false, gone: true }
 

@@ -152,6 +152,12 @@ export function notificationHref(
     const message = detailText(n.detail, "message_id");
     return message ? `${story}?chat=${message}` : story;
   }
+  if (n.kind === "moved_to_trash") return `${story}/settings/trash`;
+  if (n.kind === "restored") {
+    const item = detailText(n.detail, "item_id");
+    const path = { chapter: "chapters", entry: "bible" }[detailText(n.detail, "item_kind") ?? ""];
+    return item && path ? `${story}/${path}/${item}` : story;
+  }
   if (n.kind === "story_finished") return `${story}/read`;
   return story;
 }

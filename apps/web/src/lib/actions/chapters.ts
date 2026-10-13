@@ -91,5 +91,18 @@ export async function deleteChapter(storyId: string, chapterId: string): Promise
   if (error) return errorText(error);
 
   await refreshSyncAccess(storyId);
-  redirect(`/stories/${storyId}`);
+  redirect(`/stories/${storyId}?trashed=chapter:${chapterId}`);
+}
+
+/** `undo` is the deleter taking it straight back, which withdraws the Trash notifications instead of following them up. */
+export async function restoreChapter(storyId: string, chapterId: string, undo = false): Promise<ActionResult> {
+  if (!isUuid(storyId) || !isUuid(chapterId)) return INVALID;
+  await requireProfile(`/stories/${storyId}`);
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("restore_chapter", { p_chapter: chapterId, p_undo: undo });
+  if (error) return errorText(error);
+
+  revalidatePath(`/stories/${storyId}`, "layout");
+  return null;
 }

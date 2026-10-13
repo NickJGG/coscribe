@@ -11,17 +11,19 @@ export type DocumentRef = { kind: DocumentKind; id: string }
 
 /**
  * The document's story, what `userId` (null for anonymous) may do with it, and whether they're a Writer or up.
- * Null story if the document is gone. Entries have no lock, so only a Finished story makes them read-only.
- * Outlines go by their Chapter.
+ * Null story if the document or its story is gone or in the Trash, or `userId` may not see it; `trashed` says
+ * they could, but the document is in the Trash. Entries have no lock, so only a Finished story makes them read-only. Outlines go by their Chapter.
  */
 export async function documentAccess(
   doc: DocumentRef,
   userId: string | null
-): Promise<{ storyId: string | null; access: Access; member: boolean }> {
+): Promise<{ storyId: string | null; access: Access; member: boolean; trashed: boolean }> {
   const locked = doc.kind === "entry" ? sql`false` : sql`d.locked`
-  const [row] = await sql<(Omit<AccessFacts, "kind"> & { story_id: string })[]>`
+  const [row] = await sql<(Omit<AccessFacts, "kind"> & { story_id: string; trashed: boolean; story_trashed: boolean })[]>`
     select
       d.story_id,
+      d.deleted_at is not null as trashed,
+      s.deleted_at is not null as story_trashed,
       s.visibility,
       s.status,
       ${locked} as locked,
@@ -35,8 +37,10 @@ export async function documentAccess(
     left join public.story_members m on m.story_id = s.id and m.user_id = ${userId}
     where d.id = ${doc.id}
   `
-  const access = decideAccess(row ? { ...row, kind: doc.kind } : null)
-  return { storyId: row?.story_id ?? null, access, member: !!row?.role && row.role !== "viewer" }
+  const access = row && !row.story_trashed ? decideAccess({ ...row, kind: doc.kind }) : null
+  if (!row || !access) return { storyId: null, access: null, member: false, trashed: false }
+  if (row.trashed) return { storyId: null, access: null, member: false, trashed: true }
+  return { storyId: row.story_id, access, member: !!row.role && row.role !== "viewer", trashed: false }
 }
 
 export async function fetchDocument(doc: DocumentRef): Promise<Uint8Array | null> {
@@ -53,14 +57,15 @@ export async function fetchDocument(doc: DocumentRef): Promise<Uint8Array | null
 }
 
 /**
- * A no-op once the document (or an Outline's Chapter) is deleted. Chapters also get their stats, read from
+ * A no-op once the document (or an Outline's Chapter) is deleted, or an Outline's Chapter is in the Trash. Chapters also get their stats, read from
  * the live `document`. An Outline's row is created on its first store.
  */
 export async function storeDocument(doc: DocumentRef, state: Uint8Array, document: Y.Doc): Promise<void> {
   if (doc.kind === "outline") {
     await sql`
       insert into public.chapter_outlines (chapter_id, story_id, ydoc, has_content)
-      select id, story_id, ${state}, ${outlineHasContent(document)} from public.chapters where id = ${doc.id}
+      select id, story_id, ${state}, ${outlineHasContent(document)} from public.chapters
+      where id = ${doc.id} and deleted_at is null
       on conflict (chapter_id) do update
       set ydoc = excluded.ydoc, has_content = excluded.has_content, updated_at = now()
     `
@@ -84,7 +89,7 @@ export async function storeDocument(doc: DocumentRef, state: Uint8Array, documen
  */
 export async function backfillChapterStats(): Promise<number> {
   const rows = await sql<{ id: string; ydoc: Uint8Array }[]>`
-    select id, ydoc from public.chapters where edited_at is null and ydoc is not null
+    select id, ydoc from public.chapters where edited_at is null and ydoc is not null and deleted_at is null
   `
   for (const { id, ydoc } of rows) {
     const { words, authorChars } = chapterStats(decodeChapter(ydoc))
@@ -110,9 +115,9 @@ export type StoryContent = Record<ContentKind, Record<string, Record<string, unk
  */
 export async function storyContent(storyId: string, loaded: (name: string) => Y.Doc | undefined): Promise<StoryContent> {
   const rows = await sql<{ kind: ContentKind; id: string; ydoc: Uint8Array | null }[]>`
-    select 'chapter' as kind, id, ydoc from public.chapters where story_id = ${storyId}
+    select 'chapter' as kind, id, ydoc from public.chapters where story_id = ${storyId} and deleted_at is null
     union all
-    select 'entry' as kind, id, ydoc from public.entries where story_id = ${storyId}
+    select 'entry' as kind, id, ydoc from public.entries where story_id = ${storyId} and deleted_at is null
   `
   const content: StoryContent = { chapter: {}, entry: {} }
   for (const { kind, id, ydoc } of rows) {

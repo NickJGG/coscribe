@@ -156,8 +156,11 @@ export function countWords(doc: {
   return doc.textBetween(0, doc.content.size, "\n", "\n").match(/\S+/gu)?.length ?? 0
 }
 
-/** Close reason apps/sync sends when a connection loses all access (removed, story made Private, document deleted). */
+/** Close reason apps/sync sends when a connection loses all access (removed, story made Private or deleted). */
 export const ACCESS_REVOKED = "access-revoked"
+
+/** Close reason apps/sync sends when a connection's Chapter or Entry (or an Outline's Chapter) moves to the Trash. */
+export const DOCUMENT_TRASHED = "document-trashed"
 
 /** Stateless message apps/sync sends when a connection's edit rights change (lock, unlock). */
 export type AccessMessage = { type: "access"; readOnly: boolean }

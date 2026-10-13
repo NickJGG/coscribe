@@ -39,11 +39,11 @@ export async function takeSnapshot(chapterId: string, doc: Document, name: strin
   const latest = await fetchLatestHash(chapterId)
   if (latest ? latest === hash : content.textContent === "") return false
 
-  // A no-op if the Chapter was deleted meanwhile.
+  // A no-op if the Chapter was deleted or moved to the Trash meanwhile.
   const inserted = await sql`
     insert into public.chapter_snapshots (chapter_id, state, content_hash, name)
     select ${chapterId}, ${Y.encodeStateAsUpdate(doc)}, ${hash}, ${name}
-    where exists (select 1 from public.chapters where id = ${chapterId})
+    where exists (select 1 from public.chapters where id = ${chapterId} and deleted_at is null)
   `
   if (inserted.count === 0) return false
   if (latestHash.has(chapterId)) {
@@ -107,7 +107,7 @@ function publish(chapterId: string, doc: Document, content: ChapterContent = cha
 
 /**
  * Takes a named (or unnamed) Snapshot of the live Chapter, loading it if nobody has it open.
- * "unchanged" when there's nothing new to save, "gone" if the Chapter no longer exists.
+ * "unchanged" when there's nothing new to save, "gone" if the Chapter no longer exists or is in the Trash.
  */
 export async function takeSnapshotNow<Context>(
   instance: Hocuspocus<Context>,
@@ -115,7 +115,9 @@ export async function takeSnapshotNow<Context>(
   name: string | null,
   context: (storyId: string) => Context
 ): Promise<"taken" | "unchanged" | "gone"> {
-  const [row] = await sql<{ story_id: string }[]>`select story_id from public.chapters where id = ${chapterId}`
+  const [row] = await sql<{ story_id: string }[]>`
+    select story_id from public.chapters where id = ${chapterId} and deleted_at is null
+  `
   if (!row) return "gone"
 
   const connection = await instance.openDirectConnection(documentName("chapter", chapterId), context(row.story_id))
@@ -126,7 +128,7 @@ export async function takeSnapshotNow<Context>(
   } finally {
     await connection.disconnect()
   }
-  const [still] = await sql`select 1 from public.chapters where id = ${chapterId}`
+  const [still] = await sql`select 1 from public.chapters where id = ${chapterId} and deleted_at is null`
   return still ? "unchanged" : "gone"
 }
 
@@ -141,7 +143,7 @@ export async function snapshotPreview(snapshotId: string): Promise<Record<string
 /**
  * Replaces the live Chapter's content with the Snapshot's, as one new change that open editors
  * receive like any other edit. The current text is snapshotted first, so a Restore can be undone by
- * restoring that. Returns false if the Snapshot is gone.
+ * restoring that. Returns false if the Snapshot is gone or its Chapter is in the Trash.
  */
 export async function restoreSnapshot<Context>(
   instance: Hocuspocus<Context>,
@@ -152,7 +154,7 @@ export async function restoreSnapshot<Context>(
     select s.chapter_id, c.story_id, s.state
     from public.chapter_snapshots s
     join public.chapters c on c.id = s.chapter_id
-    where s.id = ${snapshotId}
+    where s.id = ${snapshotId} and c.deleted_at is null
   `
   if (!row) return false
   const target = decodeChapter(row.state)

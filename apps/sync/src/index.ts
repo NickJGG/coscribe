@@ -28,7 +28,13 @@ import { createHash, timingSafeEqual } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 import { Database } from "@hocuspocus/extension-database"
 import { Server, type Hocuspocus } from "@hocuspocus/server"
-import { ACCESS_REVOKED, parseDocumentName, type AccessMessage, type OutdatedMessage } from "@coscribe/editor"
+import {
+  ACCESS_REVOKED,
+  DOCUMENT_TRASHED,
+  parseDocumentName,
+  type AccessMessage,
+  type OutdatedMessage,
+} from "@coscribe/editor"
 import { isOutdated, parseToken } from "./access"
 import { verifyUser } from "./auth"
 import { env } from "./env"
@@ -229,10 +235,10 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
       const { context } = connection
       if (context.storyId !== storyId) continue
 
-      const { access, member } = await documentAccess(context.document, context.userId)
+      const { access, member, trashed } = await documentAccess(context.document, context.userId)
       setMember(context, member)
       if (!access) {
-        connection.close({ code: 4403, reason: ACCESS_REVOKED })
+        connection.close({ code: 4403, reason: trashed ? DOCUMENT_TRASHED : ACCESS_REVOKED })
       } else if (connection.readOnly !== (access === "read" || context.outdated)) {
         connection.readOnly = access === "read" || context.outdated
         connection.sendStateless(JSON.stringify({ type: "access", readOnly: connection.readOnly } satisfies AccessMessage))

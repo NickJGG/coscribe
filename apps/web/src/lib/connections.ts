@@ -25,12 +25,12 @@ export const getFriendships = cache(async (userId: string) => {
   };
 });
 
-/** Invites waiting for the viewer to join or decline, newest first. */
+/** Invites waiting for the viewer to join or decline, newest first. Invites to a trashed Story are left out. */
 export const getPendingInvites = cache(async (userId: string) => {
   const supabase = await createClient();
   const { data } = await supabase
     .from("invites")
-    .select("id, role, story:stories (id, title), inviter:profiles!invites_invited_by_fkey (id, username, author_color)")
+    .select("id, role, story:stories!inner (id, title), inviter:profiles!invites_invited_by_fkey (id, username, author_color)")
     .eq("invitee_id", userId)
     .is("used_at", null)
     .order("created_at", { ascending: false });

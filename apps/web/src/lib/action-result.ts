@@ -14,6 +14,7 @@ const RPC_ERRORS: Record<string, string> = {
   host_cannot_leave: "Hand off Host before leaving.",
   story_finished: "This story is Finished.",
   last_chapter: "A story needs at least one Chapter.",
+  not_in_trash: "It's no longer in the Trash.",
   chapter_locked: "This Chapter is locked.",
   chapter_list_changed: "The Chapter list changed. Try again.",
   entry_list_changed: "The Story Bible changed. Try again.",

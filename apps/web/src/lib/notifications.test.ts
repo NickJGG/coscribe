@@ -115,6 +115,19 @@ describe("notificationHref", () => {
     expect(notificationHref({ ...mention, detail: {} })).toBe("/stories/s1");
   });
 
+  it("opens the Trash, or what came back out of it", () => {
+    expect(notificationHref({ ...base, kind: "moved_to_trash" })).toBe("/stories/s1/settings/trash");
+    const restored = { ...base, kind: "restored" as const };
+    expect(notificationHref({ ...restored, detail: { item_kind: "chapter", item_id: "c9" } })).toBe(
+      "/stories/s1/chapters/c9"
+    );
+    expect(notificationHref({ ...restored, detail: { item_kind: "entry", item_id: "e4" } })).toBe(
+      "/stories/s1/bible/e4"
+    );
+    expect(notificationHref(restored)).toBe("/stories/s1");
+    expect(notificationHref({ ...base, kind: "story_restored" })).toBe("/stories/s1");
+  });
+
   it("has no link once the Story is gone or you were removed", () => {
     expect(notificationHref({ ...base, story_id: null })).toBeNull();
     expect(notificationHref({ ...base, kind: "story_deleted" })).toBeNull();

@@ -97,6 +97,21 @@ export const getPins = cache(async (storyId: string) => {
   return (data ?? []).map((p) => p.entry_id);
 });
 
+/** The Story's trashed Chapters and Entries, newest first (empty for Viewers and anyone outside it). */
+export const getTrash = cache(async (storyId: string) => {
+  if (!isUuid(storyId)) return [];
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("story_trash", { p_story: storyId });
+  return data ?? [];
+});
+
+/** The Stories in the viewer's Trash (they're the Host of each), newest first. */
+export const getStoryTrash = cache(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_story_trash");
+  return data ?? [];
+});
+
 /** How the viewer shows up in a live document: a named caret for Writers, nothing for Viewers. */
 export function liveWriter({
   members,
