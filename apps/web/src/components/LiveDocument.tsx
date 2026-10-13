@@ -8,18 +8,7 @@ import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Dropcursor, Gapcursor, Placeholder } from "@tiptap/extensions";
-import {
-  ACCESS_REVOKED,
-  AuthorStamp,
-  chapterExtensions,
-  countWords,
-  documentName,
-  DOCUMENT_FIELD,
-  entryExtensions,
-  type SnapshotMessage,
-  type SyncMessage,
-} from "@coscribe/editor";
-import { createClient } from "@/lib/supabase/client";
+import { AuthorStamp, chapterExtensions, countWords, documentName, DOCUMENT_FIELD, entryExtensions } from "@coscribe/editor";
 import { authorColorCss } from "@/lib/profile-rules";
 import type { EntryMentionEntry } from "@/lib/entries";
 import { DEFAULT_TOOLBAR_LAYOUT, type ToolbarLayout } from "@/lib/toolbar-layout";
@@ -30,11 +19,11 @@ import { Find, findKey, type FindConfig } from "./Find";
 import { FindBar } from "./FindBar";
 import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
-import { NO_DOCUMENT, useLiveReport, type LiveConnection, type PresentWriter } from "./LiveStatus";
+import { NO_DOCUMENT, useLiveReport, type PresentWriter } from "./LiveStatus";
 import { PinsToggle } from "./PinnedEntries";
 import { SelectionActions } from "./SelectionActions";
 import { Switch } from "./Switch";
-import { useLiveDocuments, type LiveSession } from "./SyncSocket";
+import { useLiveSession, type LiveSession } from "./SyncSocket";
 import { NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
 import { NoteLayer } from "./notes/NoteMargin";
 import { NotesButton } from "./notes/NotesPanel";
@@ -80,7 +69,7 @@ const TabKey = Extension.create({
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
- * row's end, before Show pins and Show authors; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
+ * row's end, then `outline` (shown even when read-only), before Show pins and Show authors; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
@@ -94,6 +83,7 @@ export function LiveDocument({
   writer,
   authors,
   tools,
+  outline,
   toolbarLayout = DEFAULT_TOOLBAR_LAYOUT,
   entryMentions,
   embedded = false,
@@ -103,18 +93,15 @@ export function LiveDocument({
   writer: Writer | null;
   authors: StoryAuthor[];
   tools?: React.ReactNode;
+  outline?: React.ReactNode;
   toolbarLayout?: ToolbarLayout;
   entryMentions?: DocumentEntryMentions;
   embedded?: boolean;
 }) {
-  const documents = useLiveDocuments();
+  const name = documentName(kind, id);
+  const { session, connection, synced, readOnly, outdated, snapshot } = useLiveSession(name, { reference: embedded });
   const report = useReport(embedded);
-  const [session, setSession] = useState<LiveSession | null>(null);
-  const [connection, setConnection] = useState<LiveConnection>("connecting");
-  const [synced, setSynced] = useState(false);
   const [slow, setSlow] = useState(false);
-  const [readOnly, setReadOnly] = useState(true);
-  const [outdated, setOutdated] = useState(false);
   const [showAuthors, setShowAuthors] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const params = useSearchParams();
@@ -148,64 +135,17 @@ export function LiveDocument({
   }, [attachCompare, editor]);
 
   useEffect(() => {
-    const name = documentName(kind, id);
     report({ ...NO_DOCUMENT, doc: name });
-    const supabase = createClient();
-    const token = async () => (await supabase.auth.getSession()).data.session?.access_token ?? "";
-    const live = documents.open(name, embedded ? async () => `ref:${await token()}` : token, embedded);
-    const { provider } = live;
-
-    const onAuthenticated = ({ scope }: { scope: string }) => setReadOnly(scope !== "read-write");
-    const onAuthenticationFailed = () => setConnection("denied");
-    const onSynced = ({ state }: { state: boolean }) => {
-      if (!state) return;
-      setConnection("live");
-      setSynced(true);
-    };
-    const onStatus = ({ status }: { status: string }) => {
-      if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
-    };
-    const reportSnapshot = ({ changed, empty }: SnapshotMessage) =>
-      report({ snapshotChanged: changed, snapshotEmpty: empty });
-    const onStateless = ({ payload }: { payload: string }) => {
-      const message = JSON.parse(payload) as SyncMessage;
-      if (message.type === "access") setReadOnly(message.readOnly);
-      else if (message.type === "snapshot") reportSnapshot(message);
-      else if (message.type === "outdated") setOutdated(true);
-    };
-    const onClose = ({ event }: { event: CloseEvent }) => {
-      if (event.reason === ACCESS_REVOKED) setConnection("denied");
-    };
-    provider.on("authenticated", onAuthenticated);
-    provider.on("authenticationFailed", onAuthenticationFailed);
-    provider.on("synced", onSynced);
-    provider.on("status", onStatus);
-    provider.on("stateless", onStateless);
-    provider.on("close", onClose);
-
-    // The session is an external connection owned by this effect: the editor below needs the handle, and
-    // one reused from a moment ago has already been answered, so its events won't come again.
-    /* eslint-disable react-hooks/set-state-in-effect */
-    if (provider.isAuthenticated) setReadOnly(provider.authorizedScope !== "read-write");
-    if (provider.isSynced) onSynced({ state: true });
-    if (live.snapshot) reportSnapshot(live.snapshot);
-    setOutdated(live.outdated);
-    setSession(live);
-    /* eslint-enable react-hooks/set-state-in-effect */
     const slowTimer = setTimeout(() => setSlow(true), SLOW_MS);
-
     return () => {
       clearTimeout(slowTimer);
-      provider.off("authenticated", onAuthenticated);
-      provider.off("authenticationFailed", onAuthenticationFailed);
-      provider.off("synced", onSynced);
-      provider.off("status", onStatus);
-      provider.off("stateless", onStateless);
-      provider.off("close", onClose);
-      documents.close(name, embedded);
       report(NO_DOCUMENT);
     };
-  }, [kind, id, embedded, documents, report]);
+  }, [name, report]);
+
+  useEffect(() => {
+    if (snapshot) report({ snapshotChanged: snapshot.changed, snapshotEmpty: snapshot.empty });
+  }, [report, snapshot]);
 
   useEffect(() => {
     report({ connection, slow, readOnly });
@@ -242,6 +182,7 @@ export function LiveDocument({
             <div className={styles.toolAside}>
               {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
               {tools}
+              {outline}
               {notes && <NotesButton />}
               {kind === "chapter" && <PinsToggle entries={entryMentions?.entries ?? NO_ENTRY_MENTIONS} />}
               {notes && (

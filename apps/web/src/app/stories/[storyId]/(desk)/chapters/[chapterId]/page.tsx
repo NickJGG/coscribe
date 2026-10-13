@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { entryMentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
-import { canManageChapters } from "@/lib/story-roles";
+import { canManageChapters, isWriter } from "@/lib/story-roles";
 import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { ActionForm } from "@/components/ActionForm";
@@ -17,6 +17,7 @@ import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { NotesProvider } from "@/components/notes/NotesProvider";
 import { NotesPanel } from "@/components/notes/NotesPanel";
 import { PinnedColumn } from "@/components/PinnedColumn";
+import { OutlineButton } from "@/components/outline/OutlineButton";
 import { ChapterTitle } from "./ChapterTitle";
 import styles from "./chapter.module.css";
 
@@ -62,6 +63,9 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       authors={authors}
       entryMentions={{ storyId: story.id, entries: mentionEntries }}
       toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
+      outline={
+        isWriter(myRole) && <OutlineButton chapterId={chapter.id} eyebrow={`Chapter ${index + 1} · ${chapter.title}`} />
+      }
       tools={
         manage && (
           <>

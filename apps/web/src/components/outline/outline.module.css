@@ -1,0 +1,120 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.denied {
+  color: var(--danger);
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 2px 4px 2px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.label:hover {
+  color: var(--ink);
+}
+
+.label .smallcaps {
+  color: inherit;
+}
+
+.caret {
+  width: 12px;
+  color: var(--faint);
+  font-size: 0.7rem;
+}
+
+.box,
+.folded {
+  padding: 8px 12px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-family: var(--font-prose), Georgia, serif;
+  font-size: var(--step-0);
+  line-height: 1.6;
+}
+
+.box {
+  color: var(--ink);
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.box:has(> :global(p.is-editor-empty:only-child)) {
+  min-height: calc(3 * 1.6em + 18px);
+}
+
+/* Must outrank the global :focus-visible ring. */
+.box:focus-visible {
+  outline: none;
+}
+
+.box:focus {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--rule));
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+
+.box p + p {
+  margin-top: 0.5em;
+}
+
+.box :is(ul, ol) {
+  padding-left: 1.4em;
+}
+
+.box * + :is(ul, ol),
+.box :is(ul, ol) + * {
+  margin-top: 0.5em;
+}
+
+.box li + li {
+  margin-top: 0.15em;
+}
+
+.box s {
+  text-decoration-thickness: 1px;
+}
+
+.box :global(p.is-editor-empty:first-child)::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--faint);
+  font-style: italic;
+  pointer-events: none;
+}
+
+.folded {
+  overflow: hidden;
+  color: var(--ink-muted);
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.folded:hover {
+  border-color: color-mix(in srgb, var(--ink-muted) 40%, var(--rule));
+}
+
+.foldedEmpty {
+  color: var(--faint);
+  font-style: italic;
+}

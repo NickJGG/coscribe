@@ -1,9 +1,11 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { HocuspocusProvider, HocuspocusProviderWebsocket } from "@hocuspocus/provider";
 import * as Y from "yjs";
-import { SCHEMA_VERSION, type SnapshotMessage, type SyncMessage } from "@coscribe/editor";
+import { ACCESS_REVOKED, SCHEMA_VERSION, type SnapshotMessage, type SyncMessage } from "@coscribe/editor";
+import { createClient } from "@/lib/supabase/client";
+import type { LiveConnection } from "./LiveStatus";
 
 /** `snapshot` and `outdated` keep what apps/sync said, for a session reused after its message arrived. */
 export type LiveSession = {
@@ -125,4 +127,73 @@ export function useLiveDocuments() {
   const documents = useContext(LiveDocumentsContext);
   if (!documents) throw new Error("useLiveDocuments needs a SyncSocketProvider");
   return documents;
+}
+
+/**
+ * Holds one live document open while mounted, and follows what apps/sync says about it: whether it's
+ * read-only (which can change at any time), outdated, cut off, and (for Chapters) the latest Snapshot state.
+ */
+export function useLiveSession(name: string, { reference = false }: { reference?: boolean } = {}) {
+  const documents = useLiveDocuments();
+  const [session, setSession] = useState<LiveSession | null>(null);
+  const [connection, setConnection] = useState<LiveConnection>("connecting");
+  const [synced, setSynced] = useState(false);
+  const [readOnly, setReadOnly] = useState(true);
+  const [outdated, setOutdated] = useState(false);
+  const [snapshot, setSnapshot] = useState<SnapshotMessage | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const token = async () => (await supabase.auth.getSession()).data.session?.access_token ?? "";
+    const live = documents.open(name, reference ? async () => `ref:${await token()}` : token, reference);
+    const { provider } = live;
+
+    const onAuthenticated = ({ scope }: { scope: string }) => setReadOnly(scope !== "read-write");
+    const onAuthenticationFailed = () => setConnection("denied");
+    const onSynced = ({ state }: { state: boolean }) => {
+      if (!state) return;
+      setConnection("live");
+      setSynced(true);
+    };
+    const onStatus = ({ status }: { status: string }) => {
+      if (status === "disconnected") setConnection((s) => (s === "denied" ? s : "offline"));
+    };
+    const onStateless = ({ payload }: { payload: string }) => {
+      const message = JSON.parse(payload) as SyncMessage;
+      if (message.type === "access") setReadOnly(message.readOnly);
+      else if (message.type === "snapshot") setSnapshot(message);
+      else if (message.type === "outdated") setOutdated(true);
+    };
+    const onClose = ({ event }: { event: CloseEvent }) => {
+      if (event.reason === ACCESS_REVOKED) setConnection("denied");
+    };
+    provider.on("authenticated", onAuthenticated);
+    provider.on("authenticationFailed", onAuthenticationFailed);
+    provider.on("synced", onSynced);
+    provider.on("status", onStatus);
+    provider.on("stateless", onStateless);
+    provider.on("close", onClose);
+
+    // The session is an external connection owned by this effect: the editor needs the handle, and
+    // one reused from a moment ago has already been answered, so its events won't come again.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (provider.isAuthenticated) setReadOnly(provider.authorizedScope !== "read-write");
+    if (provider.isSynced) onSynced({ state: true });
+    setSnapshot(live.snapshot);
+    setOutdated(live.outdated);
+    setSession(live);
+    /* eslint-enable react-hooks/set-state-in-effect */
+
+    return () => {
+      provider.off("authenticated", onAuthenticated);
+      provider.off("authenticationFailed", onAuthenticationFailed);
+      provider.off("synced", onSynced);
+      provider.off("status", onStatus);
+      provider.off("stateless", onStateless);
+      provider.off("close", onClose);
+      documents.close(name, reference);
+    };
+  }, [name, reference, documents]);
+
+  return { session, connection, synced, readOnly, outdated, snapshot };
 }

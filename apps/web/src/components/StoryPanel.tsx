@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from "react";
+import { CloseIcon } from "./icons";
 import { createSlot } from "./Slot";
 import styles from "./StoryPanel.module.css";
 
@@ -106,9 +107,7 @@ export function Panel({
             {title}
           </h2>
           <button type="button" className={styles.close} onClick={() => close?.(name)} aria-label={`Close ${title}`}>
-            <svg viewBox="0 0 20 20" className={styles.closeIcon} aria-hidden>
-              <path d="M5 5l10 10M15 5L5 15" />
-            </svg>
+            <CloseIcon className={styles.closeIcon} />
           </button>
         </header>
         {children}

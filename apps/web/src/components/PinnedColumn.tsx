@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ENTRY_TYPE_LABEL, type EntryMentionEntry } from "@/lib/entries";
 import { visiblePins } from "@/lib/pins";
 import { useNarrowDesk } from "./DeskScroll";
+import { CloseIcon } from "./icons";
 import { LiveDocument, type StoryAuthor, type Writer } from "./LiveDocument";
 import { PinButton, PinError, usePhone, usePinnedEntries } from "./PinnedEntries";
 import { createSlot } from "./Slot";
@@ -78,7 +79,7 @@ export function PinnedColumn({
               Pinned
             </h2>
             <button type="button" className={styles.close} onClick={() => pins.setSheetOpen(false)} aria-label="Close Pinned">
-              <CloseIcon />
+              <CloseIcon className={styles.closeIcon} />
             </button>
           </header>
           {sheetOpen && <div className={styles.sheetBody}>{cards}</div>}
@@ -174,13 +175,5 @@ function PinnedCard({
       </div>
       <PinError entryId={entry.id} className={styles.error} />
     </article>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" className={styles.closeIcon} aria-hidden>
-      <path d="M5 5l10 10M15 5L5 15" />
-    </svg>
   );
 }

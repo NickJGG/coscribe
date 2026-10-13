@@ -23,7 +23,33 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "chapter_snapshots": {
+            "chapter_outlines": {
+                  Row: {
+                    "chapter_id": string,"has_content": boolean,"story_id": string,"updated_at": string,"ydoc": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "chapter_id": string,"has_content"?: boolean,"story_id": string,"updated_at"?: string,"ydoc"?: string | null
+                  }
+                  Update: {
+                    "chapter_id"?: string,"has_content"?: boolean,"story_id"?: string,"updated_at"?: string,"ydoc"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "chapter_outlines_chapter_id_fkey"
+      columns: ["chapter_id"]
+isOneToOne: true
+      referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "chapter_outlines_story_id_fkey"
+      columns: ["story_id"]
+isOneToOne: false
+      referencedRelation: "stories"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"chapter_snapshots": {
                   Row: {
                     "chapter_id": string,"content_hash": string,"id": string,"name": string | null,"state": string,"taken_at": string
                   }

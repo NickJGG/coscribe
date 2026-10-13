@@ -122,3 +122,21 @@ export function SlidersIcon() {
     </svg>
   );
 }
+
+export function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M5 5l10 10M15 5L5 15" />
+    </svg>
+  );
+}
+
+/** A page of headed lines: the Chapter's Outline. */
+export function OutlineIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <rect x="3.5" y="2.5" width="13" height="15" rx="1.5" />
+      <path d="M6.5 6.5h7M8.5 9.5h5M8.5 12.5h5M6.5 9.5h0M6.5 12.5h0" />
+    </svg>
+  );
+}
