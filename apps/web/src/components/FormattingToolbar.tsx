@@ -40,7 +40,6 @@ import {
   GripIcon,
   NumberedListIcon,
   SceneBreakIcon,
-  SlidersIcon,
 } from "./icons";
 import { canAddNote } from "./notes/NoteHighlights";
 import styles from "./LiveDocument.module.css";
@@ -146,8 +145,9 @@ function alignmentOf(editor: Editor): Alignment {
 }
 
 /**
- * The desk's Formatting toolbar, in the signed-in account's order. Customizing reorders groups by their grips
- * and tools within their group; the order is saved once, on Done. Cancel, Escape or unmounting drops the draft.
+ * The desk's Formatting toolbar, in the signed-in account's order. `customizing` is started from the View options
+ * menu: it reorders groups by their grips and tools within their group, and the order is saved once, on Done.
+ * Cancel, Escape or unmounting drops the draft. Either way it ends with `onFinish`.
  * Lists show only on an Entry, and Add Note only with `onAddNote`.
  */
 export function FormattingToolbar({
@@ -155,11 +155,15 @@ export function FormattingToolbar({
   layout,
   lists,
   onAddNote,
+  customizing,
+  onFinish,
 }: {
   editor: Editor;
   layout: ToolbarLayout;
   lists: boolean;
   onAddNote?: () => void;
+  customizing: boolean;
+  onFinish: () => void;
 }) {
   const active = useEditorState({
     editor,
@@ -175,18 +179,16 @@ export function FormattingToolbar({
     }),
   });
   const [saved, setSaved] = useOptimistic(layout);
+  // This session's edits: null until something changes, so starting needs no copy of `saved`.
   const [draft, setDraft] = useState<ToolbarLayout | null>(null);
   const [dragging, setDragging] = useState(false);
   const [, startTransition] = useTransition();
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const focusNext = useRef<string | null>(null);
-  const customizing = draft !== null;
-  const shown = (draft ?? saved).filter(([group]) => (group !== "lists" || lists) && (group !== "note" || onAddNote));
+  const layoutShown = customizing ? (draft ?? saved) : saved;
+  const shown = layoutShown.filter(([group]) => (group !== "lists" || lists) && (group !== "note" || onAddNote));
 
   useEffect(() => {
-    if (!focusNext.current) return;
-    toolbarRef.current?.querySelector<HTMLElement>(focusNext.current)?.focus();
-    focusNext.current = null;
+    if (customizing) toolbarRef.current?.querySelector<HTMLElement>("[data-grip]")?.focus();
   }, [customizing]);
 
   const finish = (save: boolean) => {
@@ -196,13 +198,8 @@ export function FormattingToolbar({
         await setToolbarLayout(draft);
       });
     }
-    focusNext.current = "[data-customize]";
     setDraft(null);
-  };
-
-  const customize = () => {
-    focusNext.current = "[data-grip]";
-    setDraft(saved);
+    onFinish();
   };
 
   return (
@@ -217,7 +214,7 @@ export function FormattingToolbar({
       }}
     >
       {customizing ? (
-        <CustomizeGroups layout={draft} shown={shown} active={active} onChange={setDraft} onDragging={setDragging} />
+        <CustomizeGroups layout={layoutShown} shown={shown} active={active} onChange={setDraft} onDragging={setDragging} />
       ) : (
         shown.map(([group, tools], i) => (
           <Fragment key={group}>
@@ -239,34 +236,25 @@ export function FormattingToolbar({
           </Fragment>
         ))
       )}
-      <span className={styles.toolSep} aria-hidden />
-      {customizing ? (
-        <span className={styles.customizeActions}>
-          <button
-            type="button"
-            className="button button-ghost button-tiny"
-            onClick={() => setDraft(DEFAULT_TOOLBAR_LAYOUT)}
-          >
-            Reset
-          </button>
-          <button type="button" className="button button-ghost button-tiny" onClick={() => finish(false)}>
-            Cancel
-          </button>
-          <button type="button" className="button button-primary button-tiny" onClick={() => finish(true)}>
-            Done
-          </button>
-        </span>
-      ) : (
-        <button
-          type="button"
-          className={styles.tool}
-          onClick={customize}
-          data-customize
-          data-tip="Customize toolbar"
-          aria-label="Customize toolbar"
-        >
-          <SlidersIcon />
-        </button>
+      {customizing && (
+        <>
+          <span className={styles.toolSep} aria-hidden />
+          <span className={styles.customizeActions}>
+            <button
+              type="button"
+              className="button button-ghost button-tiny"
+              onClick={() => setDraft(DEFAULT_TOOLBAR_LAYOUT)}
+            >
+              Reset
+            </button>
+            <button type="button" className="button button-ghost button-tiny" onClick={() => finish(false)}>
+              Cancel
+            </button>
+            <button type="button" className="button button-primary button-tiny" onClick={() => finish(true)}>
+              Done
+            </button>
+          </span>
+        </>
       )}
     </div>
   );

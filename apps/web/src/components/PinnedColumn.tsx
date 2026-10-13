@@ -28,7 +28,7 @@ export function PinnedSlot() {
 /**
  * The viewer's Pinned Entries beside a Chapter, newest first, each with its live body. Wide, a sticky column
  * left of the text (chapter.module.css places `data-pinned-entries`). Narrower, a panel in the PinnedSlot,
- * giving way to the right-hand panel. On phones, a sheet the toolbar's PinsToggle opens. Show pins hides
+ * giving way to the right-hand panel. On phones, a sheet the toolbar's PinnedButton opens. Show pins hides
  * all but the sheet.
  */
 export function PinnedColumn({

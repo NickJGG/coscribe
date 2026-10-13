@@ -20,6 +20,7 @@ export function useDropdownOpen() {
  */
 export function Dropdown({
   label,
+  tip,
   trigger,
   className,
   triggerClassName,
@@ -29,6 +30,7 @@ export function Dropdown({
   children,
 }: {
   label: string;
+  tip?: string;
   trigger: React.ReactNode;
   className?: string;
   triggerClassName?: string;
@@ -118,6 +120,7 @@ export function Dropdown({
         type="button"
         className={triggerClassName}
         aria-label={label}
+        data-tip={tip}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpenOn(open ? null : pathname)}

@@ -1,0 +1,91 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.trigger > svg,
+.action > svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trigger:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.trigger[aria-expanded="true"] {
+  background: var(--hair);
+  color: var(--ink);
+}
+
+.menu {
+  width: 15rem;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+/* Outranks Switch's own sizing. */
+.menu .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menu .row:hover {
+  background: var(--wash);
+}
+
+.menu .action {
+  justify-content: flex-start;
+}
+
+.divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
+}
+
+@media (pointer: coarse) {
+  .trigger {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .menu .row {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 600px) {
+  .menu .notPhone {
+    display: none;
+  }
+}

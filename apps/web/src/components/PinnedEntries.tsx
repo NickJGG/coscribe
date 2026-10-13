@@ -5,7 +5,6 @@ import { pinEntry, unpinEntry } from "@/lib/actions/pins";
 import { useLocalSetting } from "@/lib/local-setting";
 import { visiblePins, withoutPin, withPin } from "@/lib/pins";
 import { PinIcon } from "./icons";
-import { Switch } from "./Switch";
 import styles from "./PinnedEntries.module.css";
 
 const SHOW_PINS_KEY = "coscribe:show-pins";
@@ -155,34 +154,38 @@ export function PinError({ entryId, className }: { entryId?: string; className?:
   );
 }
 
+function visibleCount(pins: PinnedEntriesValue | null, entries: { id: string }[]) {
+  return pins?.canPin ? visiblePins(pins.ids, entries).length : 0;
+}
+
 /**
- * The Chapter toolbar's Show pins switch, or on phones a button opening the sheet with the count. Shown only
- * to someone who can Pin, with at least one Pinned Entry among `entries`.
+ * The Show pins setting, or null when there's nothing to show: for someone who can't Pin, or with no Pinned
+ * Entry among `entries`.
  */
-export function PinsToggle({ entries }: { entries: { id: string }[] }) {
+export function usePinsSwitch(entries: { id: string }[]) {
   const pins = usePinnedEntries();
-  const count = pins ? visiblePins(pins.ids, entries).length : 0;
-  if (!pins?.canPin || count === 0) return null;
+  if (!pins || visibleCount(pins, entries) === 0) return null;
+  return { show: pins.show, setShow: pins.setShow };
+}
+
+/** On phones, the Chapter toolbar's button opening the Pinned Entries sheet, with the count. */
+export function PinnedButton({ entries }: { entries: { id: string }[] }) {
+  const pins = usePinnedEntries();
+  const count = visibleCount(pins, entries);
+  if (!pins || count === 0) return null;
 
   return (
-    <>
-      <span className={styles.notPhone}>
-        <Switch checked={pins.show} onChange={pins.setShow}>
-          Show pins
-        </Switch>
-      </span>
-      <span className={styles.phone}>
-        <button
-          type="button"
-          className="button button-ghost button-tiny with-icon"
-          aria-expanded={pins.sheetOpen}
-          onClick={() => pins.setSheetOpen(!pins.sheetOpen)}
-        >
-          <PinIcon />
-          <span className="with-icon-label">Pinned</span>
-          <span className={styles.count}>{count}</span>
-        </button>
-      </span>
-    </>
+    <span className={styles.phone}>
+      <button
+        type="button"
+        className="button button-ghost button-tiny with-icon"
+        aria-expanded={pins.sheetOpen}
+        onClick={() => pins.setSheetOpen(!pins.sheetOpen)}
+      >
+        <PinIcon />
+        <span className="with-icon-label">Pinned</span>
+        <span className={styles.count}>{count}</span>
+      </button>
+    </span>
   );
 }

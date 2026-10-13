@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { useSearchParams } from "next/navigation";
 import { Extension } from "@tiptap/core";
@@ -20,10 +20,10 @@ import { FindBar } from "./FindBar";
 import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type PresentWriter } from "./LiveStatus";
-import { PinsToggle } from "./PinnedEntries";
+import { PinnedButton, usePinsSwitch } from "./PinnedEntries";
 import { SelectionActions } from "./SelectionActions";
-import { Switch } from "./Switch";
 import { useLiveSession, type LiveSession } from "./SyncSocket";
+import { ViewOptions } from "./ViewOptions";
 import { NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
 import { NoteLayer } from "./notes/NoteMargin";
 import { NotesButton } from "./notes/NotesPanel";
@@ -69,7 +69,7 @@ const TabKey = Extension.create({
  * between read-only and editable at any time (lock, unlock, Finished) or cut it off (removed, made Private).
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
- * row's end, then `outline` (shown even when read-only), before Show pins and Show authors; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
+ * row's end, then `outline` (shown even when read-only), before the View options menu; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
@@ -103,6 +103,8 @@ export function LiveDocument({
   const report = useReport(embedded);
   const [slow, setSlow] = useState(false);
   const [showAuthors, setShowAuthors] = useState(false);
+  const [customizing, setCustomizing] = useState(false);
+  const asideRef = useRef<HTMLDivElement>(null);
   const [editor, setEditor] = useState<Editor | null>(null);
   const params = useSearchParams();
   const findQuery = embedded ? "" : (params.get("find")?.trim() ?? "");
@@ -111,6 +113,10 @@ export function LiveDocument({
   const compareContext = useSnapshotCompare();
   const notes = embedded ? null : notesContext;
   const compare = embedded ? null : compareContext;
+  const pinsSwitch = usePinsSwitch(entryMentions?.entries ?? NO_ENTRY_MENTIONS);
+  const toolbarShown = !outdated && !!editor && !readOnly;
+  // Turning read-only unmounts the Formatting toolbar and its draft; don't resume customizing after.
+  if (customizing && !toolbarShown) setCustomizing(false);
   const attachCompare = compare?.setEditor;
   const comparing = !!compare?.compare;
   const attachNotes = notes?.setEditor;
@@ -166,33 +172,33 @@ export function LiveDocument({
       {!comparing && !embedded && (
         <DeskToolbar.Fill>
           <div className={styles.toolRow}>
-            {outdated ? (
-              <Outdated />
-            ) : (
-              editor &&
-              !readOnly && (
-                <FormattingToolbar
-                  editor={editor}
-                  layout={toolbarLayout}
-                  lists={kind === "entry"}
-                  onAddNote={notes?.startDraft}
-                />
-              )
+            {outdated && <Outdated />}
+            {toolbarShown && (
+              <FormattingToolbar
+                editor={editor}
+                layout={toolbarLayout}
+                lists={kind === "entry"}
+                onAddNote={notes?.startDraft}
+                customizing={customizing}
+                onFinish={() => {
+                  setCustomizing(false);
+                  asideRef.current?.querySelector<HTMLElement>('button[aria-label="View options"]')?.focus();
+                }}
+              />
             )}
-            <div className={styles.toolAside}>
+            <div ref={asideRef} className={styles.toolAside}>
               {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
               {tools}
               {outline}
               {notes && <NotesButton />}
-              {kind === "chapter" && <PinsToggle entries={entryMentions?.entries ?? NO_ENTRY_MENTIONS} />}
-              {notes && (
-                <Switch checked={notes.show} onChange={notes.setShow}>
-                  Show notes
-                </Switch>
-              )}
-              <Switch checked={showAuthors} onChange={setShowAuthors}>
-                Show authors
-              </Switch>
+              {kind === "chapter" && <PinnedButton entries={entryMentions?.entries ?? NO_ENTRY_MENTIONS} />}
+              <ViewOptions
+                notes={notes}
+                pins={kind === "chapter" ? pinsSwitch : null}
+                showAuthors={showAuthors}
+                onShowAuthors={setShowAuthors}
+                onCustomize={toolbarShown ? () => setCustomizing(true) : undefined}
+              />
             </div>
           </div>
         </DeskToolbar.Fill>
