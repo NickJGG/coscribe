@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
+import { getChapters, getEntries, getOutlineHasContent, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { entryMentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
 import { canManageChapters, isWriter } from "@/lib/story-roles";
@@ -52,7 +52,10 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const manage = canManageChapters(myRole) && story.status !== "finished";
   const writer = liveWriter(data);
   const mentionEntries = entryMentionEntries(entries);
-  const viewer = await getViewer();
+  const [viewer, outlined] = await Promise.all([
+    getViewer(),
+    isWriter(myRole) && getOutlineHasContent(chapter.id),
+  ]);
 
   const live = (
     <LiveDocument
@@ -64,7 +67,15 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       entryMentions={{ storyId: story.id, entries: mentionEntries }}
       toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
       outline={
-        isWriter(myRole) && <OutlineButton chapterId={chapter.id} eyebrow={`Chapter ${index + 1} · ${chapter.title}`} />
+        isWriter(myRole) && (
+          <OutlineButton
+            storyId={story.id}
+            chapterId={chapter.id}
+            eyebrow={`Chapter ${index + 1} · ${chapter.title}`}
+            characters={mentionEntries.filter((e) => e.type === "character").map(({ id, name }) => ({ id, name }))}
+            hasContent={outlined}
+          />
+        )
       }
       tools={
         manage && (

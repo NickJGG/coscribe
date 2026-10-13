@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest"
 import * as Y from "yjs"
 import {
+  addCharacter,
   addedFields,
   addField,
   discardField,
   fieldFragment,
   OUTLINE_FIELDS,
+  outlineCharacters,
   outlineHasContent,
+  removeCharacter,
   removeField,
+  renameField,
   restoreField,
 } from "./outline"
 
@@ -59,6 +63,17 @@ describe("added fields", () => {
     expect(addedFields(doc)).toHaveLength(1)
   })
 
+  it("renames a field, keeping its place", () => {
+    const doc = new Y.Doc()
+    const [a, b] = ["One", "Two"].map((label) => addField(doc, label))
+    renameField(doc, a!, "Weather")
+    renameField(doc, "missing", "Nothing")
+    expect(addedFields(doc)).toEqual([
+      { id: a, label: "Weather" },
+      { id: b, label: "Two" },
+    ])
+  })
+
   it("returns null removing a field that isn't there", () => {
     expect(removeField(new Y.Doc(), "missing")).toBeNull()
   })
@@ -75,6 +90,23 @@ describe("added fields", () => {
     removeField(doc, id)
     discardField(doc, id)
     expect(doc.getXmlFragment(fieldFragment(id)).length).toBe(0)
+  })
+})
+
+describe("characters", () => {
+  it("adds each Character once", () => {
+    const doc = new Y.Doc()
+    addCharacter(doc, "a")
+    addCharacter(doc, "b")
+    addCharacter(doc, "a")
+    expect(outlineCharacters(doc)).toEqual(["a", "b"])
+  })
+
+  it("removes every copy of a Character added twice at once", () => {
+    const doc = new Y.Doc()
+    doc.getArray<string>("characters").push(["a", "b", "a"])
+    removeCharacter(doc, "a")
+    expect(outlineCharacters(doc)).toEqual(["b"])
   })
 })
 

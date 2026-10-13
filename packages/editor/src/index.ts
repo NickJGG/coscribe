@@ -40,13 +40,17 @@ export { Author, AUTHOR_RUN_MS, AuthorStamp, authorStampPlugin, type AuthorAttrs
 export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from "./passage"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 export {
+  addCharacter,
   addedFields,
   addField,
   discardField,
   fieldFragment,
   OUTLINE_FIELDS,
+  outlineCharacters,
   outlineHasContent,
+  removeCharacter,
   removeField,
+  renameField,
   restoreField,
   type OutlineField,
   type RemovedField,

@@ -13,8 +13,8 @@ export function useDropdownOpen() {
 }
 
 /**
- * A button that opens a panel beneath it. Escape, a click outside, following a link inside, or navigating
- * closes it; Escape also returns focus to the button. Not an ARIA menu: panels hold forms and links.
+ * A button that opens a panel beneath it. Escape, a click outside, following a link or a `data-close`
+ * button inside, or navigating closes it; Escape and `data-close` also return focus to the button. Not an ARIA menu: panels hold forms and links.
  * `fixed` pins the panel to the viewport, flipping above the button near the bottom, so a scrolling
  * container can't clip it; any scroll or resize closes it.
  */
@@ -104,6 +104,14 @@ export function Dropdown({
         const next = e.relatedTarget as Node | null;
         if (next && !e.currentTarget.contains(next)) setOpenOn(null);
       }}
+      onKeyDown={(e) => {
+        // Handled here too, so a Modal around it neither closes nor swallows this Escape.
+        if (e.key !== "Escape" || !open) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setOpenOn(null);
+        buttonRef.current?.focus();
+      }}
     >
       <button
         ref={buttonRef}
@@ -126,7 +134,10 @@ export function Dropdown({
         aria-label={label}
         hidden={!open}
         onClick={(e) => {
-          if ((e.target as Element).closest("a")) setOpenOn(null);
+          const target = (e.target as Element).closest("a, [data-close]");
+          if (!target) return;
+          setOpenOn(null);
+          if (target.tagName !== "A") buttonRef.current?.focus();
         }}
       >
         <OpenContext value={open}>{children}</OpenContext>

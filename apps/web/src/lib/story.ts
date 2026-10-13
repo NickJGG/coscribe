@@ -78,6 +78,13 @@ export const getEntries = cache(async (storyId: string) => {
   return data ?? [];
 });
 
+/** Whether a Chapter's Outline has anything in it (false for Viewers, and before it's first written). */
+export const getOutlineHasContent = cache(async (chapterId: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase.from("chapter_outlines").select("has_content").eq("chapter_id", chapterId).maybeSingle();
+  return data?.has_content ?? false;
+});
+
 /** The viewer's Pinned Entries' ids in a Story, newest first (empty when signed out). */
 export const getPins = cache(async (storyId: string) => {
   if (!isUuid(storyId)) return [];

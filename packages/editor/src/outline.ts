@@ -49,6 +49,11 @@ export function addField(doc: Y.Doc, label: string): string {
   return id
 }
 
+export function renameField(doc: Y.Doc, id: string, label: string): void {
+  const map = fieldsArray(doc).toArray().find((map) => map.get("id") === id)
+  if (map && map.get("label") !== label) map.set("label", label)
+}
+
 export function removeField(doc: Y.Doc, id: string): RemovedField | null {
   const fields = fieldsArray(doc)
   const index = fields.toArray().findIndex((map) => map.get("id") === id)
@@ -70,6 +75,29 @@ export function discardField(doc: Y.Doc, id: string): void {
   fragment.delete(0, fragment.length)
 }
 
+function charactersArray(doc: Y.Doc): Y.Array<string> {
+  return doc.getArray("characters")
+}
+
+export function outlineCharacters(doc: Y.Doc): string[] {
+  return charactersArray(doc).toArray()
+}
+
+export function addCharacter(doc: Y.Doc, entryId: string): void {
+  const characters = charactersArray(doc)
+  if (!characters.toArray().includes(entryId)) characters.push([entryId])
+}
+
+/** Removes every copy, since two Writers can add the same Character at once. */
+export function removeCharacter(doc: Y.Doc, entryId: string): void {
+  const characters = charactersArray(doc)
+  doc.transact(() => {
+    for (let i = characters.length - 1; i >= 0; i--) {
+      if (characters.get(i) === entryId) characters.delete(i)
+    }
+  })
+}
+
 function hasText(node: Y.XmlFragment | Y.XmlElement | Y.XmlText | Y.XmlHook): boolean {
   if (node instanceof Y.XmlText) return node.length > 0
   if (node instanceof Y.XmlHook) return false
@@ -77,7 +105,7 @@ function hasText(node: Y.XmlFragment | Y.XmlElement | Y.XmlText | Y.XmlHook): bo
 }
 
 export function outlineHasContent(doc: Y.Doc): boolean {
-  if (doc.getArray("characters").length > 0) return true
+  if (charactersArray(doc).length > 0) return true
   const ids = [...OUTLINE_FIELDS, ...addedFields(doc)].map((field) => field.id)
   return ids.some((id) => hasText(doc.getXmlFragment(fieldFragment(id))))
 }
