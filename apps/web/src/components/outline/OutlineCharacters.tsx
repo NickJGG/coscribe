@@ -3,14 +3,14 @@
 import Link from "next/link";
 import type * as Y from "yjs";
 import { addCharacter, removeCharacter } from "@coscribe/editor";
+import type { EntryMentionEntry } from "@/lib/entries";
 import { Dropdown } from "../Dropdown";
 import styles from "./outline.module.css";
 
-export type OutlineCharacter = { id: string; name: string };
-
 /**
- * The Outline's Characters, as chips linking to their Entries. Ids whose Entry was deleted or is no longer
- * a Character stay in the document but aren't shown.
+ * The Outline's Characters, as chips linking to their Entries. A plain click opens or closes the Entry's
+ * card instead; modified and middle clicks still follow the link. Ids whose Entry was deleted or is no
+ * longer a Character stay in the document but aren't shown.
  */
 export function OutlineCharacters({
   storyId,
@@ -18,15 +18,18 @@ export function OutlineCharacters({
   ids,
   characters,
   readOnly,
-  onNavigate,
+  openId,
+  onOpen,
 }: {
   storyId: string;
   ydoc: Y.Doc;
   ids: string[];
   /** The Story's Character Entries. */
-  characters: OutlineCharacter[];
+  characters: EntryMentionEntry[];
   readOnly: boolean;
-  onNavigate: () => void;
+  /** The Character whose card is open. */
+  openId: string | null;
+  onOpen: (id: string | null) => void;
 }) {
   const chosen = ids.flatMap((id) => characters.find((c) => c.id === id) ?? []);
   const available = characters.filter((c) => !ids.includes(c.id));
@@ -37,7 +40,16 @@ export function OutlineCharacters({
       <ul className={styles.chips} aria-label="Characters">
         {chosen.map((c) => (
           <li key={c.id} className={styles.chip}>
-            <Link href={`/stories/${storyId}/bible/${c.id}`} className={styles.chipLink} onClick={onNavigate}>
+            <Link
+              href={`/stories/${storyId}/bible/${c.id}`}
+              className={styles.chipLink}
+              aria-expanded={c.id === openId}
+              onClick={(e) => {
+                if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+                e.preventDefault();
+                onOpen(c.id === openId ? null : c.id);
+              }}
+            >
               {c.name}
             </Link>
             {!readOnly && (

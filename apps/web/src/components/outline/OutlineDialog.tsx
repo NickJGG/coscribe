@@ -15,33 +15,52 @@ import {
   restoreField,
   type RemovedField,
 } from "@coscribe/editor";
+import type { EntryMentionEntry } from "@/lib/entries";
 import { Bar } from "../Skeleton";
 import { Modal } from "../Modal";
 import { UndoToast } from "../UndoToast";
 import { useLiveSession, type LiveSession } from "../SyncSocket";
-import { OutlineCharacters, type OutlineCharacter } from "./OutlineCharacters";
+import type { StoryAuthor, Writer } from "../LiveDocument";
+import { OutlineCharacters } from "./OutlineCharacters";
+import { OutlineEntryCard } from "./OutlineEntryCard";
 import { NEW_FIELD, OutlineField } from "./OutlineField";
 import styles from "./outline.module.css";
 
 const [SUMMARY, ...REST] = OUTLINE_FIELDS;
 
-/** A Chapter's Outline, live while open. apps/sync makes it read-only when the Chapter is Locked or the Story Finished. */
+/**
+ * A Chapter's Outline, live while open. apps/sync makes it read-only when the Chapter is Locked or the Story
+ * Finished. A Character chip opens that Entry's card beside it, with the Entry's own rights, `entryEditable`.
+ */
 export function OutlineDialog({
   storyId,
   chapterId,
   eyebrow,
   characters,
+  entryEditable,
+  writer,
+  authors,
   onContent,
   onClose,
 }: {
   storyId: string;
   chapterId: string;
   eyebrow: string;
-  characters: OutlineCharacter[];
+  /** The Story's Character Entries. */
+  characters: EntryMentionEntry[];
+  entryEditable: boolean;
+  writer: Writer | null;
+  authors: StoryAuthor[];
   onContent: (hasContent: boolean) => void;
   onClose: () => void;
 }) {
   const { session, connection, synced, readOnly } = useLiveSession(documentName("outline", chapterId));
+  const live = connection !== "denied" && session && synced ? session : null;
+  const lists = useOutlineLists(live?.ydoc ?? null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openEntry = openId && lists.characterIds.includes(openId) ? characters.find((c) => c.id === openId) : undefined;
+  // Its chip was removed, or its Entry deleted or retyped: the card goes, and re-adding doesn't bring it back.
+  if (openId && !openEntry) setOpenId(null);
   // One Undo at a time: removing another field, or closing, gives up the last one's.
   const [removed, setRemoved] = useState<RemovedField | null>(null);
 
@@ -64,25 +83,50 @@ export function OutlineDialog({
   }, [session, synced, onContent]);
 
   return (
-    <Modal open onClose={close} title="Outline" eyebrow={eyebrow}>
+    <Modal
+      open
+      onClose={close}
+      title="Outline"
+      eyebrow={eyebrow}
+      aside={
+        openEntry ? (
+          <OutlineEntryCard
+            key={openEntry.id}
+            storyId={storyId}
+            entry={openEntry}
+            editable={entryEditable}
+            writer={writer}
+            authors={authors}
+            onClose={() => setOpenId(null)}
+          />
+        ) : null
+      }
+      onEscape={() => {
+        if (!openId) return false;
+        setOpenId(null);
+        return true;
+      }}
+    >
       {connection === "denied" ? (
         <p className={styles.denied} role="status">
           You can no longer open this Outline.
         </p>
-      ) : session && synced ? (
+      ) : live ? (
         <Fields
           storyId={storyId}
           chapterId={chapterId}
-          session={session}
+          session={live}
           readOnly={readOnly}
+          lists={lists}
           characters={characters}
+          openId={openId}
+          onOpen={setOpenId}
           removed={removed}
           onRemove={(id) => {
             discardRemoved();
-            setRemoved(removeField(session.ydoc, id));
+            setRemoved(removeField(live.ydoc, id));
           }}
           onUndone={() => setRemoved(null)}
-          onClose={close}
         />
       ) : (
         <div className={styles.fields} aria-label="Loading the Outline" role="status">
@@ -105,25 +149,28 @@ function Fields({
   chapterId,
   session,
   readOnly,
+  lists: { added, characterIds },
   characters,
+  openId,
+  onOpen,
   removed,
   onRemove,
   onUndone,
-  onClose,
 }: {
   storyId: string;
   chapterId: string;
   session: LiveSession;
   readOnly: boolean;
-  characters: OutlineCharacter[];
+  lists: OutlineLists;
+  characters: EntryMentionEntry[];
+  openId: string | null;
+  onOpen: (id: string | null) => void;
   removed: RemovedField | null;
   onRemove: (id: string) => void;
   /** The toast is gone, by Undo or by expiring. */
   onUndone: () => void;
-  onClose: () => void;
 }) {
   const { ydoc } = session;
-  const { added, characterIds } = useOutlineLists(ydoc);
   const [justAdded, setJustAdded] = useState<string | null>(null);
 
   const fieldProps = { chapterId, session, readOnly };
@@ -138,7 +185,8 @@ function Fields({
           ids={characterIds}
           characters={characters}
           readOnly={readOnly}
-          onNavigate={onClose}
+          openId={openId}
+          onOpen={onOpen}
         />
         {REST.map((field) => (
           <OutlineField key={field.id} {...fieldProps} field={field} />
@@ -183,14 +231,23 @@ function Fields({
   );
 }
 
-function readLists(ydoc: Y.Doc) {
-  return { added: addedFields(ydoc), characterIds: outlineCharacters(ydoc) };
+type OutlineLists = { added: ReturnType<typeof addedFields>; characterIds: string[] };
+
+function readLists(ydoc: Y.Doc | null): OutlineLists {
+  return ydoc ? { added: addedFields(ydoc), characterIds: outlineCharacters(ydoc) } : { added: [], characterIds: [] };
 }
 
-function useOutlineLists(ydoc: Y.Doc) {
+function useOutlineLists(ydoc: Y.Doc | null) {
+  const [seen, setSeen] = useState(ydoc);
   const [lists, setLists] = useState(() => readLists(ydoc));
+  // Read at once, not after an effect, so the fields don't arrive a frame late.
+  if (seen !== ydoc) {
+    setSeen(ydoc);
+    setLists(readLists(ydoc));
+  }
 
   useEffect(() => {
+    if (!ydoc) return;
     const update = () => setLists(readLists(ydoc));
     const fields = ydoc.getArray("fields");
     const characters = ydoc.getArray("characters");

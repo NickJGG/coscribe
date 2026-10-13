@@ -12,8 +12,9 @@ import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
-import { PinButton } from "@/components/PinnedEntries";
-import { EntryDetails } from "./EntryDetails";
+import { PinButton, PinError } from "@/components/PinnedEntries";
+import { EntryDetails, EntryName } from "@/components/EntryDetails";
+import { EntryTypePicker } from "./EntryTypePicker";
 import styles from "./entry.module.css";
 
 async function load(storyId: string, entryId: string) {
@@ -45,27 +46,26 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <EntryDetails
-          key={entry.id}
-          storyId={story.id}
-          entry={entry}
-          editable={editable}
-          actions={
-            myRole && (
-              <>
-                <PinButton entryId={entry.id} entryName={entry.name} />
-                {editable && canDeleteEntries(myRole) && (
-                  <ActionForm
-                    action={deleteEntry.bind(null, story.id, entry.id)}
-                    confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
-                  >
-                    <button className="button button-ghost button-tiny button-danger">Delete</button>
-                  </ActionForm>
-                )}
-              </>
-            )
-          }
-        />
+        <div className={styles.meta}>
+          <EntryTypePicker key={entry.id} storyId={story.id} entryId={entry.id} type={entry.type} editable={editable} />
+          <span className="muted">Story Bible</span>
+          {myRole && (
+            <div className={styles.actions}>
+              <PinButton entryId={entry.id} entryName={entry.name} />
+              {editable && canDeleteEntries(myRole) && (
+                <ActionForm
+                  action={deleteEntry.bind(null, story.id, entry.id)}
+                  confirm={`Delete "${entry.name}" from the Story Bible? This can't be undone.`}
+                >
+                  <button className="button button-ghost button-tiny button-danger">Delete</button>
+                </ActionForm>
+              )}
+            </div>
+          )}
+        </div>
+        <EntryName key={entry.id} storyId={story.id} entry={entry} editable={editable} as="h1" className={styles.title} />
+        <EntryDetails key={entry.id} storyId={story.id} entry={entry} editable={editable} />
+        <PinError entryId={entry.id} className={styles.error} />
       </header>
 
       <LiveDocument

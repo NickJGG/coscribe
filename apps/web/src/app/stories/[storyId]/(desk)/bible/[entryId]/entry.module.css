@@ -28,12 +28,6 @@
   overflow-wrap: anywhere;
 }
 
-.description {
-  color: var(--ink-muted);
-  font-size: var(--step-1);
-  overflow-wrap: anywhere;
-}
-
 .type {
   margin-left: -4px;
   padding: 2px 4px;
@@ -55,93 +49,6 @@
   align-items: center;
   gap: 6px;
   margin-left: auto;
-}
-
-.aliasRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px 16px;
-  margin-top: 4px;
-}
-
-.aliasBlock {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.aliases {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  list-style: none;
-}
-
-.alias {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: var(--wash);
-  font-size: var(--step--1);
-}
-
-.alias:has(.removeAlias) {
-  padding-right: 4px;
-}
-
-.removeAlias {
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  color: var(--ink-muted);
-  font: inherit;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.removeAlias:hover {
-  background: var(--hair);
-  color: var(--ink);
-}
-
-.addAlias {
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px dashed var(--rule);
-  border-radius: 999px;
-  background: none;
-  color: var(--ink-muted);
-  font: inherit;
-  font-size: var(--step--1);
-  cursor: pointer;
-}
-
-.addAlias:hover {
-  border-color: var(--faint);
-  color: var(--ink);
-}
-
-.aliasInput {
-  width: 12rem;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: var(--step--1);
-}
-
-.linkSwitch {
-  min-height: 28px;
-  color: var(--ink-muted);
-  font-size: var(--step--1);
 }
 
 .error {
@@ -209,20 +116,7 @@
 }
 
 @media (pointer: coarse) {
-  .type,
-  .alias,
-  .addAlias,
-  .linkSwitch,
-  .aliasInput {
+  .type {
     min-height: 44px;
-  }
-
-  .aliasInput {
-    height: 44px;
-  }
-
-  .removeAlias {
-    width: 36px;
-    height: 36px;
   }
 }

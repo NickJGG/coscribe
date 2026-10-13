@@ -1,5 +1,6 @@
 import { Line, Lines, Loading } from "@/components/Skeleton";
 import live from "@/components/LiveDocument.module.css";
+import details from "@/components/EntryDetails.module.css";
 import styles from "./entry.module.css";
 
 export default function EntryLoading() {
@@ -12,7 +13,7 @@ export default function EntryLoading() {
             <span className="muted">Story Bible</span>
           </div>
           <Line as="h1" className={styles.title} width="40%" />
-          <Line className={styles.description} width="70%" />
+          <Line className={details.description} width="70%" />
         </header>
         <Lines count={5} className={live.prose} />
       </div>

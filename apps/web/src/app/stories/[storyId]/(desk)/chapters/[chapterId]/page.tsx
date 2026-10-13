@@ -72,7 +72,10 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
             storyId={story.id}
             chapterId={chapter.id}
             eyebrow={`Chapter ${index + 1} · ${chapter.title}`}
-            characters={mentionEntries.filter((e) => e.type === "character").map(({ id, name }) => ({ id, name }))}
+            characters={mentionEntries.filter((e) => e.type === "character")}
+            entryEditable={story.status !== "finished"}
+            writer={writer}
+            authors={authors}
             hasContent={outlined}
           />
         )

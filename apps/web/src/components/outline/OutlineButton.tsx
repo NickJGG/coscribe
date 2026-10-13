@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { OutlineIcon } from "../icons";
-import type { OutlineCharacter } from "./OutlineCharacters";
+import type { EntryMentionEntry } from "@/lib/entries";
+import type { StoryAuthor, Writer } from "../LiveDocument";
 import { OutlineDialog } from "./OutlineDialog";
 import styles from "./outline.module.css";
 
@@ -15,12 +16,18 @@ export function OutlineButton({
   chapterId,
   eyebrow,
   characters,
+  entryEditable,
+  writer,
+  authors,
   hasContent: initialContent,
 }: {
   storyId: string;
   chapterId: string;
   eyebrow: string;
-  characters: OutlineCharacter[];
+  characters: EntryMentionEntry[];
+  entryEditable: boolean;
+  writer: Writer | null;
+  authors: StoryAuthor[];
   hasContent: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -50,6 +57,9 @@ export function OutlineButton({
           chapterId={chapterId}
           eyebrow={eyebrow}
           characters={characters}
+          entryEditable={entryEditable}
+          writer={writer}
+          authors={authors}
           onContent={setHasContent}
           onClose={() => setOpen(false)}
         />

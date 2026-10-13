@@ -2,29 +2,54 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { editEntry } from "@/lib/actions/entries";
-import { DESCRIPTION_MAX, ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryPatch, type EntryMentionEntry } from "@/lib/entries";
+import { DESCRIPTION_MAX, NAME_MAX, type EntryPatch, type EntryMentionEntry } from "@/lib/entries";
 import type { ActionResult } from "@/lib/action-result";
-import { InlineEdit } from "@/components/InlineEdit";
-import { PinError } from "@/components/PinnedEntries";
-import { Switch } from "@/components/Switch";
-import { Dropdown } from "@/components/Dropdown";
-import menu from "../../menu.module.css";
-import styles from "./entry.module.css";
+import { InlineEdit } from "./InlineEdit";
+import { Switch } from "./Switch";
+import styles from "./EntryDetails.module.css";
+
+/** An Entry's name, edited in place by Writers. */
+export function EntryName({
+  storyId,
+  entry,
+  editable,
+  as,
+  className,
+}: {
+  storyId: string;
+  entry: EntryMentionEntry;
+  editable: boolean;
+  as: "h1" | "h2";
+  className?: string;
+}) {
+  return (
+    <InlineEdit
+      as={as}
+      className={className}
+      value={entry.name}
+      label="Name"
+      maxLength={NAME_MAX}
+      editable={editable}
+      spellCheck={false}
+      onSave={(name) => editEntry(storyId, entry.id, { name })}
+    />
+  );
+}
 
 /**
- * An Entry's type, name, description and Aliases, each edited in place by Writers. Viewers see the same
- * fields as plain text, without the Alias controls.
+ * An Entry's description and Aliases, each edited in place by Writers, and on the Entry page its Link Entry
+ * Mentions switch. Viewers see the same fields as plain text, without the Alias controls.
  */
 export function EntryDetails({
   storyId,
   entry,
   editable,
-  actions,
+  variant = "page",
 }: {
   storyId: string;
   entry: EntryMentionEntry;
   editable: boolean;
-  actions?: React.ReactNode;
+  variant?: "page" | "card";
 }) {
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -40,56 +65,9 @@ export function EntryDetails({
 
   return (
     <>
-      <div className={styles.meta}>
-        {editable ? (
-          <Dropdown
-            label="Entry type"
-            trigger={
-              <>
-                {ENTRY_TYPE_LABEL[shown.type]} <span aria-hidden>&#9662;</span>
-              </>
-            }
-            triggerClassName={`smallcaps ${styles.type}`}
-            panelClassName={menu.menu}
-            align="start"
-          >
-            {ENTRY_TYPES.map((type) => (
-              <button
-                key={type}
-                type="button"
-                className={menu.menuItem}
-                aria-pressed={type === shown.type}
-                data-close
-                onClick={() => type !== shown.type && saveNow({ type })}
-              >
-                {ENTRY_TYPE_LABEL[type]}
-                {type === shown.type && (
-                  <span className={menu.check} aria-hidden>
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
-          </Dropdown>
-        ) : (
-          <span className="smallcaps">{ENTRY_TYPE_LABEL[entry.type]}</span>
-        )}
-        <span className="muted">Story Bible</span>
-        {actions && <div className={styles.actions}>{actions}</div>}
-      </div>
-      <InlineEdit
-        as="h1"
-        className={styles.title}
-        value={entry.name}
-        label="Name"
-        maxLength={NAME_MAX}
-        editable={editable}
-        spellCheck={false}
-        onSave={(name) => save({ name })}
-      />
       <InlineEdit
         as="p"
-        className={styles.description}
+        className={variant === "card" ? styles.cardDescription : styles.description}
         value={entry.description}
         label="Description"
         placeholder="Add a one-line description"
@@ -100,13 +78,15 @@ export function EntryDetails({
       {editable ? (
         <div className={styles.aliasRow}>
           <Aliases aliases={entry.aliases} onSave={(aliases) => save({ aliases })} />
-          <Switch
-            className={styles.linkSwitch}
-            checked={shown.linkEntryMentions}
-            onChange={(linkEntryMentions) => saveNow({ linkEntryMentions })}
-          >
-            Link Entry Mentions in the text
-          </Switch>
+          {variant === "page" && (
+            <Switch
+              className={styles.linkSwitch}
+              checked={shown.linkEntryMentions}
+              onChange={(linkEntryMentions) => saveNow({ linkEntryMentions })}
+            >
+              Link Entry Mentions in the text
+            </Switch>
+          )}
         </div>
       ) : (
         entry.aliases.length > 0 && (
@@ -124,7 +104,6 @@ export function EntryDetails({
           {error}
         </p>
       )}
-      <PinError entryId={entry.id} className={styles.error} />
     </>
   );
 }

@@ -17,8 +17,83 @@
   flex-direction: column;
 }
 
-.modal::backdrop {
+.modal::backdrop,
+.layer::backdrop {
   background: var(--scrim);
+}
+
+/*
+ * Companion mode: the dialog is a see-through layer over the window. Over 1056px the box sits centered in
+ * a middle column and the aside at the end of the left one, 16px from each; the box narrows, staying
+ * centered, to leave the aside 18rem. Below that, where the box would go under 26rem, the aside covers it.
+ */
+.layer {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 32px 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.layer[open] {
+  display: grid;
+  grid-template-columns: min(36rem, 100%);
+  grid-template-rows: minmax(0, auto);
+  place-content: center;
+}
+
+.box,
+.aside {
+  display: flex;
+  flex-direction: column;
+  grid-row: 1;
+  grid-column: 1;
+  min-width: 0;
+  max-height: calc(100dvh - 64px);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.box {
+  align-self: center;
+}
+
+.layer[data-aside] .box {
+  align-self: stretch;
+  /* Also takes it out of the tab order and the accessibility tree. */
+  visibility: hidden;
+}
+
+@media (width > 1056px) {
+  .layer[data-aside][open] {
+    grid-template-columns: 1fr min(36rem, 100vw - 2 * (18rem + 32px)) 1fr;
+    justify-content: stretch;
+    column-gap: 16px;
+  }
+
+  .layer[data-aside] .box {
+    grid-column: 2;
+    align-self: center;
+    visibility: visible;
+  }
+
+  .aside {
+    justify-self: end;
+    align-self: center;
+    width: min(24rem, 100%);
+  }
+
+  .aside [data-modal-back] {
+    display: none;
+  }
 }
 
 .head {
@@ -93,11 +168,22 @@
 }
 
 @media (max-width: 600px) {
-  .modal {
+  .modal,
+  .box,
+  .aside {
     width: 100%;
     height: 100%;
     max-height: none;
     border: 0;
     border-radius: 0;
+  }
+
+  .layer {
+    padding: 0;
+  }
+
+  .layer[open] {
+    grid-template-columns: 100%;
+    grid-template-rows: 100%;
   }
 }

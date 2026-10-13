@@ -20,7 +20,7 @@ export function InlineEdit({
   spellCheck,
   onSave,
 }: {
-  as: "h1" | "p";
+  as: "h1" | "h2" | "p";
   className?: string;
   value: string;
   label: string;

@@ -295,3 +295,54 @@
     min-height: 44px;
   }
 }
+
+.chip:has(> [aria-expanded="true"]) {
+  background: var(--accent-wash);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.card:focus-visible {
+  outline: none;
+}
+
+.cardBody {
+  gap: 8px;
+}
+
+.back {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cardDocument {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+}
+
+.open {
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.open:hover {
+  text-decoration: underline;
+}
