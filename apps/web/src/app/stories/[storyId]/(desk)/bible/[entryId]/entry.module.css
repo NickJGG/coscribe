@@ -44,7 +44,8 @@
   cursor: pointer;
 }
 
-.type:hover {
+.type:hover,
+.type[aria-expanded="true"] {
   background: var(--wash);
   color: var(--ink);
 }

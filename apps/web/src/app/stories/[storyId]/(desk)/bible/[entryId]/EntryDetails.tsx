@@ -7,6 +7,8 @@ import type { ActionResult } from "@/lib/action-result";
 import { InlineEdit } from "@/components/InlineEdit";
 import { PinError } from "@/components/PinnedEntries";
 import { Switch } from "@/components/Switch";
+import { Dropdown } from "@/components/Dropdown";
+import menu from "../../menu.module.css";
 import styles from "./entry.module.css";
 
 /**
@@ -40,18 +42,35 @@ export function EntryDetails({
     <>
       <div className={styles.meta}>
         {editable ? (
-          <select
-            className={`smallcaps ${styles.type}`}
-            aria-label="Entry type"
-            value={shown.type}
-            onChange={(e) => saveNow({ type: e.currentTarget.value as EntryMentionEntry["type"] })}
+          <Dropdown
+            label="Entry type"
+            trigger={
+              <>
+                {ENTRY_TYPE_LABEL[shown.type]} <span aria-hidden>&#9662;</span>
+              </>
+            }
+            triggerClassName={`smallcaps ${styles.type}`}
+            panelClassName={menu.menu}
+            align="start"
           >
-            {ENTRY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {ENTRY_TYPE_LABEL[t]}
-              </option>
+            {ENTRY_TYPES.map((type) => (
+              <button
+                key={type}
+                type="button"
+                className={menu.menuItem}
+                aria-pressed={type === shown.type}
+                data-close
+                onClick={() => type !== shown.type && saveNow({ type })}
+              >
+                {ENTRY_TYPE_LABEL[type]}
+                {type === shown.type && (
+                  <span className={menu.check} aria-hidden>
+                    ✓
+                  </span>
+                )}
+              </button>
             ))}
-          </select>
+          </Dropdown>
         ) : (
           <span className="smallcaps">{ENTRY_TYPE_LABEL[entry.type]}</span>
         )}
