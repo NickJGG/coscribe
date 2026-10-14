@@ -7,6 +7,7 @@ import { getViewer } from "@/lib/viewer";
 import { canManageChapters, isWriter } from "@/lib/story-roles";
 import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { setChapterLocked } from "@/lib/actions/chapters";
+import { BackToTop } from "@/components/BackToTop";
 import { ActionForm } from "@/components/ActionForm";
 import { LockIcon } from "@/components/icons";
 import { LiveDocument } from "@/components/LiveDocument";
@@ -159,6 +160,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
           </Link>
         )}
       </nav>
+      <BackToTop />
     </div>
   );
 }

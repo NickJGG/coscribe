@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { ENTRY_TYPE_LABEL, entryGroups } from "@/lib/entries";
+import { BackToTop } from "@/components/BackToTop";
 import { ProseView } from "@/components/ProseView";
 import { Unavailable } from "../Unavailable";
 import styles from "../reader.module.css";
@@ -59,6 +60,7 @@ export default async function ReaderBiblePage(props: PageProps<"/stories/[storyI
           })}
         </section>
       ))}
+      <BackToTop />
     </div>
   );
 }

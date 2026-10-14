@@ -54,6 +54,9 @@ const KINDS = {
 
 const SLOW_MS = 1000;
 
+/** Keeps the caret this far from the page's edges as it moves, in px; the bottom is above Back to top. */
+const CARET_CLEARANCE = { top: 5, right: 5, bottom: 72, left: 5 };
+
 /** Tab types a tab instead of leaving the editor. Below the default priority so Tab still indents list items. */
 const TabKey = Extension.create({
   name: "tabKey",
@@ -332,7 +335,10 @@ function LiveEditor({
       ...(kind === "chapter" && !embedded ? [CueSuggestions] : []),
       TabKey,
     ],
-    editorProps: { attributes: { class: `${styles.prose} ${scriptStyles.scripts}`, "aria-label": label } },
+    editorProps: {
+      attributes: { class: `${styles.prose} ${scriptStyles.scripts}`, "aria-label": label },
+      ...(!embedded && { scrollThreshold: CARET_CLEARANCE, scrollMargin: CARET_CLEARANCE }),
+    },
   });
 
   useEffect(() => {

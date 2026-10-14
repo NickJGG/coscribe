@@ -10,6 +10,7 @@ import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { entryMentionEntries, type EntryMentionEntry } from "@/lib/entries";
 import { fetchStoryContent } from "@/lib/sync";
 import { deleteEntry } from "@/lib/actions/entries";
+import { BackToTop } from "@/components/BackToTop";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
 import { trashedDocument } from "@/components/TrashedDocument";
@@ -89,6 +90,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
           <MentionedIn storyId={story.id} entry={entry} entries={entries} />
         </Suspense>
       </section>
+      <BackToTop />
     </div>
   );
 }

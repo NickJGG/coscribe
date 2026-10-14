@@ -150,3 +150,11 @@ export function OutlineIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function ArrowUpIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M10 16V4M5 9l5-5 5 5" />
+    </svg>
+  );
+}

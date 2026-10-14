@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { relativeTime } from "@/lib/relative-time";
+import { BackToTopSlot } from "@/components/BackToTop";
 import { DeskScrollContext } from "@/components/DeskScroll";
 import { DeskToolbar } from "@/components/DeskToolbar";
 import { FIND_CURRENT } from "@/components/Find";
@@ -121,23 +122,26 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   return (
     <DeskToolbar.Provider>
       <PinnedSlotProvider>
-        <div className={styles.main}>
-          <DeskToolbar.Target className={styles.toolbarSlot} />
-          <div className={styles.page}>
-            <div
-              ref={scroller}
-              className={styles.scroll}
-              onScroll={(e) => {
-                if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
-              }}
-            >
-              <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+        <BackToTopSlot.Provider>
+          <div className={styles.main}>
+            <DeskToolbar.Target className={styles.toolbarSlot} />
+            <div className={styles.page}>
+              <div
+                ref={scroller}
+                className={styles.scroll}
+                onScroll={(e) => {
+                  if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
+                }}
+              >
+                <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+              </div>
+              <PinnedSlot />
+              <BackToTopSlot.Target />
             </div>
-            <PinnedSlot />
+            {footer}
+            <PanelSlot />
           </div>
-          {footer}
-          <PanelSlot />
-        </div>
+        </BackToTopSlot.Provider>
       </PinnedSlotProvider>
     </DeskToolbar.Provider>
   );

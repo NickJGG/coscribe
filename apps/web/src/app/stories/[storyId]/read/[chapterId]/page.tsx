@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getChapters, getStory } from "@/lib/story";
 import { requireReader } from "@/lib/reader";
 import { isWriter } from "@/lib/story-roles";
+import { BackToTop } from "@/components/BackToTop";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
 import { FeaturePassage } from "@/components/FeaturePassage";
@@ -65,6 +66,7 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
               )}
             </div>
           </ShowAuthors>
+          <BackToTop />
         </div>
       ) : (
         <p className={styles.empty}>This Chapter was left blank.</p>
