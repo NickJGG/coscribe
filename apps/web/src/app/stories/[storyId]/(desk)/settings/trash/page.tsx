@@ -9,7 +9,7 @@ import { restoreChapter } from "@/lib/actions/chapters";
 import { restoreEntry } from "@/lib/actions/entries";
 import { emptyTrash } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
-import { Card, Sub } from "../Card";
+import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import styles from "../settings.module.css";
 
 export default async function StorySettingsTrashPage(props: PageProps<"/stories/[storyId]/settings/trash">) {
@@ -72,7 +72,7 @@ export default async function StorySettingsTrashPage(props: PageProps<"/stories/
       {myRole === "host" && trash.length > 0 && (
         <Card title="Delete for good" danger>
           <Sub>
-            <div className={styles.inlineRow}>
+            <InlineRow>
               <div>
                 <h3>Empty Trash</h3>
                 <p className="muted">Deletes everything in the Trash now instead of in 30 days. Can&rsquo;t be undone.</p>
@@ -83,7 +83,7 @@ export default async function StorySettingsTrashPage(props: PageProps<"/stories/
               >
                 <button className="button button-danger">Empty Trash&hellip;</button>
               </ActionForm>
-            </div>
+            </InlineRow>
           </Sub>
         </Card>
       )}

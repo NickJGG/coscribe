@@ -5,7 +5,7 @@ import { createInviteLink, deleteInvite, inviteFriend, type InviteRole } from "@
 import { ActionForm } from "@/components/ActionForm";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { PersonLink } from "@/components/PersonLink";
-import { Card, Sub } from "./Card";
+import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import styles from "./settings.module.css";
 
 export const INVITE_COPY = {
@@ -124,7 +124,7 @@ export async function InviteCard({
 
       {(!closed || linkInvites.length > 0) && (
         <Sub>
-          <div className={styles.inlineRow}>
+          <InlineRow>
             <div>
               <h3>Invite Links</h3>
               <p className="muted">{finished ? "They can join once the story is Reopened." : copy.link}</p>
@@ -134,7 +134,7 @@ export async function InviteCard({
                 <button className="button">New Invite Link</button>
               </ActionForm>
             )}
-          </div>
+          </InlineRow>
           {linkInvites.length > 0 && (
             <ul className="rows">
               {linkInvites.map((invite) => (

@@ -1,6 +1,6 @@
 import { Bar, Line, Loading } from "@/components/Skeleton";
 import swatches from "@/components/ColorSwatches.module.css";
-import { Card, Sub } from "../Card";
+import { Card, Sub } from "@/components/SettingsCard";
 import styles from "../settings.module.css";
 
 export default function StorySettingsYouLoading() {

@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/viewer";
 import { deleteStory, setStoryFinished, updateStory } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
 import { StoryFields } from "@/components/StoryFields";
-import { Card, Sub } from "../Card";
+import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import styles from "../settings.module.css";
 
 export default async function StorySettingsStoryPage(props: PageProps<"/stories/[storyId]/settings/story">) {
@@ -28,7 +28,7 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
           </ActionForm>
         </Sub>
         <Sub>
-          <div className={styles.inlineRow}>
+          <InlineRow>
             <div>
               <h3>
                 Finished <span className={styles.status}>{finished ? "Finished" : "In progress"}</span>
@@ -57,13 +57,13 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
                 <button className="button button-primary">Mark Finished</button>
               </ActionForm>
             )}
-          </div>
+          </InlineRow>
         </Sub>
       </Card>
 
       <Card title="Leave or delete" danger>
         <Sub>
-          <div className={styles.inlineRow}>
+          <InlineRow>
             <div>
               <h3>Delete story</h3>
               <p className="muted">
@@ -76,7 +76,7 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
             >
               <button className="button button-danger">Delete story</button>
             </ActionForm>
-          </div>
+          </InlineRow>
         </Sub>
       </Card>
     </>

@@ -340,6 +340,10 @@ a {
   font: inherit;
 }
 
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
 /* A radio or checkbox, then its label: <strong>…</strong> and an optional muted hint. */
 .choice {
   display: flex;

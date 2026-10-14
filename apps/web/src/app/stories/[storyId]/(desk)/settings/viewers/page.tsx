@@ -3,7 +3,7 @@ import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
 import { canManageInvites } from "@/lib/story-roles";
 import { PersonLink } from "@/components/PersonLink";
-import { Card, Sub } from "../Card";
+import { Card, Sub } from "@/components/SettingsCard";
 import { MemberMenu } from "../MemberMenu";
 import { InviteCard } from "../InviteCard";
 

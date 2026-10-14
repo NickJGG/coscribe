@@ -1,5 +1,5 @@
 import { Bar, Loading } from "@/components/Skeleton";
-import { Card, Sub } from "../Card";
+import { Card, Sub } from "@/components/SettingsCard";
 
 export default function StorySettingsViewersLoading() {
   return (

@@ -1,6 +1,6 @@
 import { Bar, Lines, Loading } from "@/components/Skeleton";
 import fields from "@/components/StoryFields.module.css";
-import { Card, Sub } from "../Card";
+import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import styles from "../settings.module.css";
 
 export default function StorySettingsStoryLoading() {
@@ -27,25 +27,25 @@ export default function StorySettingsStoryLoading() {
           </div>
         </Sub>
         <Sub>
-          <div className={styles.inlineRow}>
+          <InlineRow>
             <div>
               <h3>Finished</h3>
               <Lines count={2} className="muted" />
             </div>
             <Bar width={130} height={40} />
-          </div>
+          </InlineRow>
         </Sub>
       </Card>
 
       <Card title="Leave or delete" danger>
         <Sub>
-          <div className={styles.inlineRow}>
+          <InlineRow>
             <div>
               <h3>Delete story</h3>
               <p className="muted">Removes it for everyone. It waits in your Trash for 30 days, where you can restore it. To leave instead, hand off Host first.</p>
             </div>
             <Bar width={120} height={40} />
-          </div>
+          </InlineRow>
         </Sub>
       </Card>
     </Loading>

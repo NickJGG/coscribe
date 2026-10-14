@@ -11,14 +11,13 @@ export function ShowOnlineSwitch({ show }: { show: boolean }) {
   return (
     <Switch
       checked={shown}
+      label="Show me as online to Friends"
       onChange={(next) =>
         startTransition(async () => {
           setShown(next);
           await setShowOnline(next);
         })
       }
-    >
-      Show me as online to Friends
-    </Switch>
+    />
   );
 }

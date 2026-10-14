@@ -73,7 +73,7 @@ export function ProfileForm({
         <input
           id="username"
           name="username"
-          className={styles.input}
+          className="input"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
@@ -87,7 +87,7 @@ export function ProfileForm({
         <p
           id="username-hint"
           aria-live="polite"
-          className={usernameHint.error ? styles.error : availability === "available" ? styles.ok : "muted"}
+          className={`${styles.hint} ${usernameHint.error ? styles.error : availability === "available" ? styles.ok : "muted"}`}
         >
           {usernameHint.text}
         </p>
@@ -98,17 +98,21 @@ export function ProfileForm({
           <label htmlFor="bio" className={styles.label}>
             Bio
           </label>
-          <input
+          <textarea
             id="bio"
             name="bio"
-            className={`${styles.input} ${styles.wide}`}
+            rows={2}
+            className={`input ${styles.textarea}`}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+            }}
             maxLength={BIO_MAX}
             aria-invalid={Boolean(state.bioError)}
             aria-describedby="bio-hint"
           />
-          <p id="bio-hint" className={state.bioError ? styles.error : "muted"}>
+          <p id="bio-hint" className={`${styles.hint} ${state.bioError ? styles.error : "muted"}`}>
             {state.bioError ?? `One line under your name on your profile. ${BIO_MAX - bio.length} characters left.`}
           </p>
         </div>
@@ -116,7 +120,7 @@ export function ProfileForm({
 
       <fieldset className={styles.field}>
         <legend className={styles.label}>Author color</legend>
-        <p className="muted">
+        <p className={`muted ${styles.hint}`}>
           Your cursor and your text tint, wherever you write. In a Story where another Writer already has it, you
           get the nearest free color.
         </p>

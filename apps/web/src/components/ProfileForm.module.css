@@ -15,23 +15,14 @@
   font-weight: 600;
 }
 
-.input {
-  max-width: 320px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-  background: var(--paper-raised);
-  color: var(--ink);
-  font: inherit;
+.textarea {
+  max-width: 480px;
+  padding-block: 8px;
+  resize: vertical;
 }
 
-.wide {
-  max-width: 40rem;
-}
-
-.input[aria-invalid="true"] {
-  border-color: var(--danger);
+.hint {
+  font-size: var(--step--1);
 }
 
 .error {

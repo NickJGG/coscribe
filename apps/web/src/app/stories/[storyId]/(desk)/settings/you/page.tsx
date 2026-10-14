@@ -5,7 +5,7 @@ import { colorName } from "@/lib/profile-rules";
 import { canLeave, isWriter } from "@/lib/story-roles";
 import { leaveStory } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
-import { Card, Sub } from "../Card";
+import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import { StoryColorPicker } from "./StoryColorPicker";
 import { StoryNotifyChoice } from "./StoryNotifyChoice";
 import styles from "../settings.module.css";
@@ -48,7 +48,7 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
       {canLeave(myRole) && (
         <Card title="Leave or delete" danger>
           <Sub>
-            <div className={styles.inlineRow}>
+            <InlineRow>
               <div>
                 <h3>Leave story</h3>
                 <p className="muted">You&rsquo;ll need a new Invite to come back.</p>
@@ -59,7 +59,7 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
               >
                 <button className="button button-danger">Leave story</button>
               </ActionForm>
-            </div>
+            </InlineRow>
           </Sub>
         </Card>
       )}
