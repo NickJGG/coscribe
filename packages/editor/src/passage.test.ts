@@ -60,6 +60,16 @@ describe("sliceChapter", () => {
   })
 })
 
+describe("sliceChapter with line breaks", () => {
+  it("keeps a line break between the points, and drops one at either edge", () => {
+    const poem = doc({ type: "paragraph", content: [text("Roses", "mia"), { type: "hardBreak" }, text("are red", "mia"), { type: "hardBreak" }] })
+    expect(sliceChapter(poem, { block: 0, offset: 2 }, { block: 0, offset: 8 })).toEqual(
+      doc({ type: "paragraph", content: [text("ses", "mia"), { type: "hardBreak" }, text("are", "mia")] })
+    )
+    expect(sliceChapter(poem, { block: 0, offset: 5 }, { block: 0, offset: 12 })).toEqual(doc(paragraph(text("are red", "mia"))))
+  })
+})
+
 describe("featureError", () => {
   it.each([
     ["your own words", doc(paragraph(text("Once", "mia"))), null],

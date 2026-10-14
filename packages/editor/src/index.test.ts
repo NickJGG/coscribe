@@ -5,10 +5,11 @@ import { chapterExtensions, countWords, documentName, entryExtensions, parseDocu
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
 
-  it("allows only paragraphs, block quotes, Scene Breaks, Scripts, bold, italic, strikethrough, authorship, and Notes", () => {
+  it("allows only paragraphs, line breaks, block quotes, Scene Breaks, Scripts, bold, italic, strikethrough, authorship, and Notes", () => {
     expect(Object.keys(schema.nodes).sort()).toEqual([
       "blockquote",
       "doc",
+      "hardBreak",
       "paragraph",
       "sceneBreak",
       "script",
@@ -65,6 +66,7 @@ describe("entry schema", () => {
       "blockquote",
       "bulletList",
       "doc",
+      "hardBreak",
       "listItem",
       "orderedList",
       "paragraph",

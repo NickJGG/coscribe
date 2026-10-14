@@ -3,7 +3,7 @@ import { Fragment, Slice } from "@tiptap/pm/model"
 import { TextSelection, type Command } from "@tiptap/pm/state"
 import { describe, expect, it } from "vitest"
 import { AuthorStamp, chapterExtensions, scriptCues, type ScriptElementType } from "./index"
-import { sceneHeadingRule, scriptBackspace, scriptEnter, scriptShiftTab, scriptSlice, scriptTab } from "./script"
+import { sceneHeadingRule, scriptBackspace, scriptEnter, scriptShiftEnter, scriptShiftTab, scriptSlice, scriptTab } from "./script"
 
 const text = (t: string, marks?: JSONContent["marks"]): JSONContent => ({ type: "text", text: t, ...(marks && { marks }) })
 const p = (t = ""): JSONContent => ({ type: "paragraph", ...(t && { content: [text(t)] }) })
@@ -13,6 +13,7 @@ const line = (element: ScriptElementType, t = ""): JSONContent => ({
   ...(t && { content: [text(t)] }),
 })
 const script = (...lines: JSONContent[]): JSONContent => ({ type: "script", content: lines })
+const br: JSONContent = { type: "hardBreak" }
 
 /** A headless editor, with its plugins (which only load on mount) added by hand. */
 function editor(...content: JSONContent[]): Editor {
@@ -98,6 +99,15 @@ describe("toggleScript", () => {
     expect(author(0)).toBe("mia")
     e.view.dispatch(e.state.tr.insertText("!", e.state.doc.content.size - 2))
     expect(author(1)).toBe("me")
+  })
+
+  it("makes each line of a paragraph with line breaks its own Action line, keeping authorship", () => {
+    const mia = [{ type: "author", attrs: { userId: "mia", at: 1 } }]
+    const e = editor(p("Before."), { type: "paragraph", content: [text("Rain.", mia), br, text("Thunder.", mia), br, text("Hail.", mia)] })
+    caret(e, 1, 1)
+    e.commands.toggleScript()
+    expect(shape(e)).toEqual(["Before.", ["action:Rain.", "action:Thunder.", "action:Hail."]])
+    e.state.doc.child(1).forEach((l) => expect(l.firstChild!.marks[0]!.attrs.userId).toBe("mia"))
   })
 
   it("won't wrap a block quote", () => {
@@ -295,6 +305,34 @@ describe("scriptSlice", () => {
     expect(inside.content.childCount).toBe(2)
     inside.content.forEach((node) => expect([node.type.name, node.attrs.element]).toEqual(["scriptElement", "action"]))
     expect(scriptSlice(slice, e.state.doc.resolve(e.state.doc.content.size - 1))).toBe(slice)
+  })
+
+  it("makes each line of a pasted paragraph with line breaks an Action line", () => {
+    const e = editor(script(line("character", "MIA")))
+    const lines = e.schema.nodeFromJSON({ type: "paragraph", content: [text("One"), br, text("Two")] })
+    const inside = scriptSlice(new Slice(Fragment.from(lines), 1, 1), e.state.doc.resolve(2))
+    const out: string[] = []
+    inside.content.forEach((node) => out.push(`${node.attrs.element}:${node.textContent}`))
+    expect(out).toEqual(["action:One", "action:Two"])
+  })
+})
+
+describe("Shift-Enter", () => {
+  it("acts as Enter in a Script, adding no line break", () => {
+    const e = editor(script(line("character", "MIA")))
+    caret(e, 0, -1)
+    run(e, scriptShiftEnter)
+    expect(shape(e)).toEqual([["character:MIA", "dialogue:"]])
+
+    caret(e, 0, 1)
+    run(e, scriptShiftEnter)
+    expect(shape(e)).toEqual([["character:M", "character:IA", "dialogue:"]])
+  })
+
+  it("passes outside a Script", () => {
+    const e = editor(p("Rain."))
+    caret(e, 0, 2)
+    expect(run(e, scriptShiftEnter)).toBe(false)
   })
 })
 

@@ -12,8 +12,8 @@ export type EntryMention = { entryId: string; from: number; to: number; linked: 
 const WORD = "[\\p{L}\\p{M}\\p{N}_]"
 
 /**
- * Every Entry Mention of `entries` in `text`: names and Aliases as whole words or phrases, ignoring case,
- * including before a possessive 's. Where matches overlap, the longest wins ("Gull Point Light" over
+ * Every Entry Mention of `entries` in `text`: names and Aliases as whole words or phrases on one line, ignoring
+ * case, including before a possessive 's. Where matches overlap, the longest wins ("Gull Point Light" over
  * "Gull Point"). Sorted by position.
  */
 export function findEntryMentions(text: string, entries: readonly EntryMentionTarget[]): EntryMention[] {
@@ -43,7 +43,7 @@ function termPatterns(entries: readonly EntryMentionTarget[]) {
       const words = term.trim().split(/\s+/u).filter(Boolean)
       if (!words.length) continue
       // A trailing apostrophe isn't a word character, so "Wren's" already ends "Wren" on a boundary.
-      const body = words.map(escape).join("\\s+")
+      const body = words.map(escape).join("[^\\S\\n]+")
       list.push({ pattern: new RegExp(`(?<!${WORD})${body}(?!${WORD})`, "giu"), entryId: entry.id, linked: entry.linkEntryMentions })
     }
   }
@@ -56,8 +56,8 @@ const EDGES = /^[^\p{L}\p{M}\p{N}]+|[^\p{L}\p{M}\p{N}]+$/gu
 
 /**
  * The Entry name a selection of `text` (one block) stands for: snapped outward to whole words, trimmed of
- * edge punctuation and a possessive 's, with whitespace collapsed. Null if no letter is left or it runs
- * past `max` characters.
+ * edge punctuation and a possessive 's, with whitespace collapsed. Null if no letter is left, it crosses a line
+ * break, or it runs past `max` characters.
  */
 export function entryNameAt(text: string, from: number, to: number, max: number): string | null {
   const word = (i: number) => WORD_CHAR.test(text[i] ?? "")
@@ -68,8 +68,9 @@ export function entryNameAt(text: string, from: number, to: number, max: number)
     .replace(EDGES, "")
     .replace(/['’]s$/iu, "")
     .replace(EDGES, "")
-    .replace(/\s+/gu, " ")
-  return /\p{L}/u.test(name) && name.length <= max ? name : null
+  if (name.includes("\n")) return null
+  const spaced = name.replace(/\s+/gu, " ")
+  return /\p{L}/u.test(spaced) && spaced.length <= max ? spaced : null
 }
 
 /** The Entry whose name or an Alias is `name`, ignoring case and spacing. */
@@ -86,11 +87,14 @@ function escape(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-/** The text of each paragraph (or other text block) in a document, which Entry Mentions never cross. */
+/**
+ * The text of each paragraph (or other text block) in a document, which Entry Mentions never cross. A line break
+ * reads as `\n`, as in the editor's `textContent`.
+ */
 export function blockTexts(node: ContentJSON, into: string[] = []): string[] {
   const children = node.content ?? []
-  if (children.some((c) => c.type === "text")) {
-    into.push(children.map((c) => c.text ?? "").join(""))
+  if (children.some((c) => c.type === "text" || c.type === "hardBreak")) {
+    into.push(children.map((c) => (c.type === "hardBreak" ? "\n" : (c.text ?? ""))).join(""))
   } else {
     for (const child of children) blockTexts(child, into)
   }

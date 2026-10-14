@@ -38,6 +38,7 @@ import {
   BlockQuoteIcon,
   BulletListIcon,
   GripIcon,
+  LineBreakIcon,
   NumberedListIcon,
   SceneBreakIcon,
   ScriptIcon,
@@ -96,6 +97,12 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
     icon: () => <SceneBreakIcon />,
     run: (editor) => editor.chain().focus().insertSceneBreak().run(),
   },
+  lineBreak: {
+    label: "Line break",
+    keys: "Shift+Enter",
+    icon: () => <LineBreakIcon />,
+    run: (editor) => editor.chain().focus().setHardBreak().run(),
+  },
   blockquote: {
     label: "Block quote",
     keys: "Ctrl+Shift+B · type > and a space",
@@ -141,7 +148,7 @@ const GROUP_LABELS: Record<GroupId, string> = {
 };
 
 /** Tools that don't apply inside a Script. */
-const NOT_IN_SCRIPT = new Set<ToolId>(["sceneBreak", "blockquote", "align"]);
+const NOT_IN_SCRIPT = new Set<ToolId>(["sceneBreak", "lineBreak", "blockquote", "align"]);
 
 function toolDisabled(tool: ToolId, active: Active): boolean {
   if (active.script && NOT_IN_SCRIPT.has(tool)) return true;

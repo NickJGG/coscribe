@@ -1,9 +1,11 @@
 import { InputRule, Node } from "@tiptap/core"
+import { splitBlockKeepMarks } from "@tiptap/pm/commands"
 import { Fragment, Slice, type Node as PMNode, type ResolvedPos } from "@tiptap/pm/model"
 import { Plugin, PluginKey, TextSelection, type Command, type EditorState, type Transaction } from "@tiptap/pm/state"
 import { ReplaceAroundStep } from "@tiptap/pm/transform"
 import { Decoration, DecorationSet } from "@tiptap/pm/view"
 import type { ContentJSON } from "./credits"
+import { lines } from "./hard-break"
 
 export const SCRIPT_ELEMENTS = ["sceneHeading", "action", "character", "parenthetical", "dialogue", "transition"] as const
 
@@ -104,6 +106,7 @@ export const Script = Node.create({
     const run = (command: Command) => () => this.editor.isEditable && command(this.editor.state, this.editor.view.dispatch)
     return {
       Enter: run(scriptEnter),
+      "Shift-Enter": run(scriptShiftEnter),
       Tab: run(scriptTab),
       "Shift-Tab": run(scriptShiftTab),
       Backspace: run(scriptBackspace),
@@ -203,14 +206,27 @@ function insertLine(tr: Transaction, pos: number, element: ScriptElementType) {
 }
 
 /**
- * Wraps the top-level paragraph at `pos` in a Script of one `element` line. A ReplaceAroundStep keeps the text
- * itself untouched, so the authorship stamp doesn't take it over.
+ * Wraps the top-level paragraph at `pos` in a Script of `element` lines, one per line break. Splits and
+ * ReplaceAroundSteps keep the text itself untouched, so the authorship stamp doesn't take it over.
  */
 function wrapParagraph(tr: Transaction, pos: number, element: ScriptElementType) {
+  const breaks: number[] = []
+  tr.doc.nodeAt(pos)!.forEach((child, offset) => {
+    if (child.type.name === "hardBreak") breaks.push(pos + 1 + offset)
+  })
+  for (const at of breaks.reverse()) {
+    tr.delete(at, at + 1)
+    tr.split(at)
+  }
+  const starts = [pos]
+  for (let i = 0; i < breaks.length; i++) starts.push(starts[i]! + tr.doc.nodeAt(starts[i]!)!.nodeSize)
+
   const { schema } = tr.doc.type
-  const size = tr.doc.nodeAt(pos)!.nodeSize
   const wrapper = schema.nodes.script!.create(null, schema.nodes.scriptElement!.create({ element }))
-  tr.step(new ReplaceAroundStep(pos, pos + size, pos + 1, pos + size - 1, new Slice(Fragment.from(wrapper), 0, 0), 2, true))
+  for (const start of starts.reverse()) {
+    const size = tr.doc.nodeAt(start)!.nodeSize
+    tr.step(new ReplaceAroundStep(start, start + size, start + 1, start + size - 1, new Slice(Fragment.from(wrapper), 0, 0), 2, true))
+  }
 }
 
 /**
@@ -329,6 +345,10 @@ export const scriptEnter: Command = (state, dispatch) => {
   return true
 }
 
+/** A line can't hold a line break, so Shift-Enter in a Script acts as Enter. */
+export const scriptShiftEnter: Command = (state, dispatch) =>
+  !!lineAt(state.selection.$from) && (scriptEnter(state, dispatch) || splitBlockKeepMarks(state, dispatch))
+
 /** Action becomes Character; Character and Dialogue add a Parenthetical below, or when empty become Transition / Parenthetical. */
 export const scriptTab: Command = (state, dispatch) => {
   const line = lineAt(state.selection.$from)
@@ -383,7 +403,7 @@ export const scriptBackspace: Command = (state, dispatch) => {
   return true
 }
 
-/** Inside a Script, pasted paragraphs (and plain-text lines) become Action lines. */
+/** Inside a Script, pasted paragraphs (and plain-text lines) become Action lines, one per line break. */
 export function scriptSlice(slice: Slice, $at: ResolvedPos): Slice {
   if (!lineAt($at)) return slice
   const type = $at.parent.type
@@ -391,7 +411,7 @@ export function scriptSlice(slice: Slice, $at: ResolvedPos): Slice {
   const nodes: PMNode[] = []
   slice.content.forEach((node) => {
     if (node.type.name === "paragraph") {
-      nodes.push(type.create({ element: "action" }, node.content))
+      for (const line of lines(node.content)) nodes.push(type.create({ element: "action" }, line))
       changed = true
     } else {
       nodes.push(node)

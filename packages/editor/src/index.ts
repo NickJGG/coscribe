@@ -9,6 +9,7 @@ import Strike from "@tiptap/extension-strike"
 import Text from "@tiptap/extension-text"
 import { Author } from "./author"
 import { Align, ChapterBlockquote, EntryBlockquote } from "./format"
+import { LineBreak, LineBreakPaste } from "./hard-break"
 import { Note, NotePaste } from "./note"
 import { SceneBreak } from "./scene-break"
 import { Script, ScriptElement } from "./script"
@@ -68,14 +69,17 @@ export {
 } from "./outline"
 
 /**
- * Paragraphs (left, centered or right-aligned), block quotes of paragraphs, Scene Breaks, Scripts of Script
- * Elements (a `scriptElement` with its kind in `element`), and bold, italic and strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
+ * Paragraphs (left, centered or right-aligned) that can hold line breaks, block quotes of paragraphs, Scene Breaks,
+ * Scripts of Script Elements (a `scriptElement` with its kind in `element`, and no line breaks), and bold, italic and
+ * strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
  * and apps/sync must share this schema: y-tiptap drops text carrying a mark it doesn't know.
  */
 export const chapterExtensions = [
   Document,
   Paragraph,
   Text,
+  LineBreak,
+  LineBreakPaste,
   Bold,
   Italic,
   Strike,
@@ -94,7 +98,7 @@ export const chapterExtensions = [
  * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
  * `chapterExtensions`, `entryExtensions` or `outlineExtensions` gains or loses a node, mark or attribute.
  */
-export const SCHEMA_VERSION = 3
+export const SCHEMA_VERSION = 4
 
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)

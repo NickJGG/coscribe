@@ -70,6 +70,14 @@ export function SceneBreakIcon() {
   );
 }
 
+export function LineBreakIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden>
+      <path d="M15 4.5v5.5a2 2 0 0 1-2 2H5.5M8.5 9 5.5 12l3 3" />
+    </svg>
+  );
+}
+
 export function BlockQuoteIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden>

@@ -5,7 +5,7 @@
 
 export const TOOLBAR_GROUPS = [
   ["inline", ["bold", "italic", "strike"]],
-  ["block", ["sceneBreak", "blockquote", "script", "align"]],
+  ["block", ["sceneBreak", "lineBreak", "blockquote", "script", "align"]],
   ["lists", ["bulletList", "orderedList"]],
   ["note", ["addNote"]],
 ] as const;

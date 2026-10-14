@@ -11,7 +11,7 @@ describe("resolveToolbarLayout", () => {
       ["note", ["addNote"]],
       ["lists", ["orderedList", "bulletList"]],
       ["inline", ["strike", "bold", "italic"]],
-      ["block", ["align", "script", "sceneBreak", "blockquote"]],
+      ["block", ["align", "script", "lineBreak", "sceneBreak", "blockquote"]],
     ];
     expect(resolveToolbarLayout(custom)).toEqual(custom);
   });
@@ -23,7 +23,7 @@ describe("resolveToolbarLayout", () => {
         ["inline", ["italic", "bold", "strike"]],
       ])
     ).toEqual([
-      ["block", ["blockquote", "sceneBreak", "script", "align"]],
+      ["block", ["blockquote", "sceneBreak", "lineBreak", "script", "align"]],
       ["inline", ["italic", "bold", "strike"]],
       ["lists", ["bulletList", "orderedList"]],
       ["note", ["addNote"]],
@@ -31,9 +31,16 @@ describe("resolveToolbarLayout", () => {
   });
 
   it("adds the Script tool to a layout saved before it existed", () => {
-    expect(resolveToolbarLayout([["block", ["align", "sceneBreak", "blockquote"]]])[0]).toEqual([
+    expect(resolveToolbarLayout([["block", ["align", "sceneBreak", "lineBreak", "blockquote"]]])[0]).toEqual([
       "block",
-      ["align", "sceneBreak", "blockquote", "script"],
+      ["align", "sceneBreak", "lineBreak", "blockquote", "script"],
+    ]);
+  });
+
+  it("adds the Line break tool to a layout saved before it existed, at the end of its group", () => {
+    expect(resolveToolbarLayout([["block", ["align", "script", "sceneBreak", "blockquote"]]])[0]).toEqual([
+      "block",
+      ["align", "script", "sceneBreak", "blockquote", "lineBreak"],
     ]);
   });
 

@@ -2,7 +2,7 @@ import type { JSONContent } from "@tiptap/core";
 
 /**
  * Renders stored Chapter or Entry JSON as plain markup, server-side, matching the editor's output
- * (`span[data-author]` runs, `hr[data-scene-break]`, `p` with `text-align`, `div[data-script]` of `p[data-element]`)
+ * (`span[data-author]` runs, `br` line breaks, `hr[data-scene-break]`, `p` with `text-align`, `div[data-script]` of `p[data-element]`)
  * so LiveDocument's prose, Script and authorship styles apply. `positions` numbers the top-level blocks with
  * `data-block` (a block quote or Script, not its lines), for mapping a selection back to the JSON.
  */
@@ -60,6 +60,8 @@ function Node({ node, block }: { node: JSONContent; block?: number }) {
           <Children nodes={node.content} />
         </li>
       );
+    case "hardBreak":
+      return <br />;
     case "text":
       return <Text node={node} />;
     default:

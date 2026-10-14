@@ -118,6 +118,19 @@ describe("blockTexts", () => {
     expect(blockTexts(doc)).toEqual(["Wren wrote:", "Dear Aldous,", "Come home."])
   })
 
+  it("reads a line break as a newline, so mentions don't run across it", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [{ type: "text", text: "Out past Gull" }, { type: "hardBreak" }, { type: "text", text: "Point" }] },
+        { type: "paragraph", content: [{ type: "hardBreak" }] },
+      ],
+    }
+    expect(blockTexts(doc)).toEqual(["Out past Gull\nPoint", "\n"])
+    expect(found("Out past Gull\nPoint")).toEqual([])
+    expect(found("Out past Gull Point")).toEqual([["point", "Gull Point"]])
+  })
+
   it("reaches into Scripts, one text per line", () => {
     const line = (element: string, text: string) => ({ type: "scriptElement", attrs: { element }, content: [{ type: "text", text }] })
     const doc = { type: "doc", content: [{ type: "script", content: [line("character", "WREN"), line("dialogue", "Aldous?")] }] }
@@ -144,6 +157,11 @@ describe("entryNameAt", () => {
 
   it("trims and collapses whitespace", () => {
     expect(at("at   Gull  Point  now", "  Gull  Point ")).toBe("Gull Point")
+  })
+
+  it("refuses a selection across a line break, but not one ending at it", () => {
+    expect(at("Gull\nPoint", "Gull\nPoint")).toBeNull()
+    expect(at("Gull\nPoint", "Gull\n")).toBe("Gull")
   })
 
   it("refuses selections without a letter or past the limit", () => {
