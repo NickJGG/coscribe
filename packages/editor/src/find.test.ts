@@ -29,6 +29,12 @@ describe("findText", () => {
     expect(found("“Run,” she said", '"run,"')).toEqual(["“Run,”"])
   })
 
+  it("treats an ellipsis as three dots and an em dash as two hyphens", () => {
+    expect(found("Wait… no, wait...", "wait...")).toEqual(["Wait…", "wait..."])
+    expect(found("so— so--", "so--")).toEqual(["so—", "so--"])
+    expect(found("Wait… no", "…")).toEqual(["…"])
+  })
+
   it("returns UTF-16 offsets into the original text after emoji and other multi-unit characters", () => {
     const text = "🌊 waves 𝒜 then waves"
     const matches = findText(text, "waves")

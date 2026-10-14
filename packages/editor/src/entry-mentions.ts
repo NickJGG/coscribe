@@ -13,7 +13,7 @@ const WORD = "[\\p{L}\\p{M}\\p{N}_]"
 
 /**
  * Every Entry Mention of `entries` in `text`: names and Aliases as whole words or phrases on one line, ignoring
- * case, including before a possessive 's. Where matches overlap, the longest wins ("Gull Point Light" over
+ * case and curly apostrophes, including before a possessive 's. Where matches overlap, the longest wins ("Gull Point Light" over
  * "Gull Point"). Sorted by position.
  */
 export function findEntryMentions(text: string, entries: readonly EntryMentionTarget[]): EntryMention[] {
@@ -43,7 +43,7 @@ function termPatterns(entries: readonly EntryMentionTarget[]) {
       const words = term.trim().split(/\s+/u).filter(Boolean)
       if (!words.length) continue
       // A trailing apostrophe isn't a word character, so "Wren's" already ends "Wren" on a boundary.
-      const body = words.map(escape).join("[^\\S\\n]+")
+      const body = words.map((w) => escape(w).replace(/['‘’]/gu, "['‘’]")).join("[^\\S\\n]+")
       list.push({ pattern: new RegExp(`(?<!${WORD})${body}(?!${WORD})`, "giu"), entryId: entry.id, linked: entry.linkEntryMentions })
     }
   }
@@ -73,14 +73,14 @@ export function entryNameAt(text: string, from: number, to: number, max: number)
   return /\p{L}/u.test(spaced) && spaced.length <= max ? spaced : null
 }
 
-/** The Entry whose name or an Alias is `name`, ignoring case and spacing. */
+/** The Entry whose name or an Alias is `name`, ignoring case, spacing and curly apostrophes. */
 export function entryNamed<T extends EntryMentionTarget>(name: string, entries: readonly T[]): T | undefined {
   const key = nameKey(name)
   return entries.find((e) => [e.name, ...e.aliases].some((term) => nameKey(term) === key))
 }
 
 function nameKey(name: string): string {
-  return name.trim().replace(/\s+/gu, " ").toLowerCase()
+  return name.trim().replace(/\s+/gu, " ").replace(/[‘’]/gu, "'").toLowerCase()
 }
 
 function escape(text: string): string {

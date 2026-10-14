@@ -95,6 +95,15 @@ export async function updateStory(storyId: string, _prev: ActionResult, formData
   return null;
 }
 
+/** Host only: smart punctuation in every Writer's editors, reaching open ones on their next refresh. */
+export async function setSmartPunctuation(storyId: string, on: boolean): Promise<void> {
+  if (!isUuid(storyId)) return;
+  await requireProfile(`/stories/${storyId}/settings/story`);
+  const supabase = await createClient();
+  await supabase.from("stories").update({ smart_punctuation: on === true }).eq("id", storyId);
+  refresh();
+}
+
 export async function deleteStory(storyId: string): Promise<ActionResult> {
   if (!isUuid(storyId)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);

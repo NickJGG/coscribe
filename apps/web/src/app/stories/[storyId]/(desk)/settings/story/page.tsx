@@ -4,6 +4,7 @@ import { getStory } from "@/lib/story";
 import { requireProfile } from "@/lib/viewer";
 import { deleteStory, setStoryFinished, updateStory } from "@/lib/actions/stories";
 import { ActionForm } from "@/components/ActionForm";
+import { SmartPunctuationSwitch } from "@/components/SmartPunctuationSwitch";
 import { StoryFields } from "@/components/StoryFields";
 import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import styles from "../settings.module.css";
@@ -26,6 +27,15 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
               <button className="button button-primary">Save</button>
             </div>
           </ActionForm>
+        </Sub>
+        <Sub>
+          <InlineRow>
+            <div>
+              <h3>Smart punctuation</h3>
+              <p className="muted">Curly quotes, em dashes and ellipses as you type, for every Writer.</p>
+            </div>
+            <SmartPunctuationSwitch storyId={story.id} on={story.smart_punctuation} />
+          </InlineRow>
         </Sub>
         <Sub>
           <InlineRow>

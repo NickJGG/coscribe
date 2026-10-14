@@ -423,14 +423,14 @@ isOneToOne: false
                   ]
                 },"stories": {
                   Row: {
-                    "blurb": string | null,"created_at": string,"deleted_at": string | null,"deleted_by": string | null,"entry_type_order": (Database["public"]['Enums']["entry_type"])[],"finished_at": string | null,"hidden_from_front": boolean,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
+                    "blurb": string | null,"created_at": string,"deleted_at": string | null,"deleted_by": string | null,"entry_type_order": (Database["public"]['Enums']["entry_type"])[],"finished_at": string | null,"hidden_from_front": boolean,"id": string,"smart_punctuation": boolean,"status": Database["public"]['Enums']["story_status"],"title": string,"visibility": Database["public"]['Enums']["story_visibility"]
                   }
                   ComputedFields: never
                   Insert: {
-                    "blurb"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"deleted_by"?: string | null,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"deleted_by"?: string | null,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"smart_punctuation"?: boolean,"status"?: Database["public"]['Enums']["story_status"],"title": string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Update: {
-                    "blurb"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"deleted_by"?: string | null,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
+                    "blurb"?: string | null,"created_at"?: string,"deleted_at"?: string | null,"deleted_by"?: string | null,"entry_type_order"?: (Database["public"]['Enums']["entry_type"])[],"finished_at"?: string | null,"hidden_from_front"?: boolean,"id"?: string,"smart_punctuation"?: boolean,"status"?: Database["public"]['Enums']["story_status"],"title"?: string,"visibility"?: Database["public"]['Enums']["story_visibility"]
                   }
                   Relationships: [
                     {

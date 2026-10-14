@@ -8,7 +8,15 @@ import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import { Dropcursor, Gapcursor, Placeholder } from "@tiptap/extensions";
-import { AuthorStamp, chapterExtensions, countWords, documentName, DOCUMENT_FIELD, entryExtensions } from "@coscribe/editor";
+import {
+  AuthorStamp,
+  chapterExtensions,
+  countWords,
+  documentName,
+  DOCUMENT_FIELD,
+  entryExtensions,
+  SmartPunctuation,
+} from "@coscribe/editor";
 import { authorColorCss } from "@/lib/profile-rules";
 import type { EntryMentionEntry } from "@/lib/entries";
 import { DEFAULT_TOOLBAR_LAYOUT, type ToolbarLayout } from "@/lib/toolbar-layout";
@@ -23,6 +31,7 @@ import { useSnapshotCompare } from "./SnapshotCompare";
 import { NO_DOCUMENT, useLiveReport, type PresentWriter } from "./LiveStatus";
 import { PinnedButton, usePinsSwitch } from "./PinnedEntries";
 import { SelectionActions } from "./SelectionActions";
+import { useSmartPunctuation } from "./SmartPunctuation";
 import { useLiveSession, type LiveSession } from "./SyncSocket";
 import { ViewOptions } from "./ViewOptions";
 import { NoteHighlights, type NoteHighlightOptions } from "./notes/NoteHighlights";
@@ -329,6 +338,7 @@ function LiveEditor({
       Gapcursor,
       Dropcursor,
       AuthorStamp.configure({ userId: writer?.userId ?? null }),
+      SmartPunctuation,
       EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
       Find.configure(find),
@@ -344,6 +354,8 @@ function LiveEditor({
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
+
+  useSmartPunctuation(editor);
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;

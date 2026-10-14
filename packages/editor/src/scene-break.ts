@@ -9,7 +9,10 @@ declare module "@tiptap/core" {
   }
 }
 
-/** The centered `* * *` divider between scenes. Typing `***` or `---` on an empty line inserts one. */
+/**
+ * The centered `* * *` divider between scenes. Typing `***` or `---` on an empty line inserts one (`—-` too, which is
+ * what `---` becomes with Smart punctuation on).
+ */
 export const SceneBreak = Node.create({
   name: "sceneBreak",
   group: "block",
@@ -64,7 +67,7 @@ export const SceneBreak = Node.create({
   },
 
   addInputRules() {
-    const rule = nodeInputRule({ find: /^(?:\*\*\*|---)\s$/, type: this.type })
+    const rule = nodeInputRule({ find: /^(?:\*\*\*|---|—-)\s$/, type: this.type })
     return [
       new InputRule({
         find: rule.find,

@@ -12,6 +12,7 @@ import { AccountMenus } from "@/components/SiteHeader";
 import { LiveStatusProvider } from "@/components/LiveStatus";
 import { PinnedEntriesProvider } from "@/components/PinnedEntries";
 import { SignInLink } from "@/components/SignInLink";
+import { SmartPunctuationProvider } from "@/components/SmartPunctuation";
 import { ChatButton } from "@/components/StoryPanel";
 import { StorySearchProvider } from "@/components/StorySearch";
 import { SyncSocketProvider } from "@/components/SyncSocket";
@@ -102,85 +103,87 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
 
   return (
     <SyncSocketProvider>
-      <LiveStatusProvider>
-        <DeskFrame
-          className={styles.desk}
-          initialWidth={parseSidebarWidth(cookieStore.get(WIDTH_COOKIE)?.value)}
-          initialCollapsed={parseCollapsed(cookieStore.get(COLLAPSED_COOKIE)?.value)}
-        >
-          <StorySearchProvider storyId={story.id}>
-            <header className={styles.header}>
-              <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
-                <Wordmark />
-              </Link>
-              <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
-              <div className={styles.end}>
-                <DeskStatus member={writer} />
-                {canManageInvites(myRole) && (
-                  <Link href={`/stories/${story.id}/settings/writers`} className={`button button-small ${styles.invite}`}>
-                    Invite
-                  </Link>
-                )}
-                {writer && <ChatButton className="button button-small" />}
-                {viewer?.profile ? (
-                  <AccountMenus profile={viewer.profile} />
-                ) : viewer ? (
-                  <Link href="/onboarding" className="button button-primary button-small">
-                    Finish sign-up
-                  </Link>
-                ) : (
-                  <SignInLink className="button button-ghost button-small" />
-                )}
-              </div>
-            </header>
+      <SmartPunctuationProvider on={story.smart_punctuation}>
+        <LiveStatusProvider>
+          <DeskFrame
+            className={styles.desk}
+            initialWidth={parseSidebarWidth(cookieStore.get(WIDTH_COOKIE)?.value)}
+            initialCollapsed={parseCollapsed(cookieStore.get(COLLAPSED_COOKIE)?.value)}
+          >
+            <StorySearchProvider storyId={story.id}>
+              <header className={styles.header}>
+                <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
+                  <Wordmark />
+                </Link>
+                <Breadcrumb storyId={story.id} storyTitle={story.title} chapters={chapters} entries={entries} />
+                <div className={styles.end}>
+                  <DeskStatus member={writer} />
+                  {canManageInvites(myRole) && (
+                    <Link href={`/stories/${story.id}/settings/writers`} className={`button button-small ${styles.invite}`}>
+                      Invite
+                    </Link>
+                  )}
+                  {writer && <ChatButton className="button button-small" />}
+                  {viewer?.profile ? (
+                    <AccountMenus profile={viewer.profile} />
+                  ) : viewer ? (
+                    <Link href="/onboarding" className="button button-primary button-small">
+                      Finish sign-up
+                    </Link>
+                  ) : (
+                    <SignInLink className="button button-ghost button-small" />
+                  )}
+                </div>
+              </header>
   
-            <PinnedEntriesProvider storyId={story.id} initialIds={pins} canPin={!!myRole}>
-              <div className={styles.body}>
-                <Sidebar
-                  storyId={story.id}
-                  storyTitle={story.title}
-                  chapters={chapters}
-                  entries={entries}
-                  typeOrder={story.entry_type_order}
-                  member={!!myRole}
-                  reorderable={reorderable}
-                  chapterMenus={chapterMenus}
-                  entryMenus={entryMenus}
-                  typeMenus={typeMenus}
-                  newChapter={
-                    writable &&
-                    canManageChapters(myRole) && (
-                      <ActionForm action={addChapter.bind(null, story.id)}>
-                        <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
-                        <button className={styles.add}>+ New Chapter</button>
-                      </ActionForm>
-                    )
-                  }
-                  newEntry={
-                    writable && (
-                      <details className={styles.addEntry}>
-                        <summary className={styles.add}>+ Add Entry</summary>
-                        <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
-                          <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
-                            {ENTRY_TYPES.map((t) => (
-                              <option key={t} value={t}>
-                                {ENTRY_TYPE_LABEL[t]}
-                              </option>
-                            ))}
-                          </select>
-                          <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
-                          <button className="button button-small">Add</button>
+              <PinnedEntriesProvider storyId={story.id} initialIds={pins} canPin={!!myRole}>
+                <div className={styles.body}>
+                  <Sidebar
+                    storyId={story.id}
+                    storyTitle={story.title}
+                    chapters={chapters}
+                    entries={entries}
+                    typeOrder={story.entry_type_order}
+                    member={!!myRole}
+                    reorderable={reorderable}
+                    chapterMenus={chapterMenus}
+                    entryMenus={entryMenus}
+                    typeMenus={typeMenus}
+                    newChapter={
+                      writable &&
+                      canManageChapters(myRole) && (
+                        <ActionForm action={addChapter.bind(null, story.id)}>
+                          <input type="hidden" name="title" value={`Chapter ${chapters.length + 1}`} />
+                          <button className={styles.add}>+ New Chapter</button>
                         </ActionForm>
-                      </details>
-                    )
-                  }
-                />
-                <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
-              </div>
-            </PinnedEntriesProvider>
-          </StorySearchProvider>
-        </DeskFrame>
-      </LiveStatusProvider>
+                      )
+                    }
+                    newEntry={
+                      writable && (
+                        <details className={styles.addEntry}>
+                          <summary className={styles.add}>+ Add Entry</summary>
+                          <ActionForm action={addEntry.bind(null, story.id)} className={styles.addForm}>
+                            <select name="type" className="input" aria-label="New Entry type" defaultValue="character">
+                              {ENTRY_TYPES.map((t) => (
+                                <option key={t} value={t}>
+                                  {ENTRY_TYPE_LABEL[t]}
+                                </option>
+                              ))}
+                            </select>
+                            <input name="name" className="input" placeholder="Name" maxLength={NAME_MAX} required />
+                            <button className="button button-small">Add</button>
+                          </ActionForm>
+                        </details>
+                      )
+                    }
+                  />
+                  <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
+                </div>
+              </PinnedEntriesProvider>
+            </StorySearchProvider>
+          </DeskFrame>
+        </LiveStatusProvider>
+      </SmartPunctuationProvider>
     </SyncSocketProvider>
   );
 }

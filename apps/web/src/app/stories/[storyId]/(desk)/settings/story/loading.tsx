@@ -29,6 +29,15 @@ export default function StorySettingsStoryLoading() {
         <Sub>
           <InlineRow>
             <div>
+              <h3>Smart punctuation</h3>
+              <p className="muted">Curly quotes, em dashes and ellipses as you type, for every Writer.</p>
+            </div>
+            <Bar width={28} height={16} round />
+          </InlineRow>
+        </Sub>
+        <Sub>
+          <InlineRow>
+            <div>
               <h3>Finished</h3>
               <Lines count={2} className="muted" />
             </div>

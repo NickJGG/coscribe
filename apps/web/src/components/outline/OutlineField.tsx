@@ -5,8 +5,9 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import Collaboration from "@tiptap/extension-collaboration";
 import { Placeholder } from "@tiptap/extensions";
-import { fieldFragment, outlineExtensions, type OutlineField as Field } from "@coscribe/editor";
+import { fieldFragment, outlineExtensions, SmartPunctuation, type OutlineField as Field } from "@coscribe/editor";
 import { useLocalSetting } from "@/lib/local-setting";
+import { useSmartPunctuation } from "../SmartPunctuation";
 import type { LiveSession } from "../SyncSocket";
 import styles from "./outline.module.css";
 
@@ -43,6 +44,7 @@ export function OutlineField({
     editable: false,
     extensions: [
       ...outlineExtensions,
+      SmartPunctuation,
       Placeholder.configure({ placeholder: "Write here…" }),
       Collaboration.configure({ document: session.ydoc, field: fieldFragment(field.id) }),
     ],
@@ -53,6 +55,8 @@ export function OutlineField({
   useEffect(() => {
     editor?.setEditable(!readOnly);
   }, [editor, readOnly]);
+
+  useSmartPunctuation(editor);
 
   const unfold = () => {
     setFolded(false);

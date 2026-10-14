@@ -1,4 +1,4 @@
-/** Story search: case-, accent- and quote-insensitive substring matching within one block of text. */
+/** Story search: case-, accent-, quote- and smart-punctuation-insensitive substring matching within one block of text. */
 
 /** Shorter queries match too much to be useful. */
 export const MIN_QUERY = 2
@@ -9,7 +9,7 @@ export type FindMatch = { from: number; to: number }
 /** Text folded for matching, with each folded unit's source range in the original. */
 export type FoldedText = { folded: string; starts: number[]; ends: number[] }
 
-const QUOTES: Record<string, string> = {
+const FOLDS: Record<string, string> = {
   "‘": "'",
   "’": "'",
   "‚": "'",
@@ -20,10 +20,12 @@ const QUOTES: Record<string, string> = {
   "„": '"',
   "‟": '"',
   "″": '"',
+  "…": "...",
+  "—": "--",
 }
 
 function foldChar(ch: string): string {
-  return (QUOTES[ch] ?? ch).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
+  return (FOLDS[ch] ?? ch).normalize("NFD").replace(/\p{M}/gu, "").toLowerCase()
 }
 
 /** Folds one code point at a time, so every folded unit maps back to the original text. */
@@ -67,7 +69,10 @@ export function findFolded(text: FoldedText, query: string): FindMatch[] {
   return matches
 }
 
-/** Every match of `query` in `text`, ignoring case, accents and curly quotes. Nothing for queries under `MIN_QUERY`. */
+/**
+ * Every match of `query` in `text`, ignoring case, accents, curly quotes, `…` for `...` and `—` for `--`. Nothing for
+ * queries under `MIN_QUERY`.
+ */
 export function findText(text: string, query: string): FindMatch[] {
   return findFolded(foldText(text), foldQuery(query))
 }

@@ -48,6 +48,7 @@ export {
   type EntryMention,
   type EntryMentionTarget,
 } from "./entry-mentions"
+export { SmartPunctuation, smartenSlice, smartenText, type SmartPunctuationStorage } from "./smart-punctuation"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, IMPORTED_AUTHOR, authorStampPlugin, type AuthorAttrs } from "./author"
 export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from "./passage"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"

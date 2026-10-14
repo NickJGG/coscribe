@@ -35,6 +35,15 @@ describe("findEntryMentions", () => {
     ])
   })
 
+  it("matches a name with an apostrophe whichever way it's curled", () => {
+    const cottage = entry("cottage", "Mara's Cottage")
+    expect(found("Mara’s Cottage and Mara's Cottage", [cottage])).toEqual([
+      ["cottage", "Mara’s Cottage"],
+      ["cottage", "Mara's Cottage"],
+    ])
+    expect(found("Mara's Cottage", [entry("curly", "Mara’s Cottage")])).toEqual([["curly", "Mara's Cottage"]])
+  })
+
   it("prefers the longest of overlapping matches", () => {
     expect(found("Out past Gull Point Light, then back to Gull Point.")).toEqual([
       ["light", "Gull Point Light"],
@@ -174,6 +183,11 @@ describe("entryNamed", () => {
   it("matches a name or Alias, ignoring case and spacing", () => {
     expect(entryNamed("wren", ENTRIES)).toBe(wren)
     expect(entryNamed("The  Old Keeper", ENTRIES)).toBe(keeper)
+  })
+
+  it("ignores curly apostrophes", () => {
+    const cottage = entry("cottage", "Mara's Cottage")
+    expect(entryNamed("Mara’s Cottage", [cottage])).toBe(cottage)
   })
 
   it("doesn't match part of a longer name", () => {
