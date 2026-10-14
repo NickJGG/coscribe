@@ -234,6 +234,19 @@ describe("diffChapters", () => {
     expect(merged[1]).toEqual({ text: "quick", marks: [mia], op: "del" })
     expect(merged.at(-1)).toEqual({ text: " fox ran.", marks: [mia], op: "same" })
   })
+
+  it("reads a line break as a newline of its own", () => {
+    const br: JSONContent = { type: "hardBreak", marks: [mia] }
+    const lines = (...content: JSONContent[]): JSONContent => ({ type: "paragraph", content })
+    const before = lines({ type: "text", text: "Roses are red," }, br, { type: "text", text: "violets are blue." })
+    const same = diffChapters(doc(before), doc(before))
+    expect(same.rows.map((r) => r.kind)).toEqual(["same"])
+    expect(same.right[0]!.segments[1]).toEqual({ text: "\n", marks: [mia], op: "same" })
+
+    const joined = diffChapters(doc(before), doc(p("Roses are red, violets are blue.")))
+    expect(show(joined.left[0]!)).toBe("Roses are red,[-\n-]violets are blue.")
+    expect(show(joined.right[0]!)).toBe("Roses are red,{+ +}violets are blue.")
+  })
 })
 
 describe("foldRows", () => {

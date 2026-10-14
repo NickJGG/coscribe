@@ -4,7 +4,7 @@ import type { ScriptElementType } from "./script"
 
 export type DiffOp = "same" | "del" | "ins"
 
-/** A piece of one text node, with that node's own marks. */
+/** A piece of one text node, with that node's own marks. A line break is a segment of its own, `"\n"`. */
 export type DiffSegment = { text: string; marks?: JSONContent["marks"]; op: DiffOp }
 
 /**
@@ -50,7 +50,10 @@ function blocksOf(doc: JSONContent): Block[] {
     if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }]
     if (node.type === "blockquote") return blocksOf(node).map((block) => ({ ...block, quoted: true }))
     if (node.type === "script") return blocksOf(node)
-    const runs = (node.content ?? []).flatMap((n) => (n.type === "text" && n.text ? [{ text: n.text, marks: n.marks }] : []))
+    const runs = (node.content ?? []).flatMap((n): Run[] => {
+      if (n.type === "hardBreak") return [{ text: "\n", marks: n.marks }]
+      return n.type === "text" && n.text ? [{ text: n.text, marks: n.marks }] : []
+    })
     const text = runs.map((r) => r.text).join("")
     const align = node.attrs?.textAlign
     return [

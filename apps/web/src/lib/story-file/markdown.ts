@@ -69,12 +69,19 @@ const escapeHeading = (text: string) => escapeMarkdown(text).replace(/#/g, "\\$&
 
 const escapeListItem = (text: string) => text.replace(/[\\,]/g, "\\$&");
 
+/** Line breaks as `\` line ends. Breaks closing the paragraph go, since Markdown can't end one with a break. */
 function writeParagraph(content: JSONContent[] | undefined): string {
-  return writeInline(content, escapeMarkdown)
-    .replace(/^[ \t]+|[ \t]+$/g, (space) => [...space].map((c) => `&#${c.charCodeAt(0)};`).join(""))
-    .replace(/^[#+=-]/, "\\$&")
-    .replace(/^(\d+)([.)])/, "$1\\$2")
-    .replace(/^(Aliases|Characters):/, "$1\\:");
+  const lines = writeInline(content, escapeMarkdown).split("\n");
+  while (lines.length > 1 && !lines.at(-1)) lines.pop();
+  return lines
+    .map((line) =>
+      line
+        .replace(/^[ \t]+|[ \t]+$/g, (space) => [...space].map((c) => `&#${c.charCodeAt(0)};`).join(""))
+        .replace(/^[#+=-]/, "\\$&")
+        .replace(/^(\d+)([.)])/, "$1\\$2")
+        .replace(/^(Aliases|Characters):/, "$1\\:")
+    )
+    .join("\\\n");
 }
 
 function writeBlocks(nodes: JSONContent[] | undefined): string[] {
@@ -370,7 +377,7 @@ function readItems(tokens: Token[], warn: (warning: string) => void): Item[] {
 }
 
 function paragraph(children: Token[] | null): JSONContent {
-  const content = readInline(children);
+  const content = readInline(children, { breaks: true });
   return content.length ? { type: "paragraph", content } : { type: "paragraph" };
 }
 
@@ -511,11 +518,24 @@ function fitOutline(nodes: Blocks): Blocks {
       case "blockquote":
         return fitOutline(node.content ?? []);
       case "paragraph":
-        return [node];
+        return [withoutBreaks(node)];
       default:
         return paragraphsOf(node);
     }
   });
+}
+
+/** Outline boxes have no line breaks: each becomes a space. */
+function withoutBreaks(paragraph: JSONContent): JSONContent {
+  if (!paragraph.content?.some((n) => n.type === "hardBreak")) return paragraph;
+  const content: JSONContent[] = [];
+  for (const node of paragraph.content) {
+    const next = node.type === "hardBreak" ? { type: "text", text: " " } : node;
+    const last = content.at(-1);
+    if (last && JSON.stringify(last.marks ?? []) === JSON.stringify(next.marks ?? [])) last.text += next.text!;
+    else content.push({ ...next });
+  }
+  return { ...paragraph, content };
 }
 
 /** A checked doc, in the schema's normal JSON form. */

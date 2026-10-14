@@ -152,6 +152,37 @@ describe("toMarkdown / fromMarkdown", () => {
       plain(content, chapterSchema)
     );
   });
+
+  it("round trips line breaks in paragraphs, block quotes and list items", () => {
+    const br: JSONContent = { type: "hardBreak" };
+    const content = doc(
+      p(text("Roses are red,"), br, text("# not a heading"), br, text("- nor a list"), br, text("  and spaced  ")),
+      p(text("bold", "bold"), br, text("still bold", "bold"), br, br, text("after a blank line")),
+      p(br, text("opens with a break")),
+      { type: "blockquote", content: [p(text("A quoted line,"), br, text("and its second."))] }
+    );
+    const body = doc(bullets([p(text("first,"), br, text("second"))]));
+    const file: StoryFile = {
+      ...story,
+      chapters: [{ title: "One", content }],
+      entries: [{ type: "lore", name: "Poem", description: "", aliases: [], body }],
+    };
+    const markdown = toMarkdown(file, { bible: true, outlines: false });
+    expect(markdown).toContain("Roses are red,\\\n\\# not a heading\\\n\\- nor a list\\\n&#32;&#32;and spaced&#32;&#32;\n");
+    expect(markdown).toContain("> A quoted line,\\\n> and its second.\n");
+    expect(markdown).toContain("- first,\\\n  second\n");
+    const { file: read } = fromMarkdown(markdown, "x.md");
+    expect(read.chapters[0]!.content).toEqual(plain(content, chapterSchema));
+    expect(read.entries[0]!.body).toEqual(plain(body, entrySchema));
+  });
+
+  it("drops line breaks that end a paragraph", () => {
+    const br: JSONContent = { type: "hardBreak" };
+    const file: StoryFile = { ...story, chapters: [{ title: "One", content: doc(p(text("Last line"), br, br)) }], entries: [] };
+    const markdown = toMarkdown(file, { bible: false, outlines: false });
+    expect(markdown).toContain("\nLast line\n");
+    expect(fromMarkdown(markdown, "x.md").file.chapters[0]!.content).toEqual(plain(doc(p(text("Last line"))), chapterSchema));
+  });
 });
 
 describe("fromMarkdown with files from elsewhere", () => {
@@ -190,6 +221,23 @@ describe("fromMarkdown with files from elsewhere", () => {
     const { file, warnings } = fromMarkdown("# One\n\n- a\n- b\n\n<div>x</div>\n\n```\ncode line\n```\n", "x.md");
     expect(file.chapters[0]!.content.content!.map((n) => n.content?.[0]?.text)).toEqual(["a", "b", "code line"]);
     expect(warnings).toEqual(["HTML in the file was left out.", "Lists in Chapters became paragraphs."]);
+  });
+
+  it("reads hard breaks as line breaks and soft breaks as spaces, and none in Outlines or headings", () => {
+    const { file } = fromMarkdown(
+      "# One\n\n<!-- coscribe:outline -->\n\n## Summary\n\nOutline\\\nline\n\n<!-- /coscribe:outline -->\n\nHead  \ning\n---\n\nHard  \nbreak\nsoft\n",
+      "x.md"
+    );
+    expect(file.chapters[0]!.outline!.fields[0]!.content).toEqual(plain(doc(p({ type: "text", text: "Outline line" })), outlineSchema));
+    expect(file.chapters[0]!.content).toEqual(
+      plain(
+        doc(
+          p({ type: "text", text: "Head ing", marks: [{ type: "bold" }] }),
+          p({ type: "text", text: "Hard" }, { type: "hardBreak" }, { type: "text", text: "break soft" })
+        ),
+        chapterSchema
+      )
+    );
   });
 
   it("gives an empty file one empty Chapter", () => {

@@ -499,6 +499,18 @@ function FoldButton({ fold, onOpen, gridRow }: { fold: Fold; onOpen: (from: numb
 
 function Segments({ segments }: { segments: DiffSegment[] }) {
   return segments.map((segment, s) => {
+    // `docPosition` counts each `[data-line-break]` as the break's one character.
+    if (segment.text === "\n") {
+      if (segment.op === "same") return <br key={s} data-line-break="" />;
+      const mark = <span data-line-break="" aria-hidden />;
+      if (segment.op === "del") return <del key={s}>{mark}</del>;
+      return (
+        <ins key={s}>
+          {mark}
+          <br />
+        </ins>
+      );
+    }
     const text = <Text node={{ type: "text", text: segment.text, marks: segment.marks }} />;
     if (segment.op === "del") return <del key={s}>{text}</del>;
     if (segment.op === "ins") return <ins key={s}>{text}</ins>;
@@ -819,5 +831,6 @@ function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, of
   const before = document.createRange();
   before.selectNodeContents(cell);
   before.setEnd(node, offset);
-  return start + 1 + Math.min(before.toString().length, block.content.size);
+  const breaks = before.cloneContents().querySelectorAll("[data-line-break]").length;
+  return start + 1 + Math.min(before.toString().length + breaks, block.content.size);
 }

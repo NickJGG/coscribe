@@ -12,7 +12,7 @@ const file: StoryFile = {
   chapters: [
     {
       title: "One",
-      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Hello" }] }] },
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Hello" }, { type: "hardBreak" }, { type: "text", text: "there" }] }] },
       outline: { fields: [{ label: "Summary", content: { type: "doc", content: [{ type: "paragraph" }] } }], characters: ["Anna"] },
     },
   ],
@@ -53,5 +53,6 @@ describe("toEpub", () => {
     expect(strFromU8(files["OEBPS/nav.xhtml"]!)).toContain('<a href="credits.xhtml">Credits so far</a>');
     expect(strFromU8(files["OEBPS/title.xhtml"]!)).toContain("Draft, exported October 13, 2026");
     expect(strFromU8(files["OEBPS/chapter-1.xhtml"]!)).toContain("Characters: Anna");
+    expect(strFromU8(files["OEBPS/chapter-1.xhtml"]!)).toContain("<p>Hello<br />there</p>");
   });
 });

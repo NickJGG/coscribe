@@ -279,6 +279,10 @@
   border-radius: 2px;
 }
 
+.body span[data-line-break]::before {
+  content: "\21B5";
+}
+
 /* Struck through by the writer: plain ink, unlike removed text's red. */
 .body s {
   text-decoration-color: var(--ink);

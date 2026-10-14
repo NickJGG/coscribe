@@ -13,6 +13,8 @@ describe("toXhtml", () => {
             content: [
               { type: "text", text: "Tom & <Jerry> \"run\"", marks: [{ type: "author", attrs: { userId: "u1" } }] },
               { type: "text", text: "!", marks: [{ type: "bold" }, { type: "italic" }] },
+              { type: "hardBreak" },
+              { type: "text", text: "Next line" },
             ],
           },
           { type: "sceneBreak" },
@@ -21,7 +23,7 @@ describe("toXhtml", () => {
         ],
       })
     ).toBe(
-      '<p style="text-align: center">Tom &amp; &lt;Jerry&gt; &quot;run&quot;<em><strong>!</strong></em></p>\n' +
+      '<p style="text-align: center">Tom &amp; &lt;Jerry&gt; &quot;run&quot;<em><strong>!</strong></em><br />Next line</p>\n' +
         '<hr data-scene-break="" />\n' +
         '<div data-script=""><p data-element="character">ANNA</p></div>\n' +
         '<ol start="2"><li><p></p></li></ol>'

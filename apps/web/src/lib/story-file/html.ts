@@ -28,6 +28,8 @@ function node(n: JSONContent): string {
       return `<p data-element="${escapeXml(String(n.attrs?.element ?? "action"))}">${children(n)}</p>`;
     case "sceneBreak":
       return `<hr data-scene-break="" />`;
+    case "hardBreak":
+      return "<br />";
     case "bulletList":
       return `<ul>${children(n)}</ul>`;
     case "orderedList": {

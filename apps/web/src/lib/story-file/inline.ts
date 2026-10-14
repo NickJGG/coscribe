@@ -10,15 +10,17 @@ const DELIMITER: Record<Style, string> = { bold: "**", italic: "*", strike: "~~"
 
 const sameStyles = (a: Style[], b: Style[]) => a.length === b.length && a.every((s, i) => s === b[i]);
 
+/** A line break is written as a bare `\n`, outside any delimiters, for the caller to write as it needs. */
 export function writeInline(nodes: JSONContent[] | undefined, escape: (text: string) => string): string {
   const runs: { text: string; styles: Style[] }[] = [];
   for (const node of nodes ?? []) {
-    if (!node.text) continue;
+    const text = node.type === "hardBreak" ? "\n" : node.text;
+    if (!text) continue;
     // `** **` isn't emphasis, and styled whitespace looks the same unstyled.
-    const styles = /\S/.test(node.text) ? STYLES.filter((s) => node.marks?.some((m) => m.type === s)) : [];
+    const styles = /\S/.test(text) ? STYLES.filter((s) => node.marks?.some((m) => m.type === s)) : [];
     const last = runs.at(-1);
-    if (last && sameStyles(last.styles, styles)) last.text += node.text;
-    else runs.push({ text: node.text, styles });
+    if (last && sameStyles(last.styles, styles)) last.text += text;
+    else runs.push({ text, styles });
   }
 
   let out = "";
@@ -52,14 +54,17 @@ export function writeInline(nodes: JSONContent[] | undefined, escape: (text: str
   return out;
 }
 
-/** Text nodes from markdown-it inline tokens. Links keep their text; images and inline HTML are left out. */
-export function readInline(tokens: Token[] | null): JSONContent[] {
+/**
+ * Text nodes from markdown-it inline tokens. Links keep their text; images and inline HTML are left out. Hard
+ * breaks are spaces, or line breaks with `breaks`.
+ */
+export function readInline(tokens: Token[] | null, { breaks = false } = {}): JSONContent[] {
   const depth: Record<Style, number> = { bold: 0, italic: 0, strike: 0 };
   const out: JSONContent[] = [];
   const push = (text: string) => {
     if (!text) return;
     const styles = STYLES.filter((s) => depth[s] > 0);
-    const last = out.at(-1);
+    const last = out.at(-1)?.type === "text" ? out.at(-1) : undefined;
     const lastStyles = (last?.marks ?? []).map((m) => m.type as Style);
     if (last && sameStyles(lastStyles, styles)) last.text += text;
     else out.push(styles.length ? { type: "text", text, marks: styles.map((type) => ({ type })) } : { type: "text", text });
@@ -82,8 +87,11 @@ export function readInline(tokens: Token[] | null): JSONContent[] {
       case "code_inline":
         push(token.content);
         break;
-      case "softbreak":
       case "hardbreak":
+        if (breaks) out.push({ type: "hardBreak" });
+        else push(" ");
+        break;
+      case "softbreak":
         push(" ");
         break;
     }
