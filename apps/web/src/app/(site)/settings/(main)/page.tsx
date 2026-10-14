@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getViewer } from "@/lib/viewer";
 import { ProfileForm } from "@/components/ProfileForm";
@@ -39,6 +40,15 @@ export default async function SettingsPage() {
         </p>
         <div>
           <ShowOnlineSwitch show={viewer.profile.show_online} />
+        </div>
+      </section>
+      <section className="section">
+        <h2>Delete account</h2>
+        <p className="muted">Remove your account and sign out everywhere.</p>
+        <div>
+          <Link href="/settings/delete-account" className="button button-danger">
+            Delete account&hellip;
+          </Link>
         </div>
       </section>
     </div>

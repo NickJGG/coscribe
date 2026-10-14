@@ -20,6 +20,11 @@ export default function SettingsLoading() {
           </p>
           <Bar width="12rem" height={24} />
         </section>
+        <section className="section">
+          <h2>Delete account</h2>
+          <p className="muted">Remove your account and sign out everywhere.</p>
+          <Bar width="9rem" height={40} />
+        </section>
       </div>
     </Loading>
   );

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Privacy" };
 
@@ -9,7 +10,7 @@ export default function PrivacyPage() {
     <div className="page">
       <div>
         <h1>Privacy</h1>
-        <p className="muted">Last updated October 10, 2026</p>
+        <p className="muted">Last updated October 14, 2026</p>
       </div>
 
       <p>
@@ -53,8 +54,10 @@ export default function PrivacyPage() {
       <section>
         <h2>Deleting your data</h2>
         <p>
-          Email <a href={`mailto:${CONTACT}`}>{CONTACT}</a> to have your account deleted or to ask
-          about what&apos;s stored.
+          Delete your account from <Link href="/settings">Settings</Link>. Your profile, Friends and
+          Invites go, along with Stories only you write in; what you wrote in other Writers&apos;
+          Stories stays there, credited to &ldquo;A deleted account&rdquo;. Email{" "}
+          <a href={`mailto:${CONTACT}`}>{CONTACT}</a> to ask about what&apos;s stored.
         </p>
       </section>
     </div>

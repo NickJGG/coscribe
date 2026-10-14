@@ -20,6 +20,8 @@ const RPC_ERRORS: Record<string, string> = {
   entry_list_changed: "The Story Bible changed. Try again.",
   not_a_color: "Pick one of the colors.",
   color_taken: "Another Writer in this story has that color.",
+  host_has_writers: "Hand over the Stories you Host first.",
+  username_mismatch: "That isn't your username.",
 };
 
 export function errorText(error: { message: string } | null): ActionResult {

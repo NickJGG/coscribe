@@ -97,14 +97,14 @@ isOneToOne: false
                   ]
                 },"chat_messages": {
                   Row: {
-                    "body": string,"created_at": string,"id": string,"story_id": string,"user_id": string
+                    "body": string,"created_at": string,"id": string,"story_id": string,"user_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "body": string,"created_at"?: string,"id"?: string,"story_id": string,"user_id"?: string
+                    "body": string,"created_at"?: string,"id"?: string,"story_id": string,"user_id"?: string | null
                   }
                   Update: {
-                    "body"?: string,"created_at"?: string,"id"?: string,"story_id"?: string,"user_id"?: string
+                    "body"?: string,"created_at"?: string,"id"?: string,"story_id"?: string,"user_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -583,6 +583,9 @@ isOneToOne: false
                            },
 "create_story":
 { Args: { "p_blurb"?: string,"p_title": string,"p_visibility": Database["public"]['Enums']["story_visibility"] }; Returns: string
+                           },
+"delete_account":
+{ Args: { "p_username": string }; Returns: string[]
                            },
 "delete_chapter":
 { Args: { "p_chapter": string }; Returns: undefined

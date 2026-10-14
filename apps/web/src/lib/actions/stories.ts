@@ -179,6 +179,7 @@ export async function transferHost(storyId: string, userId: string): Promise<Act
   const { error } = await supabase.rpc("transfer_host", { p_story: storyId, p_user: userId });
   if (error) return errorText(error);
 
+  await refreshSyncAccess(storyId);
   refresh();
   return null;
 }

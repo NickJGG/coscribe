@@ -1,0 +1,52 @@
+.back {
+  align-self: flex-start;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta small {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.title {
+  font-family: var(--font-prose), Georgia, serif;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.picker {
+  width: auto;
+  min-height: 32px;
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

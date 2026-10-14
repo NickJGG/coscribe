@@ -62,6 +62,11 @@
   background: var(--author);
 }
 
+.deleted {
+  color: var(--faint);
+  font-style: italic;
+}
+
 .body {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

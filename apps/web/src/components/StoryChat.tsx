@@ -12,7 +12,7 @@ import { WriterMentionPicker, useWriterMentionPicker } from "./WriterMentionPick
 import { WriterMentionText } from "./WriterMentionText";
 import styles from "./StoryChat.module.css";
 
-type Message = { id: string; user_id: string; body: string; created_at: string };
+type Message = { id: string; user_id: string | null; body: string; created_at: string };
 
 const PAGE = 50;
 const COLUMNS = "id, user_id, body, created_at";
@@ -99,7 +99,10 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
     };
   }, [supabase, storyId, me, loadLatest, addUnread]);
 
-  const authorIds = useMemo(() => [...new Set(messages.map((m) => m.user_id))], [messages]);
+  const authorIds = useMemo(
+    () => [...new Set(messages.flatMap((m) => (m.user_id ? [m.user_id] : [])))],
+    [messages]
+  );
   const person = usePeople(authorIds);
 
   // Opening the panel starts from the newest message.
@@ -203,18 +206,24 @@ export function StoryChat({ storyId, me }: { storyId: string; me: string }) {
         {messages.map((m, i) => {
           const prev = messages[i - 1];
           const grouped =
-            prev?.user_id === m.user_id && Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
-          const author = person(m.user_id);
+            m.user_id !== null &&
+            prev?.user_id === m.user_id &&
+            Date.parse(m.created_at) - Date.parse(prev.created_at) < GROUP_MS;
+          const author = m.user_id ? person(m.user_id) : null;
           return (
             <li key={m.id} className={grouped ? styles.grouped : styles.message} data-chat-message={m.id}>
               {!grouped && (
                 <div className={styles.byline}>
-                  <span
-                    className={styles.author}
-                    style={{ "--author": author ? authorColorCss(author.color) : "var(--rule)" } as React.CSSProperties}
-                  >
-                    {author?.name ?? "…"}
-                  </span>
+                  {m.user_id ? (
+                    <span
+                      className={styles.author}
+                      style={{ "--author": author ? authorColorCss(author.color) : "var(--rule)" } as React.CSSProperties}
+                    >
+                      {author?.name ?? "…"}
+                    </span>
+                  ) : (
+                    <span className={styles.deleted}>A deleted account</span>
+                  )}
                   <time className="muted" dateTime={m.created_at}>
                     {formatTime(m.created_at)}
                   </time>
