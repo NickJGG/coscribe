@@ -43,6 +43,15 @@ export default async function SettingsPage() {
         </div>
       </section>
       <section className="section">
+        <h2>Your data</h2>
+        <p className="muted">Your profile, Friends, Notes and Story Chat messages, plus a Markdown copy of each Story you write in.</p>
+        <div>
+          <a href="/settings/data" className="button" download>
+            Download your data (.zip)
+          </a>
+        </div>
+      </section>
+      <section className="section">
         <h2>Delete account</h2>
         <p className="muted">Remove your account and sign out everywhere.</p>
         <div>

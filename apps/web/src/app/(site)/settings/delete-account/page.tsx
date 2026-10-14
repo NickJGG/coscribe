@@ -124,6 +124,13 @@ export default async function DeleteAccountPage() {
         </section>
       )}
 
+      <p className="muted">
+        <a href="/settings/data" download>
+          Download your data first
+        </a>
+        , with a Markdown copy of each Story you write in.
+      </p>
+
       <DeleteAccountForm username={me.profile.username} handOvers={handOver.length} />
     </div>
   );

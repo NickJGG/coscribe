@@ -1,4 +1,7 @@
+import { slug } from "./story-file/slug";
+import type { Json } from "./supabase/database.types";
 import { isWriter, type MemberRole } from "./story-roles";
+import { toEditableText } from "./writer-mentions";
 
 type MembershipRow = {
   role: MemberRole;
@@ -35,4 +38,52 @@ export function hostedStories(rows: MembershipRow[], userId: string) {
     else solo.push({ id: story.id, title: story.title });
   }
   return { handOver, solo };
+}
+
+type Message = { body: string };
+
+/** The parts of account_export's result this file reads; everything else passes through untouched. */
+export type AccountData = {
+  story_chat: Message[];
+  notes: Message[];
+  note_replies: Message[];
+  [key: string]: Json | Message[];
+};
+
+/** The zip's files by path. A Story with no Markdown couldn't be exported and is listed as `unavailable`. */
+export function accountFiles(
+  account: AccountData,
+  stories: { title: string; markdown: string | null }[]
+): Record<string, string> {
+  const files: Record<string, string> = {};
+  const unavailable: string[] = [];
+  const taken = new Set<string>();
+  for (const { title, markdown } of stories) {
+    if (markdown === null) {
+      unavailable.push(title);
+      continue;
+    }
+    const base = slug(title);
+    let name = base;
+    for (let n = 2; taken.has(name); n++) name = `${base}-${n}`;
+    taken.add(name);
+    files[`stories/${name}.md`] = markdown;
+  }
+  return { "account.json": `${JSON.stringify({ ...account, unavailable }, null, 2)}\n`, ...files };
+}
+
+/** Writer Mentions are stored as profile ids; the file shows them as `@username`, as Coscribe does. */
+export function withMentionNames(account: AccountData, names: Map<string, string>): AccountData {
+  const named = <T extends Message>(list: T[]) =>
+    list.map((m) => ({ ...m, body: toEditableText(m.body, (id) => names.get(id) ?? "someone") }));
+  return {
+    ...account,
+    story_chat: named(account.story_chat),
+    notes: named(account.notes),
+    note_replies: named(account.note_replies),
+  };
+}
+
+export function accountMessages(account: AccountData): Message[] {
+  return [...account.story_chat, ...account.notes, ...account.note_replies];
 }

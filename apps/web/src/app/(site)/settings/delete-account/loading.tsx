@@ -36,6 +36,7 @@ export default function DeleteAccountLoading() {
             ))}
           </div>
         </section>
+        <Bar width="24rem" />
         <div className={styles.confirm}>
           <Bar width="11rem" />
           <Bar width={320} height={40} />

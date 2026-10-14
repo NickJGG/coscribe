@@ -56,7 +56,8 @@ export default function PrivacyPage() {
         <p>
           Delete your account from <Link href="/settings">Settings</Link>. Your profile, Friends and
           Invites go, along with Stories only you write in; what you wrote in other Writers&apos;
-          Stories stays there, credited to &ldquo;A deleted account&rdquo;. Email{" "}
+          Stories stays there, credited to &ldquo;A deleted account&rdquo;. Settings also lets you download your
+          data: your profile, Friends, Notes and Story Chat messages, and a copy of each Story you write in. Email{" "}
           <a href={`mailto:${CONTACT}`}>{CONTACT}</a> to ask about what&apos;s stored.
         </p>
       </section>

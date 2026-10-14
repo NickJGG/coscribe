@@ -542,6 +542,9 @@ isOneToOne: false
 "accept_invite_link":
 { Args: { "p_token": string }; Returns: string
                            },
+"account_export":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "add_chapter":
 { Args: { "p_story": string,"p_title": string }; Returns: string
                            },

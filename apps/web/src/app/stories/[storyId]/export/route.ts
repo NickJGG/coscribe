@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getExport } from "@/lib/export";
 import { toEpub } from "@/lib/story-file/epub";
 import { toMarkdown } from "@/lib/story-file/markdown";
+import { slug } from "@/lib/story-file/slug";
 
 /**
  * Downloads the Story: `?format=md|epub`, `bible=0` to leave out the Story Bible, `outlines=1` to add Outlines to a
@@ -28,16 +29,4 @@ export async function GET(request: NextRequest, ctx: RouteContext<"/stories/[sto
       "cache-control": "private, no-store",
     },
   });
-}
-
-function slug(title: string): string {
-  const words = title
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80)
-    .replace(/-+$/, "");
-  return words || "story";
 }

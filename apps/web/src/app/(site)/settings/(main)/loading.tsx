@@ -21,6 +21,11 @@ export default function SettingsLoading() {
           <Bar width="12rem" height={24} />
         </section>
         <section className="section">
+          <h2>Your data</h2>
+          <p className="muted">Your profile, Friends, Notes and Story Chat messages, plus a Markdown copy of each Story you write in.</p>
+          <Bar width="13rem" height={40} />
+        </section>
+        <section className="section">
           <h2>Delete account</h2>
           <p className="muted">Remove your account and sign out everywhere.</p>
           <Bar width="9rem" height={40} />
