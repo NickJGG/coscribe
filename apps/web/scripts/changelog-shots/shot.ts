@@ -10,9 +10,11 @@ export type Shot = {
   as: Role | "signedOut";
   path: string | ((ctx: ShotContext) => string);
   viewport: { width: number; height: number };
-  /** Screenshot just this element instead of the viewport. */
-  frame?: string;
+  /** Screenshot just this element instead of the viewport, or the padded box around the first visible match of each selector. */
+  frame?: string | string[];
   setup?: (page: Page, ctx: ShotContext) => Promise<void>;
+  /** Runs after the shot, even a failed one, to undo what `setup` changed in the demo Story. */
+  cleanup?: (page: Page, ctx: ShotContext) => Promise<void>;
   /** A second User on the same path, kept open through the shot, for collaborative shots. Set up first. */
   with?: { as: Role; setup?: (page: Page, ctx: ShotContext) => Promise<void> };
 };

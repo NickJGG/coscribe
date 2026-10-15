@@ -36,8 +36,30 @@ The reader is a Writer using Coscribe, not a developer.
 - **Drop invisible work:** RLS and policies, migrations and RPCs, sync internals, tooling and scripts, docs and AGENTS.md, refactors, tests. If a commit has a visible side, describe only that.
 - **Fold fixes into their feature.** A fix to something introduced in the same range is part of that feature's line. Fixed is only for bugs in published or pre-range work.
 - **One line per feature.** Merge multi-commit features into one line. Order New biggest first.
-- **Words:** `CONTEXT.md` vocabulary (Host, Co-host, Writer, Viewer, Chapter, Story Bible, Entry, Snapshot, Restore, Finished, ...) and the labels the UI shows. Say what the reader can now do, not how it was built.
+- **Words:** `CONTEXT.md` vocabulary (host, co-host, writer, viewer, chapter, story bible, entry, snapshot, restore, finished, ...), written in lowercase like ordinary words. Capitalize only sentence starts, leads, and proper names (Coscribe, Markdown). Describe a button rather than quoting its label ("the line break button in the toolbar"). Say what the reader can now do, not how it was built.
 - No line cap. A thin range gets a short update; don't push back on it.
+
+### Voice
+
+Write like a person telling a friend what changed. Several of these together are what make text read as machine-written (Wikipedia's "Signs of AI writing"), so check the draft against them before saving.
+
+- **Specifics over claims.** Name the key, the button, where it lives. No "seamless", "powerful", "easily", "now you can", "we're excited", or exclamation marks.
+- **Plain verbs.** "is", "has", "opens", not "serves as", "features", "boasts", "offers".
+- **No setups.** No "not just X, it's Y", no "whether you're A or B", no closing line that sums up or says why it matters.
+- **Lists as long as the facts.** Don't pad to three or trim to three. Oxford comma in any list of three or more.
+- **Repeat a word** rather than reach for a synonym.
+- **No em dashes in prose.** Use a period, a comma, or a semicolon.
+- **Bold only the lead.** Nothing else in a line is bold.
+- **Full sentences**, varied in length. Read the line aloud; if it sounds like a press release, cut it down.
+- **Don't let the lines match.** The `**Lead.** Description.` format already gives every line one shape, so vary what follows it: not every line opens with "you", ends on a list, or runs two sentences. If the lines read alike, the rules above are being over-applied.
+- **House style, not tells:** the bold lead, and curly quotes in the app (smart punctuation makes them). Leave both.
+
+### Revise
+
+After the draft, before writing the file:
+
+1. **Critique.** List what still reads as machine-written, by the Voice rules, and fix those lines. A single weak tell (one list of three, one short sentence) is fine; act when several pile up in a line.
+2. **Check every claim.** Each fact traces to a diff or the UI copy you read: the key, the label, where it lives, who can do it. Cut what you can't trace rather than guess, and don't call a fix a regression ("again") unless the history shows it worked before.
 
 ## 4. Write
 
@@ -48,7 +70,7 @@ The reader is a Writer using Coscribe, not a developer.
 
 ## 5. Screenshots
 
-- Choose the lines a picture would actually explain: new UI, a changed layout, a visible behaviour. Not every line needs one.
+- Picture the writing features: the editor, desk and reader doing the new thing. Skip account and settings pages, and the changelog itself. Not every line needs one.
 - Write `apps/web/scripts/changelog-shots/recipes/<today>.ts`, default-exporting `Shot[]` (`scripts/changelog-shots/shot.ts`):
   ```ts
   import type { Shot } from "../shot";
@@ -67,7 +89,8 @@ The reader is a Writer using Coscribe, not a developer.
   ```
   - `ctx` has `storyId`, `chapterIds`, `entryIds` and `users` for the demo Story (`fixture/story.md`). Check real routes under `apps/web/src/app/` before writing paths.
   - `with: { as: "writer", setup }` keeps a second User on the same page, for collaborative shots.
-  - Frame tightly with `frame` or a small viewport, so each image stays under 1 MB.
+  - A `setup` that types into the demo Story needs a `cleanup` that removes it. Clicking and Control+End leave the caret at the start of a chapter, so place it through the DOM selection (see `recipes/2026-10-14.ts`), and check the chapter still matches `fixture/story.md` afterwards.
+  - Crop every shot to just the change and what's needed to place it, never the whole page. `frame` takes one selector, or a list to crop to the padded box around all of them (e.g. a menu's trigger and its panel).
 - Ask the user to start `pnpm dev` and `pnpm dev:sync`, and wait for them. Never start them yourself.
 - Run `pnpm changelog:shots <today>`. It writes `apps/web/public/changelog/<today>/<name>.webp` and `<name>.dark.webp`.
 - `Read` every image, light and dark. Fix the framing, waits or setup in the recipe and re-run until each one shows just the change.

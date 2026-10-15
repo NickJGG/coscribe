@@ -16,6 +16,7 @@ import type { Shot, ShotContext } from "./shot";
 import { demoStory } from "./story";
 
 const MAX_BYTES = 1024 * 1024;
+const FRAME_PADDING = 16;
 const THEMES = ["light", "dark"] as const;
 
 const date = process.argv[2] ?? "";
@@ -76,12 +77,35 @@ async function take(browser: Browser, shot: Shot, theme: (typeof THEMES)[number]
     }
     const [context, page] = await open(shot.as);
     contexts.push(context);
-    await shot.setup?.(page, ctx);
-    await page.evaluate(() => document.fonts.ready);
+    try {
+      await shot.setup?.(page, ctx);
+      await page.evaluate(() => document.fonts.ready);
 
-    const options = { animations: "disabled", caret: "hide" } as const;
-    return shot.frame ? await page.locator(shot.frame).screenshot(options) : await page.screenshot(options);
+      const options = { animations: "disabled", caret: "hide" } as const;
+      if (typeof shot.frame === "string") return await page.locator(shot.frame).screenshot(options);
+      if (shot.frame) return await page.screenshot({ ...options, clip: await around(page, shot.frame, shot.viewport) });
+      return await page.screenshot(options);
+    } finally {
+      await shot.cleanup?.(page, ctx);
+    }
   } finally {
     await Promise.all(contexts.map((context) => context.close()));
   }
+}
+
+async function around(page: Page, selectors: string[], viewport: Shot["viewport"]) {
+  const targets = selectors.map((selector) => page.locator(selector).filter({ visible: true }).first());
+  for (const target of targets) await target.scrollIntoViewIfNeeded();
+  const boxes = await Promise.all(
+    targets.map(async (target, i) => {
+      const box = await target.boundingBox();
+      if (!box) fail(`Frame "${selectors[i]}" isn't on the page.`);
+      return box;
+    })
+  );
+  const x = Math.max(0, Math.min(...boxes.map((b) => b.x)) - FRAME_PADDING);
+  const y = Math.max(0, Math.min(...boxes.map((b) => b.y)) - FRAME_PADDING);
+  const right = Math.min(viewport.width, Math.max(...boxes.map((b) => b.x + b.width)) + FRAME_PADDING);
+  const bottom = Math.min(viewport.height, Math.max(...boxes.map((b) => b.y + b.height)) + FRAME_PADDING);
+  return { x, y, width: right - x, height: bottom - y };
 }
