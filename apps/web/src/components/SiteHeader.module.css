@@ -146,7 +146,6 @@
     height: 44px;
   }
 
-  .menuItem,
   .panelFoot .input {
     min-height: 44px;
   }
@@ -316,27 +315,6 @@ a.personRow:hover {
   font-size: 0.75rem;
 }
 
-.menuItem {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-a.menuItem:hover,
-button.menuItem:hover {
-  background: var(--wash);
-}
-
 .itemDot {
   width: 7px;
   height: 7px;
@@ -351,8 +329,3 @@ button.menuItem:hover {
   cursor: default;
 }
 
-.divider {
-  margin: 4px 0;
-  border: 0;
-  border-top: 1px solid var(--hair);
-}

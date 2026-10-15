@@ -59,7 +59,12 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
               {editable && canDeleteEntries(myRole) && (
                 <ActionForm
                   action={deleteEntry.bind(null, story.id, entry.id)}
-                  confirm={`Delete “${entry.name}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
+                  confirm={{
+                    title: `Delete “${entry.name}”?`,
+                    body: "It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.",
+                    action: "Delete",
+                    danger: true,
+                  }}
                 >
                   <button className="button button-ghost button-tiny button-danger">Delete</button>
                 </ActionForm>

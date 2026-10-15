@@ -96,7 +96,7 @@ export default async function FriendsPage(props: PageProps<"/friends">) {
                 <PersonLink person={other} />
                 <ActionForm
                   action={removeFriendship.bind(null, other.id)}
-                  confirm={`Remove ${other.username} from your friends?`}
+                  confirm={{ title: `Remove ${other.username} from your friends?`, action: "Remove", danger: true }}
                 >
                   <button className="button button-small button-danger">Remove</button>
                 </ActionForm>

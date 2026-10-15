@@ -55,7 +55,7 @@ export default async function StorySettingsYouPage(props: PageProps<"/stories/[s
               </div>
               <ActionForm
                 action={leaveStory.bind(null, story.id)}
-                confirm="Leave this story? You'll need a new Invite to come back."
+                confirm={{ title: "Leave this story?", body: "You'll need a new Invite to come back.", action: "Leave", danger: true }}
               >
                 <button className="button button-danger">Leave story</button>
               </ActionForm>

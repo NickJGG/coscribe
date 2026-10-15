@@ -37,32 +37,32 @@ export function MemberMenu({
         <ActionForm
           action={setMemberRole.bind(null, storyId, member.id, member.role === "writer" ? "cohost" : "writer")}
         >
-          <button className={menu.menuItem}>{member.role === "writer" ? "Make Co-host" : "Make Writer"}</button>
+          <button className="menu-item">{member.role === "writer" ? "Make Co-host" : "Make Writer"}</button>
         </ActionForm>
       )}
       {swap && (
         <ActionForm
           action={setMemberRole.bind(null, storyId, member.id, member.role === "viewer" ? "writer" : "viewer")}
         >
-          <button className={menu.menuItem}>{member.role === "viewer" ? "Make Writer" : "Make Viewer"}</button>
+          <button className="menu-item">{member.role === "viewer" ? "Make Writer" : "Make Viewer"}</button>
         </ActionForm>
       )}
       {changeRole && (
         <ActionForm
           action={transferHost.bind(null, storyId, member.id)}
-          confirm={`Hand off Host to ${member.username}? You'll become a Co-host.`}
+          confirm={{ title: `Hand off Host to ${member.username}?`, body: "You'll become a Co-host.", action: "Hand off" }}
         >
-          <button className={menu.menuItem}>Hand off Host&hellip;</button>
+          <button className="menu-item">Hand off Host&hellip;</button>
         </ActionForm>
       )}
       {remove && (
         <>
-          {(changeRole || swap) && <hr className={menu.divider} />}
+          {(changeRole || swap) && <hr className="menu-divider" />}
           <ActionForm
             action={removeMember.bind(null, storyId, member.id)}
-            confirm={`Remove ${member.username} from this story?`}
+            confirm={{ title: `Remove ${member.username} from this story?`, action: "Remove", danger: true }}
           >
-            <button className={`${menu.menuItem} ${menu.danger}`}>Remove from Story&hellip;</button>
+            <button className="menu-item menu-item-danger">Remove from Story&hellip;</button>
           </ActionForm>
         </>
       )}

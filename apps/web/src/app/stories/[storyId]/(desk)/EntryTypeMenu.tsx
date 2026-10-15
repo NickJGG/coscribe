@@ -27,12 +27,12 @@ export function EntryTypeMenu({
     >
       {upAfter !== undefined && (
         <ActionForm action={moveEntryType.bind(null, storyId, type, upAfter)}>
-          <button className={styles.menuItem}>Move up</button>
+          <button className="menu-item">Move up</button>
         </ActionForm>
       )}
       {downAfter !== undefined && (
         <ActionForm action={moveEntryType.bind(null, storyId, type, downAfter)}>
-          <button className={styles.menuItem}>Move down</button>
+          <button className="menu-item">Move down</button>
         </ActionForm>
       )}
     </Dropdown>

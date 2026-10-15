@@ -24,7 +24,6 @@
     height: 44px;
   }
 
-  .menuItem,
   .renameForm :global(.input) {
     min-height: 44px;
   }
@@ -35,40 +34,6 @@
   display: flex;
   flex-direction: column;
   padding: 6px;
-}
-
-.menuItem {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  list-style: none;
-}
-
-.menuItem::-webkit-details-marker {
-  display: none;
-}
-
-.menuItem:hover {
-  background: var(--wash);
-}
-
-.danger {
-  color: var(--danger);
-}
-
-.divider {
-  margin: 4px 0;
-  border: 0;
-  border-top: 1px solid var(--hair);
 }
 
 .renameForm {

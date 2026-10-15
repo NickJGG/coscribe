@@ -214,29 +214,6 @@
   padding: 6px;
 }
 
-.menuItem {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: 32px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 6px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.menuItem:hover {
-  background: var(--wash);
-}
-
-.danger {
-  color: var(--danger);
-}
-
 .resolvedBy {
   margin-top: 8px;
   color: var(--faint);
@@ -430,10 +407,6 @@
   .moreButton {
     min-width: 44px;
     height: 44px;
-  }
-
-  .menuItem {
-    min-height: 44px;
   }
 
   .step {

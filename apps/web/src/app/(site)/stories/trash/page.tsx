@@ -56,7 +56,12 @@ export default async function StoryTrashPage() {
             </div>
             <ActionForm
               action={emptyStoryTrash}
-              confirm={`Delete ${trash.length === 1 ? "the 1 story" : `all ${trash.length} stories`} in the Trash for good? This can't be undone.`}
+              confirm={{
+                title: `Delete ${trash.length === 1 ? "the 1 story" : `all ${trash.length} stories`} in the Trash for good?`,
+                body: "This can't be undone.",
+                action: "Delete",
+                danger: true,
+              }}
             >
               <button className="button button-danger">Empty Trash&hellip;</button>
             </ActionForm>

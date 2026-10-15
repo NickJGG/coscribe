@@ -49,7 +49,7 @@ export function EntryTypePicker({
           <button
             key={t}
             type="button"
-            className={menu.menuItem}
+            className="menu-item"
             aria-pressed={t === shown}
             data-close
             onClick={() => t !== shown && choose(t)}

@@ -19,6 +19,7 @@ import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } 
 import { authorColorCss } from "@/lib/profile-rules";
 import { DeskToolbar } from "./DeskToolbar";
 import { Authorship, authorName, type StoryAuthor } from "./Authorship";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { Text } from "./ProseView";
 import { usePhone, useSnapshotCompare, type Snapshot } from "./SnapshotCompare";
 import { usePanelOpen, useStoryPanel } from "./StoryPanel";
@@ -677,6 +678,7 @@ function SnapshotActions({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [naming, setNaming] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   async function run(task: () => Promise<Notice | null>) {
     setBusy(true);
@@ -721,16 +723,25 @@ function SnapshotActions({
             type="button"
             className="button button-small button-primary"
             disabled={busy}
-            onClick={() => {
-              const message =
-                "Restore this Snapshot? The Chapter's current text is saved as a Snapshot first." +
-                (replacesOther ? " This replaces the current text, not the other Snapshot shown." : "");
-              if (window.confirm(message)) void run(() => onRestore(snapshot));
-            }}
+            onClick={() => setRestoring(true)}
           >
             Restore
           </button>
         )}
+        <ConfirmDialog
+          open={restoring}
+          onCancel={() => setRestoring(false)}
+          onConfirm={() => {
+            setRestoring(false);
+            void run(() => onRestore(snapshot));
+          }}
+          title="Restore this Snapshot?"
+          body={
+            "The Chapter's current text is saved as a Snapshot first." +
+            (replacesOther ? " This replaces the current text, not the other Snapshot shown." : "")
+          }
+          action="Restore"
+        />
         <button
           type="button"
           className="button button-small"

@@ -236,6 +236,49 @@ a {
   color: var(--ink);
 }
 
+.menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  list-style: none;
+}
+
+.menu-item::-webkit-details-marker {
+  display: none;
+}
+
+a.menu-item:hover,
+button.menu-item:hover,
+summary.menu-item:hover {
+  background: var(--wash);
+}
+
+.menu-item-danger {
+  color: var(--danger);
+}
+
+.menu-divider {
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--hair);
+}
+
+@media (pointer: coarse) {
+  .menu-item {
+    min-height: 44px;
+  }
+}
+
 .badge {
   display: inline-grid;
   place-items: center;

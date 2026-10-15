@@ -11,6 +11,7 @@ import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type Not
 import type { ActionResult } from "@/lib/action-result";
 import { toEditableText, toStoredBody } from "@/lib/writer-mentions";
 import { Avatar } from "../Avatar";
+import { ConfirmDialog } from "../ConfirmDialog";
 import { Dropdown } from "../Dropdown";
 import { useDismiss } from "../useDismiss";
 import { usePeople, useStoryMembers } from "../StoryMembers";
@@ -381,14 +382,15 @@ function Message({
   const { person, isMine, canDelete, readOnly, edit, remove } = useNotes()!;
   const lookup = usePeople(NO_IDS);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const who = person(message.author_id);
   const editable = !readOnly && isMine(message.author_id);
   const deletable = canDelete(message.author_id);
 
   async function onDelete() {
-    const question = kind === "note" ? "Delete this Note and its replies?" : "Delete this reply?";
-    if (confirm(question)) setError(await remove(kind, message.id));
+    setDeleting(false);
+    setError(await remove(kind, message.id));
   }
 
   return (
@@ -410,17 +412,30 @@ function Message({
               panelClassName={styles.menu}
             >
               {editable && (
-                <button type="button" className={styles.menuItem} onClick={() => setEditing(true)}>
+                <button type="button" className="menu-item" onClick={() => setEditing(true)}>
                   Edit
                 </button>
               )}
               {deletable && (
-                <button type="button" className={`${styles.menuItem} ${styles.danger}`} onClick={onDelete}>
+                <button
+                  type="button"
+                  className="menu-item menu-item-danger"
+                  data-close
+                  onClick={() => setDeleting(true)}
+                >
                   Delete
                 </button>
               )}
             </Dropdown>
           )}
+          <ConfirmDialog
+            open={deleting}
+            onCancel={() => setDeleting(false)}
+            onConfirm={() => void onDelete()}
+            title={kind === "note" ? "Delete this Note and its replies?" : "Delete this reply?"}
+            action="Delete"
+            danger
+          />
         </div>
         {editing ? (
           <Compose

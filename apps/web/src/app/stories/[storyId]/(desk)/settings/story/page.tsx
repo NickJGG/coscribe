@@ -62,7 +62,11 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
             ) : (
               <ActionForm
                 action={setStoryFinished.bind(null, story.id, true)}
-                confirm={`Mark "${story.title}" Finished? Editing locks for everyone until you reopen it.`}
+                confirm={{
+                  title: `Mark “${story.title}” Finished?`,
+                  body: "Editing locks for everyone until you reopen it.",
+                  action: "Mark Finished",
+                }}
               >
                 <button className="button button-primary">Mark Finished</button>
               </ActionForm>
@@ -82,7 +86,12 @@ export default async function StorySettingsStoryPage(props: PageProps<"/stories/
             </div>
             <ActionForm
               action={deleteStory.bind(null, story.id)}
-              confirm={`Delete “${story.title}” for everyone? It goes to your Trash for 30 days, where you can restore it.`}
+              confirm={{
+                title: `Delete “${story.title}” for everyone?`,
+                body: "It goes to your Trash for 30 days, where you can restore it.",
+                action: "Delete",
+                danger: true,
+              }}
             >
               <button className="button button-danger">Delete story</button>
             </ActionForm>

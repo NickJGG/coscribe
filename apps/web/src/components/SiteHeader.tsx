@@ -186,14 +186,14 @@ async function YouMenu({ profile }: { profile: Profile }) {
           <small>View profile</small>
         </span>
       </Link>
-      <Link href="/settings" className={styles.menuItem}>
+      <Link href="/settings" className="menu-item">
         Settings
       </Link>
-      <div className={`${styles.menuItem} ${styles.theme}`}>
+      <div className={`menu-item ${styles.theme}`}>
         Theme
         <ThemeSwitch theme={profile.theme} />
       </div>
-      <Link href="/changelog" className={styles.menuItem}>
+      <Link href="/changelog" className="menu-item">
         Changelog
         {unseen && (
           <>
@@ -202,9 +202,9 @@ async function YouMenu({ profile }: { profile: Profile }) {
           </>
         )}
       </Link>
-      <hr className={styles.divider} />
+      <hr className="menu-divider" />
       <form action={signOut}>
-        <button className={styles.menuItem}>Sign out</button>
+        <button className="menu-item">Sign out</button>
       </form>
     </Dropdown>
   );

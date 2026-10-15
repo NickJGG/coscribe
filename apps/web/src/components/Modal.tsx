@@ -10,6 +10,7 @@ import styles from "./Modal.module.css";
  * A modal dialog on native `<dialog>`: focus stays inside, the page behind is inert, and Esc, ×, or a click
  * outside it closes it.
  * Focus goes back to whatever opened it, or to `returnTo()`. Full screen on phones. Its children render only while it's open.
+ * `size="compact"` is a narrow box that's a bottom sheet on phones instead, for short questions.
  *
  * Passing `aside` (even null) makes it a companion layout: a transparent layer over the window holding the
  * dialog's box, always centered, and the aside's own box to its left. Where both don't fit, the aside covers
@@ -25,6 +26,8 @@ export function Modal({
   aside,
   onEscape,
   returnTo,
+  size,
+  role,
 }: {
   open: boolean;
   onClose: () => void;
@@ -34,6 +37,8 @@ export function Modal({
   aside?: React.ReactNode;
   onEscape?: () => boolean;
   returnTo?: () => HTMLElement | null;
+  size?: "compact";
+  role?: "alertdialog";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
@@ -84,7 +89,8 @@ export function Modal({
   return createPortal(
     <dialog
       ref={ref}
-      className={companion ? styles.layer : styles.modal}
+      className={companion ? styles.layer : `${styles.modal} ${size === "compact" ? styles.compact : ""}`}
+      role={role}
       aria-labelledby={headingId}
       data-aside={(companion && aside != null) || undefined}
       onClose={(e) => {

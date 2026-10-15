@@ -29,7 +29,7 @@ export function ChapterMenu({
       panelClassName={styles.menu}
     >
       <details>
-        <summary className={styles.menuItem}>Rename</summary>
+        <summary className="menu-item">Rename</summary>
         <ActionForm action={renameChapter.bind(null, storyId, chapter.id)} className={styles.renameForm}>
           <input
             name="title"
@@ -43,26 +43,31 @@ export function ChapterMenu({
         </ActionForm>
       </details>
       <ActionForm action={setChapterLocked.bind(null, storyId, chapter.id, !chapter.locked)}>
-        <button className={styles.menuItem}>{chapter.locked ? "Unlock" : "Lock"}</button>
+        <button className="menu-item">{chapter.locked ? "Unlock" : "Lock"}</button>
       </ActionForm>
       {upAfter !== undefined && (
         <ActionForm action={moveChapterTo.bind(null, storyId, chapter.id, upAfter)}>
-          <button className={styles.menuItem}>Move up</button>
+          <button className="menu-item">Move up</button>
         </ActionForm>
       )}
       {downAfter !== undefined && (
         <ActionForm action={moveChapterTo.bind(null, storyId, chapter.id, downAfter)}>
-          <button className={styles.menuItem}>Move down</button>
+          <button className="menu-item">Move down</button>
         </ActionForm>
       )}
       {!only && (
         <>
-          <hr className={styles.divider} />
+          <hr className="menu-divider" />
           <ActionForm
             action={deleteChapter.bind(null, storyId, chapter.id)}
-            confirm={`Delete “${chapter.title}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
+            confirm={{
+              title: `Delete “${chapter.title}”?`,
+              body: "It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.",
+              action: "Delete",
+              danger: true,
+            }}
           >
-            <button className={`${styles.menuItem} ${styles.danger}`}>Delete</button>
+            <button className="menu-item menu-item-danger">Delete</button>
           </ActionForm>
         </>
       )}

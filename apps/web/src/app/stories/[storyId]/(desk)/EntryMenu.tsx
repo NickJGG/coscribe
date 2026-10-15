@@ -30,7 +30,7 @@ export function EntryMenu({
       panelClassName={styles.menu}
     >
       <details>
-        <summary className={styles.menuItem}>Rename</summary>
+        <summary className="menu-item">Rename</summary>
         <ActionForm action={renameEntry.bind(null, storyId, entry.id)} className={styles.renameForm}>
           <input
             name="name"
@@ -46,31 +46,36 @@ export function EntryMenu({
       <h4 className={`smallcaps ${styles.menuHeading}`}>Change type</h4>
       {ENTRY_TYPES.map((type) => (
         <ActionForm key={type} action={editEntry.bind(null, storyId, entry.id, { type })}>
-          <button className={styles.menuItem} aria-pressed={type === entry.type}>
+          <button className="menu-item" aria-pressed={type === entry.type}>
             {ENTRY_TYPE_LABEL[type]}
             {type === entry.type && <span className={styles.check} aria-hidden>✓</span>}
           </button>
         </ActionForm>
       ))}
-      {(upAfter !== undefined || downAfter !== undefined) && <hr className={styles.divider} />}
+      {(upAfter !== undefined || downAfter !== undefined) && <hr className="menu-divider" />}
       {upAfter !== undefined && (
         <ActionForm action={moveEntryTo.bind(null, storyId, entry.id, upAfter)}>
-          <button className={styles.menuItem}>Move up</button>
+          <button className="menu-item">Move up</button>
         </ActionForm>
       )}
       {downAfter !== undefined && (
         <ActionForm action={moveEntryTo.bind(null, storyId, entry.id, downAfter)}>
-          <button className={styles.menuItem}>Move down</button>
+          <button className="menu-item">Move down</button>
         </ActionForm>
       )}
       {deletable && (
         <>
-          <hr className={styles.divider} />
+          <hr className="menu-divider" />
           <ActionForm
             action={deleteEntry.bind(null, storyId, entry.id)}
-            confirm={`Delete “${entry.name}”? It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.`}
+            confirm={{
+              title: `Delete “${entry.name}”?`,
+              body: "It goes to the Trash in Settings for 30 days, where the Host or a Co-host can restore it.",
+              action: "Delete",
+              danger: true,
+            }}
           >
-            <button className={`${styles.menuItem} ${styles.danger}`}>Delete</button>
+            <button className="menu-item menu-item-danger">Delete</button>
           </ActionForm>
         </>
       )}
