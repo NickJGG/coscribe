@@ -6,6 +6,7 @@ import { CameraIcon } from "./icons";
 import { useLiveStatus } from "./LiveStatus";
 import { useSnapshotCompare } from "./SnapshotCompare";
 import { useStoryPanel } from "./StoryPanel";
+import { useDismiss } from "./useDismiss";
 import styles from "./SnapshotButton.module.css";
 
 const NAME_MAX = 80;
@@ -37,19 +38,7 @@ export function SnapshotButton({ chapterId }: { chapterId: string }) {
           : "No changes since the last Snapshot"
         : "Take a Snapshot";
 
-  const close = (refocus: boolean) => {
-    setOpen(false);
-    if (refocus) button.current?.focus();
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!anchor.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
+  const close = useDismiss(open, () => setOpen(false), { root: anchor, returnTo: () => button.current });
 
   useEffect(() => {
     if (!saved) return;
@@ -101,12 +90,6 @@ export function SnapshotButton({ chapterId }: { chapterId: string }) {
           onSubmit={(e) => {
             e.preventDefault();
             if (!pending) submit();
-          }}
-          onKeyDown={(e) => {
-            if (e.key !== "Escape") return;
-            // Not the desk's Escape (find, comparison).
-            e.stopPropagation();
-            close(true);
           }}
         >
           <h3 id={titleId} className={styles.title}>

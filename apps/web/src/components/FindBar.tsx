@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { useEditorState, type Editor } from "@tiptap/react";
 import type { DocumentKind } from "@coscribe/editor";
+import { hasOpenLayer } from "@/lib/layers";
 import type { DocumentCount } from "@/lib/search";
 import { findKey } from "./Find";
 import { useStorySearch } from "./StorySearch";
@@ -102,7 +103,7 @@ export function FindBar({
     if (e.key.toLowerCase() === "g" && (e.ctrlKey || e.metaKey) && !e.altKey) {
       e.preventDefault();
       step(e.shiftKey ? -1 : 1);
-    } else if (e.key === "Escape" && !e.defaultPrevented && !isTyping(e.target)) {
+    } else if (e.key === "Escape" && !e.defaultPrevented && !hasOpenLayer() && !isTyping(e.target)) {
       close();
     }
   });

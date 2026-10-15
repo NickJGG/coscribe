@@ -14,6 +14,7 @@ import {
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Editor } from "@tiptap/react";
+import { hasOpenLayer } from "@/lib/layers";
 import { createClient } from "@/lib/supabase/client";
 import { useDeskScroll } from "./DeskScroll";
 import { isTyping } from "./FindBar";
@@ -133,7 +134,7 @@ export function SnapshotCompareProvider({ chapterId, children }: { chapterId: st
   useEffect(() => onPanel(open), [open]);
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
-    if (comparing && e.key === "Escape" && !e.defaultPrevented && !isTyping(e.target)) exit();
+    if (comparing && e.key === "Escape" && !e.defaultPrevented && !hasOpenLayer() && !isTyping(e.target)) exit();
   });
   useEffect(() => {
     document.addEventListener("keydown", onKeyDown);

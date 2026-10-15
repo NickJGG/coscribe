@@ -44,6 +44,7 @@ import {
   ScriptIcon,
 } from "./icons";
 import { canAddNote } from "./notes/NoteHighlights";
+import { useDismiss } from "./useDismiss";
 import styles from "./LiveDocument.module.css";
 
 type Active = {
@@ -501,44 +502,17 @@ function usePopover() {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpen(false);
-      if (wrapRef.current?.contains(document.activeElement)) buttonRef.current?.focus();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  const onBlur = (e: React.FocusEvent) => {
-    const next = e.relatedTarget as Node | null;
-    if (next && !e.currentTarget.contains(next)) setOpen(false);
-  };
-
-  return { open, setOpen, wrapRef, buttonRef, onBlur };
+  useDismiss(open, () => setOpen(false), { root: wrapRef, returnTo: () => buttonRef.current });
+  return { open, setOpen, wrapRef, buttonRef };
 }
 
 /** One button showing the paragraph's alignment, opening a row of the three. Clicks keep focus in the editor. */
 function AlignTool({ editor, align, disabled }: { editor: Editor; align: Alignment; disabled: boolean }) {
-  const { open, setOpen, wrapRef, buttonRef, onBlur } = usePopover();
+  const { open, setOpen, wrapRef, buttonRef } = usePopover();
   const rowId = useId();
 
   return (
-    <span
-      ref={wrapRef}
-      className={styles.alignTool}
-      onBlur={onBlur}
-    >
+    <span ref={wrapRef} className={styles.alignTool}>
       <button
         ref={buttonRef}
         type="button"
@@ -583,15 +557,11 @@ function AlignTool({ editor, align, disabled }: { editor: Editor; align: Alignme
  * between elements where there's no Tab key, as on a phone.
  */
 function ElementTool({ editor, element }: { editor: Editor; element: ScriptElementType }) {
-  const { open, setOpen, wrapRef, buttonRef, onBlur } = usePopover();
+  const { open, setOpen, wrapRef, buttonRef } = usePopover();
   const listId = useId();
 
   return (
-    <span
-      ref={wrapRef}
-      className={styles.alignTool}
-      onBlur={onBlur}
-    >
+    <span ref={wrapRef} className={styles.alignTool}>
       <button
         ref={buttonRef}
         type="button"

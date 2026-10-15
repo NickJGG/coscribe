@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
 import { noteRanges } from "@coscribe/editor";
+import { hasOpenLayer } from "@/lib/layers";
 import { relativeTime } from "@/lib/relative-time";
 import { useMeasure } from "@/lib/use-measure";
 import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
@@ -11,6 +12,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { toEditableText, toStoredBody } from "@/lib/writer-mentions";
 import { Avatar } from "../Avatar";
 import { Dropdown } from "../Dropdown";
+import { useDismiss } from "../useDismiss";
 import { usePeople, useStoryMembers } from "../StoryMembers";
 import { WriterMentionPicker, useWriterMentionPicker } from "../WriterMentionPicker";
 import { WriterMentionText } from "../WriterMentionText";
@@ -163,23 +165,12 @@ function NotePopover({ editor, layer }: { editor: Editor; layer: React.RefObject
   }, [editor, layer, key]);
   const place = useMeasure(roots, key ? measure : null, NOT_ANCHORED);
 
-  useEffect(() => {
-    if (!key || writing) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const target = e.target as Node;
-      // The editor's own click handling moves between Notes, or closes on plain text.
-      if (!panel.current?.contains(target) && !editor.view.dom.contains(target)) setActive(null);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) setActive(null);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [editor, key, writing, setActive]);
+  const dismiss = useDismiss(!!key && !writing, () => setActive(null), {
+    root: panel,
+    returnTo: () => editor.view.dom,
+    // The editor's own click handling moves between Notes, or closes on plain text.
+    ignoreOutside: (target) => editor.view.dom.contains(target),
+  });
 
   if (!view) return null;
   const note = writing ? null : notes.find((n) => n.id === view.key);
@@ -225,7 +216,7 @@ function NotePopover({ editor, layer }: { editor: Editor; layer: React.RefObject
           <button
             type="button"
             className={`${styles.step} ${styles.popoverClose}`}
-            onClick={() => setActive(null)}
+            onClick={() => dismiss(true)}
             aria-label="Close"
           >
             &times;
@@ -239,10 +230,10 @@ function NotePopover({ editor, layer }: { editor: Editor; layer: React.RefObject
           replies={replies.filter((r) => r.note_id === note.id)}
           active
           onActivate={() => {}}
-          onDeactivate={() => setActive(null)}
+          onDeactivate={() => dismiss(true)}
         />
       ) : (
-        <DraftCard quote={view.quote} />
+        <DraftCard quote={view.quote} onPosted={() => editor.commands.focus()} />
       )}
     </div>
   );
@@ -252,17 +243,29 @@ function DraftCard({
   ref,
   style,
   quote,
+  onPosted,
 }: {
   ref?: React.Ref<HTMLDivElement>;
   style?: React.CSSProperties;
   quote: string;
+  onPosted?: () => void;
 }) {
   const { addNote, cancelDraft } = useNotes()!;
 
   return (
     <div ref={ref} className={styles.card} data-active style={style}>
       <blockquote className={styles.quote}>{quote}</blockquote>
-      <Compose placeholder="Add a Note…" submit="Note" onSubmit={addNote} onCancel={cancelDraft} autoFocus />
+      <Compose
+        placeholder="Add a Note…"
+        submit="Note"
+        onSubmit={async (body) => {
+          const result = await addNote(body);
+          if (!result) onPosted?.();
+          return result;
+        }}
+        onCancel={cancelDraft}
+        autoFocus
+      />
     </div>
   );
 }
@@ -307,7 +310,8 @@ export function NoteCard({
       onClick={onActivate}
       onKeyDown={(e) => {
         if (e.defaultPrevented) return;
-        if (e.key === "Escape" && active) {
+        // In a popover, or with its menu open, the layer's Escape (useDismiss).
+        if (e.key === "Escape" && active && !hasOpenLayer()) {
           e.preventDefault();
           onDeactivate();
         } else if ((e.key === "Enter" || e.key === " ") && !active && e.target === e.currentTarget) {

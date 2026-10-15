@@ -2,13 +2,14 @@
 
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { pushLayer, topLayer, type Layer } from "@/lib/layers";
 import { CloseIcon } from "./icons";
 import styles from "./Modal.module.css";
 
 /**
  * A modal dialog on native `<dialog>`: focus stays inside, the page behind is inert, and Esc, ×, or a click
  * outside it closes it.
- * Focus goes back to whatever opened it. Full screen on phones. Its children render only while it's open.
+ * Focus goes back to whatever opened it, or to `returnTo()`. Full screen on phones. Its children render only while it's open.
  *
  * Passing `aside` (even null) makes it a companion layout: a transparent layer over the window holding the
  * dialog's box, always centered, and the aside's own box to its left. Where both don't fit, the aside covers
@@ -23,6 +24,7 @@ export function Modal({
   children,
   aside,
   onEscape,
+  returnTo,
 }: {
   open: boolean;
   onClose: () => void;
@@ -31,21 +33,31 @@ export function Modal({
   children: React.ReactNode;
   aside?: React.ReactNode;
   onEscape?: () => boolean;
+  returnTo?: () => HTMLElement | null;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const headingId = useId();
   const pressedOutside = useRef(false);
+  const layer = useRef<Layer>(null);
+  const returnToRef = useRef(returnTo);
   const companion = aside !== undefined;
   const outside = companion ? isLayer : isOutside;
+
+  useEffect(() => {
+    returnToRef.current = returnTo;
+  });
 
   useEffect(() => {
     const dialog = ref.current;
     if (!open || !dialog) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    layer.current = { contains: (node) => dialog.contains(node) };
+    const pop = pushLayer(layer.current);
     dialog.showModal();
     return () => {
+      pop();
       dialog.close();
-      opener?.focus();
+      (returnToRef.current?.() ?? opener)?.focus();
     };
   }, [open]);
 
@@ -88,7 +100,8 @@ export function Modal({
         pressedOutside.current = false;
       }}
       onKeyDown={(e) => {
-        if (e.key !== "Escape") return;
+        // A menu open inside takes it, in useDismiss.
+        if (e.key !== "Escape" || topLayer() !== layer.current) return;
         // Not the desk's Escape (find, comparison).
         e.stopPropagation();
         if (!e.defaultPrevented && onEscape?.()) e.preventDefault();

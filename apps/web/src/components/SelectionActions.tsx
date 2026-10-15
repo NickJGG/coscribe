@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useEditorState } from "@tiptap/react";
 import type { Editor } from "@tiptap/core";
@@ -10,6 +10,7 @@ import { ENTRY_TYPE_LABEL, ENTRY_TYPES, NAME_MAX, type EntryType, type EntryMent
 import { useMeasure } from "@/lib/use-measure";
 import type { DocumentEntryMentions } from "./LiveDocument";
 import { canAddNote, noteDraft } from "./notes/NoteHighlights";
+import { useDismiss } from "./useDismiss";
 import styles from "./SelectionActions.module.css";
 
 const NOT_PLACED: { top: number; left: number } | null = null;
@@ -133,25 +134,7 @@ function BiblePopover({
   }, [editor, to]);
   const place = useMeasure(roots, measure, NOT_PLACED);
 
-  const cancel = useCallback(() => {
-    onClose();
-    editor.commands.focus();
-  }, [editor, onClose]);
-
-  useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
-      if (!panel.current?.contains(e.target as Node)) onClose();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !e.defaultPrevented) cancel();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [cancel, onClose]);
+  useDismiss(true, onClose, { root: panel, returnTo: () => editor.view.dom });
 
   function add(type: EntryType) {
     if (pending || existing || !name.trim()) return;

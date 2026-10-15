@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { COLLAPSED_COOKIE, sidebarCookie, WIDTH_COOKIE } from "@/lib/desk-sidebar";
+import { hasOpenLayer } from "@/lib/layers";
 
 export type SidebarTab = "chapters" | "bible";
 
@@ -94,7 +95,7 @@ export function DeskFrame({
     if (e.key === "\\" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       toggle();
-    } else if (e.key === "Escape" && overlay) {
+    } else if (e.key === "Escape" && overlay && !e.defaultPrevented && !hasOpenLayer()) {
       close();
     } else if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target)) {
       e.preventDefault();

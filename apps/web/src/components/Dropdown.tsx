@@ -1,15 +1,24 @@
 "use client";
 
-import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useContext, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { usePathname } from "next/navigation";
+import { useDismiss } from "./useDismiss";
 import styles from "./Dropdown.module.css";
 
+type DropdownHandle = { close: () => void; trigger: RefObject<HTMLButtonElement | null> };
+
 const OpenContext = createContext(false);
+const HandleContext = createContext<DropdownHandle | null>(null);
 const GAP = 8;
 
 /** Whether the Dropdown around this content is open, for content that loads only when shown. */
 export function useDropdownOpen() {
   return useContext(OpenContext);
+}
+
+/** The Dropdown around this content: `close()` leaves focus alone, for content that moves it elsewhere. */
+export function useDropdown() {
+  return useContext(HandleContext);
 }
 
 /**
@@ -47,24 +56,8 @@ export function Dropdown({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: PointerEvent) => {
-      if (!wrapRef.current?.contains(e.target as Node)) setOpenOn(null);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpenOn(null);
-      buttonRef.current?.focus();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const close = () => setOpenOn(null);
+  const dismiss = useDismiss(open, close, { root: wrapRef, returnTo: () => buttonRef.current });
 
   useLayoutEffect(() => {
     const panel = panelRef.current;
@@ -102,18 +95,6 @@ export function Dropdown({
     <div
       ref={wrapRef}
       className={`${styles.wrap} ${className ?? ""}`}
-      onBlur={(e) => {
-        const next = e.relatedTarget as Node | null;
-        if (next && !e.currentTarget.contains(next)) setOpenOn(null);
-      }}
-      onKeyDown={(e) => {
-        // Handled here too, so a Modal around it neither closes nor swallows this Escape.
-        if (e.key !== "Escape" || !open) return;
-        e.preventDefault();
-        e.stopPropagation();
-        setOpenOn(null);
-        buttonRef.current?.focus();
-      }}
     >
       <button
         ref={buttonRef}
@@ -138,12 +119,12 @@ export function Dropdown({
         hidden={!open}
         onClick={(e) => {
           const target = (e.target as Element).closest("a, [data-close]");
-          if (!target) return;
-          setOpenOn(null);
-          if (target.tagName !== "A") buttonRef.current?.focus();
+          if (target) dismiss(target.tagName !== "A");
         }}
       >
-        <OpenContext value={open}>{children}</OpenContext>
+        <OpenContext value={open}>
+          <HandleContext value={{ close, trigger: buttonRef }}>{children}</HandleContext>
+        </OpenContext>
       </div>
     </div>
   );
