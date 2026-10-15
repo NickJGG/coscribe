@@ -6,8 +6,9 @@ export const IMPORT_MAX_BYTES = 2 * 1024 * 1024;
 export const IMPORT_MAX_CHAPTERS = 500;
 
 /**
- * A parsed file as Import sends it to sync: every run of text credited to `author`, and names cut to what the
- * tables take (a Chapter with no title gets its number, an Entry with no name is left out).
+ * A parsed file as Import sends it to sync: every run of Chapter and Entry text credited to `author` (Outlines have no
+ * authorship), and names cut to what the tables take (a Chapter with no title gets its number, an Entry with no name
+ * is left out).
  */
 export function importContent(file: StoryFile, author: AuthorAttrs): Pick<StoryFile, "chapters" | "entries"> {
   const stamp = (node: JSONContent) => stampAuthor(node, author);
@@ -19,7 +20,7 @@ export function importContent(file: StoryFile, author: AuthorAttrs): Pick<StoryF
         ...(chapter.outline && {
           outline: {
             fields: chapter.outline.fields.flatMap(({ label, content }) =>
-              cut(label, 120) ? [{ label: cut(label, 120), content: stamp(content) }] : []
+              cut(label, 120) ? [{ label: cut(label, 120), content }] : []
             ),
             characters: chapter.outline.characters.map((name) => cut(name, 80)).filter(Boolean),
           },

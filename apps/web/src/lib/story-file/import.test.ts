@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IMPORTED_AUTHOR } from "@coscribe/editor";
+import { IMPORTED_AUTHOR, outlineSchema } from "@coscribe/editor";
 import { importContent } from "./import";
 import type { StoryFile } from "./types";
 
@@ -32,10 +32,12 @@ describe("importContent", () => {
       { type: "bold" },
       { type: "author", attrs: imported },
     ]);
-    expect(content.chapters[1]!.outline!.fields[0]!.content.content![0]!.content![0]!.marks).toEqual([
-      { type: "author", attrs: imported },
-    ]);
     expect(content.entries[0]!.body.content![0]!.content![0]!.marks).toEqual([{ type: "author", attrs: imported }]);
+  });
+
+  it("leaves Outlines uncredited, since their schema has no author mark", () => {
+    const outline = content.chapters[1]!.outline!.fields[0]!.content;
+    expect(() => outlineSchema.nodeFromJSON(outline).check()).not.toThrow();
   });
 
   it("fits names to the tables' limits", () => {

@@ -15,6 +15,7 @@
     "db:reset": "supabase db reset",
     "db:status": "supabase status",
     "db:types": "supabase gen types typescript --local > apps/web/src/lib/supabase/database.types.ts",
+    "changelog:shots": "pnpm --filter @coscribe/web exec tsx scripts/changelog-shots/index.ts",
     "deploy:sync": "fly deploy . --config apps/sync/fly.toml --dockerfile apps/sync/Dockerfile --ha=false"
   },
   "devDependencies": {
