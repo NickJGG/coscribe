@@ -1,0 +1,114 @@
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper-raised);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--hair);
+}
+
+h2.title {
+  font-size: var(--step-1);
+}
+
+.title a {
+  text-decoration: none;
+}
+
+.title a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+}
+
+.group + .group {
+  border-top: 1px solid var(--hair);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-ui), system-ui, sans-serif;
+  font-size: var(--step-0);
+  font-weight: 600;
+}
+
+.label::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--rule);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 1.25em;
+}
+
+.lines li::marker {
+  color: var(--faint);
+}
+
+.lead {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.text {
+  color: var(--ink-muted);
+}
+
+.image,
+.light,
+.dark {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 10px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+/* Mirrors the theme selectors in globals.css, so a pinned theme wins over the system one. */
+.dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .light {
+  display: none;
+}
+
+:root[data-theme="dark"] .dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .light {
+    display: none;
+  }
+
+  :root:not([data-theme="light"]) .dark {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  .head,
+  .group {
+    padding-inline: 16px;
+  }
+}
