@@ -25,6 +25,15 @@ export default async function InvitePage(props: PageProps<"/invite/[token]">) {
     );
   }
 
+  if (data.expired) {
+    return (
+      <div className="page">
+        <h1>This Invite Link has expired</h1>
+        <p className="muted">Invite Links only last a while. Ask whoever sent it for a new one.</p>
+      </div>
+    );
+  }
+
   const here = `/invite/${encodeURIComponent(token)}`;
   const viewer = await getViewer();
   const myRole = viewer?.profile ? (await getStory(data.story_id))?.myRole : null;

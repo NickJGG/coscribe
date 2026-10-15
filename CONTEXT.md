@@ -103,7 +103,7 @@ A host-issued grant that makes one specific **User** a **Writer**, or a **Viewer
 _Avoid_: Share, join request
 
 **Invite Link**:
-A single-use URL generated for one person that expires after first use.
+A single-use URL generated for one person that stops working after first use or once it expires (1, 7 or 30 days after it's made, as the **Host** or **Co-host** chose).
 _Avoid_: Share link, join link
 
 ### History and lifecycle
@@ -190,7 +190,7 @@ _Avoid_: Alert, activity, update
 
 ## Relationships
 
-- A **Story** has exactly one **Host**, zero or more **Co-hosts**, and one or more **Writers** (the **Host** counts as one)
+- A **Story** has exactly one **Host**, zero or more **Co-hosts**, and one to twelve **Writers** (the **Host** counts as one, and each has their own **Author Color**)
 - A **Story** has one or more ordered **Chapters** and exactly one **Story Bible**
 - A **Story Bible** has zero or more **Entries**
 - A **Chapter** has zero or more **Snapshots**

@@ -1,3 +1,5 @@
+import { MAX_WRITERS } from "./story-roles";
+
 /** What `ActionForm` actions return: an error message to show, or null on success. */
 export type ActionResult = string | null;
 
@@ -11,8 +13,10 @@ const RPC_ERRORS: Record<string, string> = {
   already_member: "You're already writing in this story.",
   invite_not_found: "That invite no longer exists.",
   invite_used: "That Invite Link has already been used.",
+  invite_expired: "That Invite Link has expired. Ask whoever sent it for a new one.",
   host_cannot_leave: "Hand off Host before leaving.",
   story_finished: "This story is Finished.",
+  story_full: `This story already has ${MAX_WRITERS} Writers.`,
   last_chapter: "A story needs at least one Chapter.",
   not_in_trash: "It's no longer in the Trash.",
   chapter_locked: "This Chapter is locked.",

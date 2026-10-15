@@ -9,9 +9,12 @@ import {
   canManageInvites,
   canRemove,
   canSwapViewer,
+  isInviteLinkDays,
   isWriter,
+  MAX_WRITERS,
   type MemberRole,
 } from "./story-roles";
+import { AUTHOR_COLORS } from "./profile-rules";
 
 const ROLES: MemberRole[] = ["viewer", "writer", "cohost", "host"];
 
@@ -110,5 +113,18 @@ describe("canDeleteNote", () => {
   it("never lets a Viewer or non-member delete", () => {
     expect(canDeleteNote("viewer", true)).toBe(false);
     expect(canDeleteNote(null, true)).toBe(false);
+  });
+});
+
+describe("MAX_WRITERS", () => {
+  it("gives every Writer their own Author Color", () => {
+    expect(MAX_WRITERS).toBe(AUTHOR_COLORS.length);
+  });
+});
+
+describe("isInviteLinkDays", () => {
+  it("accepts only the Lasts choices", () => {
+    expect([1, 7, 30].every(isInviteLinkDays)).toBe(true);
+    expect([0, 2, 365, "7", null].some(isInviteLinkDays)).toBe(false);
   });
 });

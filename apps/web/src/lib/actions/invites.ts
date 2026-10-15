@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/viewer";
 import { errorText, isUuid, type ActionResult } from "@/lib/action-result";
+import { isInviteLinkDays } from "@/lib/story-roles";
 
 const INVALID = "Something went wrong. Try again.";
 const JOIN_FINISHED = "This story is Finished. You can join once it's Reopened.";
@@ -24,12 +25,18 @@ export async function inviteFriend(storyId: string, userId: string, role: Invite
 }
 
 /** The new link shows up in the settings page's pending list, so there's nothing to return. */
-export async function createInviteLink(storyId: string, role: InviteRole): Promise<ActionResult> {
-  if (!isUuid(storyId) || !isInviteRole(role)) return INVALID;
+export async function createInviteLink(
+  storyId: string,
+  role: InviteRole,
+  _prev: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const lasts = Number(formData.get("lasts") ?? 7);
+  if (!isUuid(storyId) || !isInviteRole(role) || !isInviteLinkDays(lasts)) return INVALID;
   await requireProfile(`/stories/${storyId}/settings`);
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("create_invite_link", { p_story: storyId, p_role: role });
+  const { error } = await supabase.rpc("create_invite_link", { p_story: storyId, p_role: role, p_lasts: lasts });
   if (error) return errorText(error);
 
   refresh();

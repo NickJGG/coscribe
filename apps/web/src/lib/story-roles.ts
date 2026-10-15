@@ -11,6 +11,16 @@ export const ROLE_LABEL: Record<MemberRole, string> = {
   viewer: "Viewer",
 };
 
+/** Host included; one per Author Color (`AUTHOR_COLORS`). Mirrors `story_full` in 0047_invite_link_expiry.sql. */
+export const MAX_WRITERS = 12;
+
+export const INVITE_LINK_DAYS = [1, 7, 30] as const;
+export type InviteLinkDays = (typeof INVITE_LINK_DAYS)[number];
+
+export function isInviteLinkDays(days: unknown): days is InviteLinkDays {
+  return INVITE_LINK_DAYS.includes(days as InviteLinkDays);
+}
+
 const RANK: Record<MemberRole, number> = { viewer: -1, writer: 0, cohost: 1, host: 2 };
 
 export function atLeast(role: MemberRole | null | undefined, min: MemberRole): boolean {

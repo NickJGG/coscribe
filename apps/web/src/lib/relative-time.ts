@@ -17,3 +17,12 @@ export function relativeTime(at: number, now = Date.now()): string {
   }
   return "just now";
 }
+
+const DAY = 24 * 3600 * 1000;
+
+/** "today", "tomorrow", "in 6 days", counting whole days left and rounding up. */
+export function inDays(at: number, now = Date.now()): string {
+  const days = Math.ceil((at - now) / DAY);
+  if (days <= 0) return "today";
+  return days === 1 ? "tomorrow" : `in ${days} days`;
+}

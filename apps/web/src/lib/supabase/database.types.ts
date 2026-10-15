@@ -213,14 +213,14 @@ isOneToOne: false
                   ]
                 },"invites": {
                   Row: {
-                    "created_at": string,"id": string,"invited_by": string,"invitee_id": string | null,"role": Database["public"]['Enums']["member_role"],"story_id": string,"token": string | null,"used_at": string | null,"used_by": string | null
+                    "created_at": string,"expires_at": string | null,"id": string,"invited_by": string,"invitee_id": string | null,"role": Database["public"]['Enums']["member_role"],"story_id": string,"token": string | null,"used_at": string | null,"used_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"invited_by": string,"invitee_id"?: string | null,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"token"?: string | null,"used_at"?: string | null,"used_by"?: string | null
+                    "created_at"?: string,"expires_at"?: string | null,"id"?: string,"invited_by": string,"invitee_id"?: string | null,"role"?: Database["public"]['Enums']["member_role"],"story_id": string,"token"?: string | null,"used_at"?: string | null,"used_by"?: string | null
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"invited_by"?: string,"invitee_id"?: string | null,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"token"?: string | null,"used_at"?: string | null,"used_by"?: string | null
+                    "created_at"?: string,"expires_at"?: string | null,"id"?: string,"invited_by"?: string,"invitee_id"?: string | null,"role"?: Database["public"]['Enums']["member_role"],"story_id"?: string,"token"?: string | null,"used_at"?: string | null,"used_by"?: string | null
                   }
                   Relationships: [
                     {
@@ -582,7 +582,7 @@ isOneToOne: false
 { Args: { "p_chapter": string }; Returns: string
                            },
 "create_invite_link":
-{ Args: { "p_role"?: Database["public"]['Enums']["member_role"],"p_story": string }; Returns: string
+{ Args: { "p_lasts"?: number,"p_role"?: Database["public"]['Enums']["member_role"],"p_story": string }; Returns: string
                            },
 "create_story":
 { Args: { "p_blurb"?: string,"p_title": string,"p_visibility": Database["public"]['Enums']["story_visibility"] }; Returns: string
@@ -626,7 +626,7 @@ isOneToOne: false
                            },
 "invite_link_preview":
 { Args: { "p_token": string }; Returns: {
-              "inviter_username": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"story_title": string,"used": boolean
+              "expired": boolean,"inviter_username": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"story_title": string,"used": boolean
             }[]
                            },
 "is_writer":
@@ -673,6 +673,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "blurb": string,"edited_at": string,"id": string,"status": Database["public"]['Enums']["story_status"],"title": string,"viewers": number,"writers": number
             }[]
+                           },
+"purge_expired_invite_links":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "purge_expired_trash":
 { Args: Record<PropertyKey, never>; Returns: undefined
@@ -724,6 +727,9 @@ isOneToOne: false
                            },
 "story_colors_taken":
 { Args: { "p_story": string,"p_user": string }; Returns: (string)[]
+                           },
+"story_full":
+{ Args: { "p_story": string }; Returns: boolean
                            },
 "story_member_ids":
 { Args: { "p_story": string }; Returns: (string)[]

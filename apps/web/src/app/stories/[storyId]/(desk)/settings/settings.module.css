@@ -72,3 +72,32 @@
   margin-top: 2px;
   font-size: var(--step--1);
 }
+
+.newLink {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.lasts {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.lasts select {
+  width: auto;
+}
+
+.linkMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.expires {
+  font-size: var(--step--1);
+}
