@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { EntryType } from "@/lib/entries";
@@ -55,7 +55,8 @@ export function Sidebar({
   newChapter: React.ReactNode;
   newEntry: React.ReactNode;
 }) {
-  const { collapsed, overlay, tab, setTab, open, toggle, close, focusSearch } = useDeskFrame();
+  const { collapsed, overlay, tab, setTab, open, toggle, close, focusSearch, focusingSearch, sidebarRef, arrivalRef } =
+    useDeskFrame();
   const { chapterId, entryId } = useParams<{ chapterId?: string; entryId?: string }>();
   const panes = useRef<Record<SidebarTab, HTMLDivElement | null>>({ chapters: null, bible: null });
   const scrollTops = useRef<Record<SidebarTab, number>>({ chapters: 0, bible: 0 });
@@ -83,6 +84,24 @@ export function Sidebar({
     }
   }, [chapterId]);
 
+  const focusRow = useEffectEvent(() => {
+    if (focusingSearch.current) return;
+    const pane = panes.current[tab];
+    const row =
+      pane?.querySelector<HTMLElement>('[aria-current="page"]') ?? pane?.querySelector<HTMLElement>("a[href]");
+    (row ?? tabRefs.current[tab])?.focus();
+  });
+  useEffect(() => {
+    if (overlay) focusRow();
+  }, [overlay]);
+
+  const onLinkClick = (e: React.MouseEvent) => {
+    if (!overlay || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = (e.target as Element).closest<HTMLAnchorElement>("a[href]");
+    if (!link || link.target || link.origin !== location.origin) return;
+    arrivalRef.current = { path: link.pathname, focused: null };
+  };
+
   const onTabKey = (e: React.KeyboardEvent) => {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     const next = tab === "chapters" ? "bible" : "chapters";
@@ -92,7 +111,7 @@ export function Sidebar({
 
   return (
     <>
-      <aside className={styles.sidebar} aria-label="Story">
+      <aside ref={sidebarRef} className={styles.sidebar} aria-label="Story" onClickCapture={onLinkClick}>
         <div className={styles.strip}>
           <button
             type="button"
@@ -299,7 +318,7 @@ export function Sidebar({
         </div>
         <SidebarResize fullRef={full} />
       </aside>
-      {overlay && <div className={styles.scrim} onClick={close} aria-hidden />}
+      {overlay && <div className={styles.scrim} onClick={() => close(true)} data-scrim aria-hidden />}
     </>
   );
 }

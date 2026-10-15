@@ -786,6 +786,12 @@
   scrollbar-gutter: stable;
 }
 
+/* Focused on arriving from the sidebar overlay, to start reading there, not to act. */
+.scroll:focus-visible,
+.scroll h1[tabindex="-1"]:focus-visible {
+  outline: none;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

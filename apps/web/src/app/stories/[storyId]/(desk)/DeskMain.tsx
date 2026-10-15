@@ -12,6 +12,7 @@ import { useLiveStatus } from "@/components/LiveStatus";
 import { PinnedSlot, PinnedSlotProvider } from "@/components/PinnedColumn";
 import { useHereNow } from "@/components/StoryPresence";
 import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
+import { useArrival } from "@/components/DeskArrival";
 import styles from "./desk.module.css";
 
 const SCROLL_KEY = "coscribe:desk-scroll:";
@@ -28,6 +29,15 @@ function writeScroll(doc: string, top: number) {
   try {
     sessionStorage.setItem(SCROLL_KEY + doc, String(Math.round(top)));
   } catch {}
+}
+
+/** Focuses `el` without scrolling, making it focusable for as long as it has focus. */
+function land(el: HTMLElement) {
+  if (el.tabIndex < 0 && !el.hasAttribute("tabindex")) {
+    el.tabIndex = -1;
+    el.addEventListener("blur", () => el.removeAttribute("tabindex"), { once: true });
+  }
+  el.focus({ preventScroll: true });
 }
 
 const ENTRY_MENTION_HASH = /^#entry-mention-([0-9a-f-]{36})$/i;
@@ -68,6 +78,8 @@ function show(page: HTMLElement, selector: string, all: boolean, otherwise: () =
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
  * A `#entry-mention-<entryId>` link opens at that Entry's first Entry Mention instead, a `?find=…&n=` link at that
  * search match (again on every step), and a `?note=` link leaves it to the Note.
+ *
+ * Arriving from the sidebar overlay, focus lands on the page's heading, or the column until it has one.
  */
 export function DeskMain({ footer, children }: { footer: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
@@ -76,11 +88,39 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   const finding = params.has("find") && params.has("n") ? `${params.get("n")} ${params.get("find")}` : null;
   const scroller = useRef<HTMLDivElement>(null);
   const restored = useRef<string | null>(null);
+  const arrivalRef = useArrival();
 
   useLayoutEffect(() => {
     restored.current = null;
     scroller.current?.scrollTo(0, 0);
   }, [pathname]);
+
+  useEffect(() => {
+    const page = scroller.current;
+    const pending = arrivalRef?.current;
+    if (!page || !arrivalRef || !pending) return;
+    if (pending.path !== pathname) {
+      arrivalRef.current = null;
+      return;
+    }
+    const heading = () => page.querySelector<HTMLElement>("h1");
+    const settle = (el: HTMLElement) => {
+      land(el);
+      arrivalRef.current = { path: pathname, focused: el };
+    };
+    const first = heading();
+    if (first) return settle(first);
+    // The page may still be a loading skeleton.
+    settle(page);
+    const observer = new MutationObserver(() => {
+      const found = heading();
+      if (!found) return;
+      observer.disconnect();
+      if (arrivalRef.current?.path === pathname && document.activeElement === page) settle(found);
+    });
+    observer.observe(page, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pathname, arrivalRef]);
 
   useEffect(() => {
     const page = scroller.current;
@@ -123,7 +163,7 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
     <DeskToolbar.Provider>
       <PinnedSlotProvider>
         <BackToTopSlot.Provider>
-          <div className={styles.main}>
+          <div className={styles.main} data-desk-inert>
             <DeskToolbar.Target className={styles.toolbarSlot} />
             <div className={styles.page}>
               <div

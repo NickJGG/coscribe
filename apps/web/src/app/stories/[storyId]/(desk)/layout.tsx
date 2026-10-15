@@ -111,7 +111,7 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
             initialCollapsed={parseCollapsed(cookieStore.get(COLLAPSED_COOKIE)?.value)}
           >
             <StorySearchProvider storyId={story.id}>
-              <header className={styles.header}>
+              <header className={styles.header} data-desk-inert>
                 <Link href={viewer?.profile ? "/stories" : "/"} className={styles.wordmark}>
                   <Wordmark />
                 </Link>

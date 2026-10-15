@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { HocuspocusProvider } from "@hocuspocus/provider";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Extension } from "@tiptap/core";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import Collaboration from "@tiptap/extension-collaboration";
@@ -22,6 +22,7 @@ import type { EntryMentionEntry } from "@/lib/entries";
 import { DEFAULT_TOOLBAR_LAYOUT, type ToolbarLayout } from "@/lib/toolbar-layout";
 import { Authorship, HEX_COLOR, type StoryAuthor } from "./Authorship";
 import { CueSuggestionList, CueSuggestions } from "./CueSuggestions";
+import { useArrival } from "./DeskArrival";
 import { DeskToolbar } from "./DeskToolbar";
 import { FormattingToolbar } from "./FormattingToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
@@ -354,6 +355,17 @@ function LiveEditor({
   useEffect(() => {
     editor?.setEditable(editable);
   }, [editor, editable]);
+
+  // Picked from the sidebar overlay: the caret goes to the start, unless focus has moved on since arriving.
+  const arrivalRef = useArrival();
+  const pathname = usePathname();
+  useEffect(() => {
+    const pending = arrivalRef?.current;
+    if (!editor || editor.isDestroyed || embedded || !editable || !arrivalRef || pending?.path !== pathname) return;
+    arrivalRef.current = null;
+    const focused = document.activeElement;
+    if (focused === document.body || focused === pending.focused) editor.commands.focus("start");
+  }, [editor, editable, embedded, arrivalRef, pathname]);
 
   useSmartPunctuation(editor);
 

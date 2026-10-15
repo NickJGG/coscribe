@@ -1,9 +1,10 @@
 "use client";
 
-import { createContext, useContext, useEffect, useEffectEvent, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { useParams, usePathname } from "next/navigation";
 import { COLLAPSED_COOKIE, sidebarCookie, WIDTH_COOKIE } from "@/lib/desk-sidebar";
-import { hasOpenLayer } from "@/lib/layers";
+import { ArrivalContext, type Arrival } from "@/components/DeskArrival";
+import { useDismiss } from "@/components/useDismiss";
 
 export type SidebarTab = "chapters" | "bible";
 
@@ -19,12 +20,17 @@ type Frame = {
   setTab: (tab: SidebarTab) => void;
   open: (tab?: SidebarTab) => void;
   toggle: () => void;
-  close: () => void;
+  /** Closes the overlay; `refocus` returns focus to whatever opened it. */
+  close: (refocus?: boolean) => void;
   /** Keeps an open overlay open on `path`, for navigation the overlay itself starts (typing a search). */
   keepOverlay: (path: string) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
   /** Opens the sidebar and puts the caret in Story search. */
   focusSearch: () => void;
+  /** True from `focusSearch` until the search box has focus, so opening the overlay leaves focus to it. */
+  focusingSearch: React.RefObject<boolean>;
+  sidebarRef: React.RefObject<HTMLElement | null>;
+  arrivalRef: Arrival;
 };
 
 const FrameContext = createContext<Frame | null>(null);
@@ -32,6 +38,10 @@ const FrameContext = createContext<Frame | null>(null);
 const WIDE = "(min-width: 1025px)";
 /** Where collapse was kept before it moved to a cookie. */
 const LEGACY_COLLAPSED_KEY = "coscribe:sidebar-collapsed";
+/** The header and main column, while the overlay is open over them. */
+function setInert(desk: HTMLElement | null, on: boolean) {
+  desk?.querySelectorAll<HTMLElement>("[data-desk-inert]").forEach((el) => (el.inert = on));
+}
 function isTyping(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
 }
@@ -59,6 +69,11 @@ export function DeskFrame({
   const [overlayOn, setOverlayOn] = useState<string | null>(null);
   const [chosen, setChosen] = useState<{ on: string; tab: SidebarTab } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const focusingSearch = useRef(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const deskRef = useRef<HTMLDivElement>(null);
+  const opener = useRef<Element | null>(null);
+  const arrivalRef: Arrival = useRef(null);
 
   const setCollapsed = (next: boolean) => {
     setCollapsedState(next);
@@ -72,31 +87,55 @@ export function DeskFrame({
   const overlay = overlayOn === pathname;
   const tab = chosen?.on === pathname ? chosen.tab : entryId ? "bible" : "chapters";
 
+  useLayoutEffect(() => setInert(deskRef.current, overlay), [overlay]);
+
+  const dismiss = useDismiss(
+    overlay,
+    () => {
+      // At once rather than in the effect, so focus can go straight back to the breadcrumb in the header.
+      setInert(deskRef.current, false);
+      setOverlayOn(null);
+    },
+    {
+      root: sidebarRef,
+      returnTo: () => (opener.current instanceof HTMLElement && opener.current.isConnected ? opener.current : null),
+      // The scrim's own click closes it, and returns focus as well.
+      ignoreOutside: (target) => target instanceof Element && target.hasAttribute("data-scrim"),
+    }
+  );
+
+  const openOverlay = () => {
+    if (!overlay) opener.current = document.activeElement;
+    setOverlayOn(pathname);
+  };
   const setTab = (next: SidebarTab) => setChosen({ on: pathname, tab: next });
   const open = (next?: SidebarTab) => {
     if (next) setTab(next);
     if (matchMedia(WIDE).matches) setCollapsed(false);
-    else setOverlayOn(pathname);
+    else openOverlay();
   };
   const toggle = () => {
     if (matchMedia(WIDE).matches) setCollapsed(!collapsed);
-    else setOverlayOn(overlay ? null : pathname);
+    else if (overlay) dismiss(true);
+    else openOverlay();
   };
-  const close = () => setOverlayOn(null);
+  const close = (refocus = false) => dismiss(refocus);
   const keepOverlay = (path: string) => {
     if (overlay) setOverlayOn(path);
   };
   const focusSearch = () => {
+    focusingSearch.current = true;
     open();
-    requestAnimationFrame(() => searchRef.current?.focus());
+    requestAnimationFrame(() => {
+      searchRef.current?.focus();
+      focusingSearch.current = false;
+    });
   };
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
     if (e.key === "\\" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       toggle();
-    } else if (e.key === "Escape" && overlay && !e.defaultPrevented && !hasOpenLayer()) {
-      close();
     } else if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey && !isTyping(e.target)) {
       e.preventDefault();
       focusSearch();
@@ -123,17 +162,36 @@ export function DeskFrame({
 
   return (
     <FrameContext
-      value={{ collapsed, overlay, width, setWidth, tab, setTab, open, toggle, close, keepOverlay, searchRef, focusSearch }}
+      value={{
+        collapsed,
+        overlay,
+        width,
+        setWidth,
+        tab,
+        setTab,
+        open,
+        toggle,
+        close,
+        keepOverlay,
+        searchRef,
+        focusSearch,
+        focusingSearch,
+        sidebarRef,
+        arrivalRef,
+      }}
     >
-      <div
-        className={className}
-        data-desk
-        data-collapsed={collapsed || undefined}
-        data-overlay={overlay || undefined}
-        style={width ? ({ "--sidebar-width": `${width}px` } as React.CSSProperties) : undefined}
-      >
-        {children}
-      </div>
+      <ArrivalContext value={arrivalRef}>
+        <div
+          ref={deskRef}
+          className={className}
+          data-desk
+          data-collapsed={collapsed || undefined}
+          data-overlay={overlay || undefined}
+          style={width ? ({ "--sidebar-width": `${width}px` } as React.CSSProperties) : undefined}
+        >
+          {children}
+        </div>
+      </ArrivalContext>
     </FrameContext>
   );
 }
