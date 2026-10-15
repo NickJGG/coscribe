@@ -7,6 +7,7 @@ import { bioError, isAuthorColor, normalizeBio, normalizeUsername, usernameError
 import { safeNext } from "@/lib/safe-next";
 import { requireProfile } from "@/lib/viewer";
 import { isDefaultLayout, resolveToolbarLayout } from "@/lib/toolbar-layout";
+import { isValidDate } from "@/lib/changelog";
 import type { Database } from "@/lib/supabase/database.types";
 
 export type Theme = Database["public"]["Enums"]["theme"];
@@ -95,5 +96,14 @@ export async function setToolbarLayout(input: unknown): Promise<void> {
     .from("profiles")
     .update({ toolbar_layout: isDefaultLayout(layout) ? null : layout })
     .eq("id", me.userId);
+  refresh();
+}
+
+/** Clears the You menu's Changelog dot up to `date`, the newest update's. */
+export async function markChangelogSeen(date: string): Promise<void> {
+  if (!isValidDate(date)) return;
+  const me = await requireProfile("/changelog");
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ changelog_seen: date }).eq("id", me.userId);
   refresh();
 }

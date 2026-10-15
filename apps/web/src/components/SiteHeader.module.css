@@ -115,6 +115,7 @@
 }
 
 .avatarButton {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 36px;
@@ -124,6 +125,18 @@
   background: none;
   font: inherit;
   cursor: pointer;
+}
+
+/* On the Avatar's top-right edge, whatever the button's size. */
+.dot {
+  position: absolute;
+  top: calc(50% - 13px);
+  right: calc(50% - 13px);
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--paper);
 }
 
 @media (pointer: coarse) {
@@ -322,6 +335,14 @@ a.personRow:hover {
 a.menuItem:hover,
 button.menuItem:hover {
   background: var(--wash);
+}
+
+.itemDot {
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
 .theme {

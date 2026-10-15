@@ -2,6 +2,7 @@ import Link from "next/link";
 import Form from "next/form";
 import { getViewer } from "@/lib/viewer";
 import { getFriendships } from "@/lib/connections";
+import { unseenUpdateDate } from "@/lib/changelog";
 import { signOut } from "@/lib/actions/auth";
 import type { Theme } from "@/lib/actions/profile";
 import { acceptFriendRequest, removeFriendship } from "@/lib/actions/friends";
@@ -75,7 +76,7 @@ export async function SiteHeader() {
 }
 
 /** Friends, Notifications and You: the right end of every header for a signed-in User. */
-export function AccountMenus({ profile }: { profile: { id: string; username: string; author_color: string; theme: Theme } }) {
+export function AccountMenus({ profile }: { profile: Profile & { id: string } }) {
   return (
     <>
       <FriendsMenu userId={profile.id} />
@@ -161,13 +162,22 @@ async function FriendsMenu({ userId }: { userId: string }) {
   );
 }
 
-function YouMenu({ profile }: { profile: { username: string; author_color: string; theme: Theme } }) {
+type Profile = { username: string; author_color: string; theme: Theme; changelog_seen: string };
+
+async function YouMenu({ profile }: { profile: Profile }) {
+  const unseen = await unseenUpdateDate(profile.changelog_seen);
+
   return (
     <Dropdown
-      label="Your account"
+      label={unseen ? "Your account, new in Changelog" : "Your account"}
       triggerClassName={styles.avatarButton}
       panelClassName={styles.menu}
-      trigger={<Avatar name={profile.username} color={profile.author_color} />}
+      trigger={
+        <>
+          <Avatar name={profile.username} color={profile.author_color} />
+          {unseen && <span className={styles.dot} aria-hidden />}
+        </>
+      }
     >
       <Link href={`/u/${profile.username}`} className={styles.who}>
         <Avatar name={profile.username} color={profile.author_color} />
@@ -183,6 +193,15 @@ function YouMenu({ profile }: { profile: { username: string; author_color: strin
         Theme
         <ThemeSwitch theme={profile.theme} />
       </div>
+      <Link href="/changelog" className={styles.menuItem}>
+        Changelog
+        {unseen && (
+          <>
+            <span className="sr-only">, new</span>
+            <span className={styles.itemDot} aria-hidden />
+          </>
+        )}
+      </Link>
       <hr className={styles.divider} />
       <form action={signOut}>
         <button className={styles.menuItem}>Sign out</button>

@@ -190,6 +190,12 @@ export const getUpdate = cache(async (date: string): Promise<Update | null> => {
 /** The newest update's date, or null before the first one. */
 export const latestUpdateDate = cache(async (): Promise<string | null> => updateDates()[0] ?? null);
 
+/** The newest update's date when it's newer than `seen` (a profile's `changelog_seen`), else null. */
+export async function unseenUpdateDate(seen: string): Promise<string | null> {
+  const latest = await latestUpdateDate();
+  return latest && latest > seen ? latest : null;
+}
+
 function readUpdate(date: string): Update {
   const source = readFileSync(path.join(contentDir(), `${date}.md`), "utf8");
   return parseUpdate(date, source, (p) => existsSync(path.join(root(), "public", p)));
