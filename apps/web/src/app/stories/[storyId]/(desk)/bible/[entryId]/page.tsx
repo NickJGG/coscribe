@@ -5,7 +5,7 @@ import { notFound, redirect } from "next/navigation";
 import { countEntryMentions } from "@coscribe/editor";
 import { getChapters, getEntries, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { getViewer } from "@/lib/viewer";
-import { canDeleteEntries, isWriter } from "@/lib/story-roles";
+import { canDeleteEntries, canManageSnapshots, isWriter } from "@/lib/story-roles";
 import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { entryMentionEntries, type EntryMentionEntry } from "@/lib/entries";
 import { fetchStoryContent } from "@/lib/sync";
@@ -14,6 +14,10 @@ import { BackToTop } from "@/components/BackToTop";
 import { ActionForm } from "@/components/ActionForm";
 import { LiveDocument } from "@/components/LiveDocument";
 import { trashedDocument } from "@/components/TrashedDocument";
+import { SnapshotCompareProvider } from "@/components/SnapshotCompare";
+import { SnapshotCompareView } from "@/components/SnapshotCompareView";
+import { SnapshotButton } from "@/components/SnapshotButton";
+import { SnapshotHistory } from "@/components/SnapshotHistory";
 import { PinButton, PinError } from "@/components/PinnedEntries";
 import { EntryDetails, EntryName } from "@/components/EntryDetails";
 import { EntryTypePicker } from "./EntryTypePicker";
@@ -45,7 +49,22 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   }
   const { story, entries, entry, myRole } = data;
   const editable = isWriter(myRole) && story.status !== "finished";
+  const snapshots = canManageSnapshots(myRole);
+  const authors = storyAuthors(data);
   const viewer = await getViewer();
+
+  const live = (
+    <LiveDocument
+      key={entry.id}
+      kind="entry"
+      id={entry.id}
+      writer={liveWriter(data)}
+      authors={authors}
+      toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
+      entryMentions={{ storyId: story.id, entries: entries.map((e) => (e.id === entry.id ? { ...e, linkEntryMentions: false } : e)) }}
+      tools={snapshots && story.status !== "finished" && <SnapshotButton kind="entry" id={entry.id} />}
+    />
+  );
 
   return (
     <div className={styles.page}>
@@ -77,15 +96,15 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
         <PinError entryId={entry.id} className={styles.error} />
       </header>
 
-      <LiveDocument
-        key={entry.id}
-        kind="entry"
-        id={entry.id}
-        writer={liveWriter(data)}
-        authors={storyAuthors(data)}
-        toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
-        entryMentions={{ storyId: story.id, entries: entries.map((e) => (e.id === entry.id ? { ...e, linkEntryMentions: false } : e)) }}
-      />
+      {snapshots ? (
+        <SnapshotCompareProvider key={entry.id} kind="entry" id={entry.id}>
+          {live}
+          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName />
+          <SnapshotHistory kind="entry" id={entry.id} title={entry.name} />
+        </SnapshotCompareProvider>
+      ) : (
+        live
+      )}
 
       <section className={styles.entryMentioned} aria-labelledby="mentioned-in">
         <h2 id="mentioned-in" className="smallcaps">

@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core"
 import { describe, expect, it } from "vitest"
-import { diffDocuments, foldRows, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
+import { diffDocuments, foldRows, listNumbers, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
 
 type Text = string | { text: string; marks: JSONContent["marks"] }
 
@@ -351,6 +351,43 @@ describe("diffDocuments with lists", () => {
     ])
     const unquoted = diffDocuments(entry, doc(p("Her rules:"), ul(li("Never whistle."))))
     expect(unquoted.rows.map((r) => r.kind)).toEqual(["same", "same"])
+  })
+})
+
+describe("listNumbers", () => {
+  const numbers = (...content: JSONContent[]) => listNumbers(diffDocuments(doc(...content), doc(...content)).left)
+
+  it("numbers ordered items and nothing else", () => {
+    expect(numbers(p("Intro"), ol(li("a"), li("b")), ul(li("c")), p("Outro"))).toEqual([
+      undefined,
+      1,
+      2,
+      undefined,
+      undefined,
+    ])
+  })
+
+  it("restarts after a paragraph or a bulleted list", () => {
+    expect(numbers(ol(li("a")), p("Break"), ol(li("b")), ul(li("c")), ol(li("d")))).toEqual([1, undefined, 1, undefined, 1])
+  })
+
+  it("counts nested lists on their own, and carries on after them", () => {
+    expect(numbers(ol(li("a", ol(li("a1"), li("a2"))), li("b", ul(li("b1"))), li("c")))).toEqual([
+      1,
+      1,
+      2,
+      2,
+      undefined,
+      3,
+    ])
+  })
+
+  it("restarts a nested list in each item", () => {
+    expect(numbers(ul(li("a", ol(li("a1"))), li("b", ol(li("b1")))))).toEqual([undefined, 1, undefined, 1])
+  })
+
+  it("leaves an item's later paragraphs unnumbered", () => {
+    expect(numbers(ol(li("a", "more"), li("b")))).toEqual([1, undefined, 2])
   })
 })
 

@@ -10,7 +10,7 @@ export type PresentWriter = { id: string; name: string; color: string };
 
 /**
  * The open live document as the desk around it shows it. `slow` turns true once connecting has taken
- * about a second; `ready` once its text is synced and on screen. `snapshotChanged` (Chapters only) says
+ * about a second; `ready` once its text is synced and on screen. `snapshotChanged` (Chapters and Entries) says
  * whether taking a Snapshot would save anything, null until apps/sync says; `snapshotEmpty` why not.
  */
 export type LiveStatus = {

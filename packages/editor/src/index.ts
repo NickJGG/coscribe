@@ -30,6 +30,7 @@ export { countAuthorCharacters, type ContentJSON } from "./credits"
 export {
   diffDocuments,
   foldRows,
+  listNumbers,
   type DocumentDiff,
   type DiffBlock,
   type DiffOp,

@@ -229,7 +229,25 @@
 }
 
 .quoted {
-  padding-left: 1.5em;
+  --quote: 1.5em;
+  padding-left: var(--quote);
+}
+
+/* A list item's paragraph, indented a step per nesting `--depth`, with its marker hanging in the last step. */
+.listed {
+  position: relative;
+  padding-left: calc(var(--quote, 0em) + (var(--depth) + 1) * 1.6em);
+}
+
+.marker {
+  position: absolute;
+  left: calc(var(--quote, 0em) + var(--depth) * 1.6em);
+  width: 1.6em;
+  padding-right: 0.45em;
+  display: flex;
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
 }
 
 .gap {

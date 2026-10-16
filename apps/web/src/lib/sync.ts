@@ -1,6 +1,7 @@
 import type { JSONContent } from "@tiptap/core";
 import type { TextPoint } from "@coscribe/editor";
 import type { StoryFile } from "@/lib/story-file/types";
+import type { SnapshotKind } from "@/lib/snapshots";
 
 /** A server-to-server call to apps/sync, authorized with SYNC_SECRET. Callers check permissions first. */
 async function syncFetch(path: string, init: RequestInit = {}, timeout = 5000): Promise<Response> {
@@ -28,25 +29,34 @@ export async function refreshSyncAccess(storyId: string) {
   }
 }
 
+const SNAPSHOT_PATHS: Record<SnapshotKind, { document: string; snapshot: string }> = {
+  chapter: { document: "chapters", snapshot: "snapshots" },
+  entry: { document: "entries", snapshot: "entry-snapshots" },
+};
+
 /** A Snapshot's text, with its `author` marks. Null if it's gone. */
-export async function fetchSnapshotContent(snapshotId: string): Promise<JSONContent | null> {
-  const response = await syncFetch(`/snapshots/${snapshotId}`);
+export async function fetchSnapshotContent(kind: SnapshotKind, snapshotId: string): Promise<JSONContent | null> {
+  const response = await syncFetch(`/${SNAPSHOT_PATHS[kind].snapshot}/${snapshotId}`);
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`snapshot preview failed: ${response.status}`);
   return ((await response.json()) as { content: JSONContent }).content;
 }
 
-/** Applies a Snapshot to the live Chapter. False if it's gone. */
-export async function restoreSnapshotLive(snapshotId: string): Promise<boolean> {
-  const response = await syncFetch(`/snapshots/${snapshotId}/restore`, { method: "POST" });
+/** Applies a Snapshot to the live Chapter or Entry. False if it's gone. */
+export async function restoreSnapshotLive(kind: SnapshotKind, snapshotId: string): Promise<boolean> {
+  const response = await syncFetch(`/${SNAPSHOT_PATHS[kind].snapshot}/${snapshotId}/restore`, { method: "POST" });
   if (response.status === 404) return false;
   if (!response.ok) throw new Error(`snapshot restore failed: ${response.status}`);
   return true;
 }
 
-/** Snapshots the live Chapter now, unless nothing changed since the last Snapshot. */
-export async function takeSnapshotLive(chapterId: string, name: string | null): Promise<"taken" | "unchanged" | "gone"> {
-  const response = await syncFetch(`/chapters/${chapterId}/snapshot`, {
+/** Snapshots the live Chapter or Entry now, unless nothing changed since the last Snapshot. */
+export async function takeSnapshotLive(
+  kind: SnapshotKind,
+  id: string,
+  name: string | null
+): Promise<"taken" | "unchanged" | "gone"> {
+  const response = await syncFetch(`/${SNAPSHOT_PATHS[kind].document}/${id}/snapshot`, {
     method: "POST",
     body: JSON.stringify({ name }),
   });

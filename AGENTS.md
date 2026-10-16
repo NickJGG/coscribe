@@ -27,6 +27,11 @@ This Next.js has breaking changes from what you were trained on. Check `apps/web
 
 `pnpm typecheck`, `pnpm test`, `pnpm lint`.
 
+## Changelog
+
+- Only the user's `/changelog` skill writes `apps/web/src/content/changelog/`. Plans and feature work never add or edit those files, even when a plan says to.
+- Any commit that touches that folder becomes the skill's bookmark, so a feature committed with a changelog edit is left out of the next update.
+
 ## Loading skeletons
 
 - Every leaf `page.tsx` has a sibling `loading.tsx` built from the page's own CSS module (`Bar`, `Line`, `Loading` from `components/Skeleton.tsx`). Update it when the page's markup changes.

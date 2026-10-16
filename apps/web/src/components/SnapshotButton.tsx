@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { takeSnapshot } from "@/lib/actions/snapshots";
+import { SNAPSHOT_KINDS, type SnapshotKind } from "@/lib/snapshots";
 import { CameraIcon } from "./icons";
 import { useLiveStatus } from "./LiveStatus";
 import { useSnapshotCompare } from "./SnapshotCompare";
@@ -13,10 +14,10 @@ const NAME_MAX = 80;
 const SAVED_MS = 2000;
 
 /**
- * The toolbar's Snapshot button, for Co-hosts and up: a popover takes a Snapshot of the live Chapter,
+ * The toolbar's Snapshot button, for Co-hosts and up: a popover takes a Snapshot of the live Chapter or Entry,
  * optionally named. Grayed while apps/sync says there's nothing new to save.
  */
-export function SnapshotButton({ chapterId }: { chapterId: string }) {
+export function SnapshotButton({ kind, id }: { kind: SnapshotKind; id: string }) {
   const { snapshotChanged, snapshotEmpty } = useLiveStatus();
   const compare = useSnapshotCompare();
   const setHistory = useStoryPanel()?.setHistory;
@@ -48,7 +49,7 @@ export function SnapshotButton({ chapterId }: { chapterId: string }) {
 
   const submit = () =>
     startTransition(async () => {
-      const failure = await takeSnapshot(chapterId, name);
+      const failure = await takeSnapshot(kind, id, name);
       if (failure) {
         setError(failure);
         return;
@@ -95,7 +96,9 @@ export function SnapshotButton({ chapterId }: { chapterId: string }) {
           <h3 id={titleId} className={styles.title}>
             Take a Snapshot
           </h3>
-          <p className={styles.hint}>Saves this Chapter as it is right now. Find it later in History.</p>
+          <p className={styles.hint}>
+            Saves this {SNAPSHOT_KINDS[kind].noun} as it is right now. Find it later in History.
+          </p>
           <input
             className={styles.name}
             aria-label="Snapshot name"

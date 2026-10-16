@@ -254,6 +254,28 @@ export function diffDocuments(left: JSONContent, right: JSONContent): DocumentDi
   return diff
 }
 
+/**
+ * Each block's number in its ordered list, counted down one side the way the editor draws it, or undefined
+ * for anything without a number. Numbers aren't diffed, so each side counts its own.
+ */
+export function listNumbers(blocks: DiffBlock[]): (number | undefined)[] {
+  const counts: number[] = []
+  return blocks.map(({ list }) => {
+    if (!list) {
+      counts.length = 0
+      return undefined
+    }
+    counts.length = list.depth + 1
+    if (list.continued) return undefined
+    if (list.kind === "bullet") {
+      counts[list.depth] = 0
+      return undefined
+    }
+    counts[list.depth] = (counts[list.depth] ?? 0) + 1
+    return counts[list.depth]
+  })
+}
+
 /** A run of unchanged rows, `from` up to but not including `to`, folded away. */
 export type Fold = { kind: "fold"; from: number; to: number }
 export type FoldItem = { kind: "row"; row: number } | Fold

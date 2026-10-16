@@ -37,6 +37,11 @@ export function canManageChapters(actor: MemberRole | null | undefined): boolean
   return atLeast(actor, "cohost");
 }
 
+/** Take, name, compare and Restore a Chapter's or Entry's Snapshots. Mirrors the RLS on chapter_snapshots and entry_snapshots. */
+export function canManageSnapshots(actor: MemberRole | null | undefined): boolean {
+  return atLeast(actor, "cohost");
+}
+
 /** Mirrors Chapters: any Writer adds and edits Entries, Co-hosts and up delete them. */
 export function canDeleteEntries(actor: MemberRole | null | undefined): boolean {
   return atLeast(actor, "cohost");

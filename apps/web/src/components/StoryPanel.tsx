@@ -7,7 +7,7 @@ import styles from "./StoryPanel.module.css";
 
 export type PanelName = "chat" | "history" | "notes";
 
-/** The open Chapter's Snapshot history, as its footer shows it. Set while a Co-host+ has a Chapter open. */
+/** The open document's Snapshot history, as its footer shows it. Set while a Co-host+ has a Chapter or Entry open. */
 export type HistoryInfo = { latestAt: string | null };
 
 type StoryPanel = {

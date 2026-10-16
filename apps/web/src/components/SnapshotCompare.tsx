@@ -16,6 +16,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Editor } from "@tiptap/react";
 import { hasOpenLayer } from "@/lib/layers";
 import { createClient } from "@/lib/supabase/client";
+import { SNAPSHOT_KINDS, type SnapshotKind } from "@/lib/snapshots";
 import { useDeskScroll } from "./DeskScroll";
 import { isTyping } from "./FindBar";
 import { usePanelOpen, useStoryPanel } from "./StoryPanel";
@@ -23,13 +24,14 @@ import { usePanelOpen, useStoryPanel } from "./StoryPanel";
 export type Snapshot = { id: string; taken_at: string; name: string | null };
 
 type SnapshotCompareValue = {
-  /** The live Chapter's editor, whose text is the comparison's "Current text". */
+  kind: SnapshotKind;
+  /** The live document's editor, whose text is the comparison's "Current text". */
   editor: Editor | null;
   setEditor: (editor: Editor | null) => void;
   snapshots: Snapshot[] | null;
   listError: string | null;
   loadList: () => Promise<void>;
-  /** The Snapshot being compared, from `?compare=`. Null when the live Chapter shows. */
+  /** The Snapshot being compared, from `?compare=`. Null when the live document shows. */
   compare: string | null;
   /** The Snapshot it's compared with, from `&to=`. Null means the current text. */
   to: string | null;
@@ -40,7 +42,7 @@ type SnapshotCompareValue = {
 
 const CompareContext = createContext<SnapshotCompareValue | null>(null);
 
-/** The open Chapter's Snapshot comparison, or null where there is none (below Co-host, Entries). */
+/** The open Chapter's or Entry's Snapshot comparison, or null where there is none (below Co-host). */
 export function useSnapshotCompare() {
   return useContext(CompareContext);
 }
@@ -62,12 +64,20 @@ export function usePhone() {
 }
 
 /**
- * A Chapter's Snapshot list and the comparison open over it, for Co-hosts and up. The comparison lives
- * in the URL (`?compare=<id>&to=<id>`); while one is open the live Chapter stays connected but hidden,
+ * A Chapter's or Entry's Snapshot list and the comparison open over it, for Co-hosts and up. The comparison
+ * lives in the URL (`?compare=<id>&to=<id>`); while one is open the live document stays connected but hidden,
  * and the desk returns to its scroll position on exit. Esc, or closing the History panel on desktop,
  * leaves it.
  */
-export function SnapshotCompareProvider({ chapterId, children }: { chapterId: string; children: React.ReactNode }) {
+export function SnapshotCompareProvider({
+  kind,
+  id,
+  children,
+}: {
+  kind: SnapshotKind;
+  id: string;
+  children: React.ReactNode;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const pathname = usePathname();
@@ -86,12 +96,13 @@ export function SnapshotCompareProvider({ chapterId, children }: { chapterId: st
   const fetchList = useCallback(
     () =>
       supabase
-        .from("chapter_snapshots")
+        .from(SNAPSHOT_KINDS[kind].table)
         .select("id, taken_at, name")
-        .eq("chapter_id", chapterId)
+        // Not `eq`, whose types can't take a column that differs by table.
+        .filter(SNAPSHOT_KINDS[kind].column, "eq", id)
         .order("taken_at", { ascending: false })
         .limit(LIMIT),
-    [supabase, chapterId]
+    [supabase, kind, id]
   );
 
   const showList = useCallback(
@@ -156,8 +167,8 @@ export function SnapshotCompareProvider({ chapterId, children }: { chapterId: st
   }, [scroller, comparing]);
 
   const value = useMemo<SnapshotCompareValue>(
-    () => ({ editor, setEditor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit }),
-    [editor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit]
+    () => ({ kind, editor, setEditor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit }),
+    [kind, editor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit]
   );
 
   return <CompareContext value={value}>{children}</CompareContext>;

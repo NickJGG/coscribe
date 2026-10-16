@@ -189,7 +189,7 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
 
 /**
  * Word count for everyone: the open document's once it's synced, else the Story's. Members also see how
- * many Writers are here; Co-hosts and up, on a Chapter, when it was last Snapshotted and the way into
+ * many Writers are here; Co-hosts and up, on a Chapter or Entry, when it was last Snapshotted and the way into
  * History. Signed-out Viewers get one quiet way in.
  */
 export function DeskFooter({

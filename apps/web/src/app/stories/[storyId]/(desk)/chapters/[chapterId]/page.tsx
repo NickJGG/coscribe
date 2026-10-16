@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getChapters, getEntries, getOutlineHasContent, getStory, liveWriter, storyAuthors } from "@/lib/story";
 import { entryMentionEntries } from "@/lib/entries";
 import { getViewer } from "@/lib/viewer";
-import { canManageChapters, isWriter } from "@/lib/story-roles";
+import { canManageChapters, canManageSnapshots, isWriter } from "@/lib/story-roles";
 import { resolveToolbarLayout } from "@/lib/toolbar-layout";
 import { setChapterLocked } from "@/lib/actions/chapters";
 import { BackToTop } from "@/components/BackToTop";
@@ -87,7 +87,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       tools={
         manage && (
           <>
-            <SnapshotButton chapterId={chapter.id} />
+            <SnapshotButton kind="chapter" id={chapter.id} />
             <ActionForm action={setChapterLocked.bind(null, story.id, chapter.id, !chapter.locked)}>
               <button
                 className="button button-ghost button-tiny with-icon"
@@ -136,11 +136,11 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         <ChapterTitle key={chapter.id} storyId={story.id} chapterId={chapter.id} title={chapter.title} renamable={manage} />
       </header>
 
-      {canManageChapters(myRole) ? (
-        <SnapshotCompareProvider key={chapter.id} chapterId={chapter.id}>
+      {canManageSnapshots(myRole) ? (
+        <SnapshotCompareProvider key={chapter.id} kind="chapter" id={chapter.id}>
           {text}
-          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName={canManageChapters(myRole)} />
-          <SnapshotHistory chapterId={chapter.id} chapterTitle={chapter.title} />
+          <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName />
+          <SnapshotHistory kind="chapter" id={chapter.id} title={chapter.title} />
         </SnapshotCompareProvider>
       ) : (
         text

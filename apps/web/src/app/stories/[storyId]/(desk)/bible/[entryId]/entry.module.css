@@ -8,6 +8,22 @@
   gap: 24px;
 }
 
+/* A Snapshot comparison's two columns, kept clear of the History panel laid over the desk on desktop. */
+.page:has([data-compare]) {
+  max-width: calc(2 * var(--measure) + 40px + 2 * var(--gutter));
+}
+
+@media (min-width: 601px) {
+  .page:has([data-compare][data-panel-open]) {
+    max-width: calc(2 * var(--measure) + 40px + 2 * var(--gutter) + 22rem);
+    padding-right: calc(var(--gutter) + 22rem);
+  }
+}
+
+.page:has([data-compare]) > .entryMentioned {
+  display: none;
+}
+
 .header {
   display: flex;
   flex-direction: column;

@@ -6,6 +6,7 @@ import {
   canDeleteNote,
   canLeave,
   canManageChapters,
+  canManageSnapshots,
   canManageInvites,
   canRemove,
   canSwapViewer,
@@ -50,6 +51,13 @@ describe("canManageChapters", () => {
   it("allows Co-hosts and the Host only", () => {
     expect(ROLES.filter((r) => canManageChapters(r))).toEqual(["cohost", "host"]);
     expect(canManageChapters(null)).toBe(false);
+  });
+});
+
+describe("canManageSnapshots", () => {
+  it("allows Co-hosts and the Host only", () => {
+    expect(ROLES.filter((r) => canManageSnapshots(r))).toEqual(["cohost", "host"]);
+    expect(canManageSnapshots(null)).toBe(false);
   });
 });
 

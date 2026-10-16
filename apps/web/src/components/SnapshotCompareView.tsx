@@ -7,7 +7,9 @@ import { DOMSerializer, Node as PMNode } from "@tiptap/pm/model";
 import {
   chapterSchema,
   diffDocuments,
+  entrySchema,
   foldRows,
+  listNumbers,
   type DocumentDiff,
   type DiffBlock,
   type DiffRow,
@@ -17,6 +19,7 @@ import {
 } from "@coscribe/editor";
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
 import { authorColorCss } from "@/lib/profile-rules";
+import { SNAPSHOT_KINDS, type SnapshotKind } from "@/lib/snapshots";
 import { DeskToolbar } from "./DeskToolbar";
 import { Authorship, authorName, type StoryAuthor } from "./Authorship";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -35,7 +38,7 @@ type Notice = { text: string; error?: boolean };
 const takenAt = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short" });
 const timeOnly = new Intl.DateTimeFormat("en", { timeStyle: "short" });
 const HEX_COLOR = /^#[0-9a-f]{6}$/i;
-/** How long after a Restore the live Chapter's changes count as the Restore landing, not as new writing. */
+/** How long after a Restore the live document's changes count as the Restore landing, not as new writing. */
 const RESTORE_MS = 5000;
 const FLASH_MS = 1600;
 const NO_FOLDS = new Set<number>();
@@ -75,7 +78,7 @@ function shownItems(rows: DiffRow[], changesOnly: boolean, opened: Set<number>):
 }
 
 /**
- * The Snapshot comparison open over the Chapter, in place of the hidden live document: two aligned
+ * The Snapshot comparison open over the Chapter or Entry, in place of the hidden live document: two aligned
  * columns, older on the left, with removals struck through and additions tinted by their writer (on a
  * phone, one column with both inline). By default only the changes show, with a row of context around
  * each and the rest folded. The current text is frozen when the comparison opens; later edits only raise
@@ -104,7 +107,8 @@ function Comparison({
   canRestore: boolean;
   canName: boolean;
 }) {
-  const { editor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit } = useSnapshotCompare()!;
+  const { kind, editor, snapshots, listError, loadList, compare, to, openCompare, setTo, exit } = useSnapshotCompare()!;
+  const noun = SNAPSHOT_KINDS[kind].noun;
   const panelOpen = usePanelOpen("history");
   const showPanel = useStoryPanel()?.show;
   const phone = usePhone();
@@ -128,7 +132,7 @@ function Comparison({
 
   useEffect(() => {
     if (!editor) return;
-    // The live editor appears after the Chapter syncs; its text is frozen once, when it first can be.
+    // The live editor appears after the document syncs; its text is frozen once, when it first can be.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFrozen((frozen) => frozen ?? { json: editor.getJSON(), at: Date.now() });
     const onUpdate = ({ transaction }: { transaction: Transaction }) => {
@@ -146,11 +150,11 @@ function Comparison({
     for (const id of [compare, to]) {
       if (!id || requested.current.has(id)) continue;
       requested.current.add(id);
-      void previewSnapshot(id).then((result) => setContents((c) => ({ ...c, [id]: result })));
+      void previewSnapshot(kind, id).then((result) => setContents((c) => ({ ...c, [id]: result })));
     }
-  }, [compare, to]);
+  }, [kind, compare, to]);
 
-  // A Snapshot that isn't in the list (deleted, another Chapter's, a bad link) quietly isn't compared.
+  // A Snapshot that isn't in the list (deleted, another document's, a bad link) quietly isn't compared.
   useEffect(() => {
     if (!snapshots) return;
     if (!snapshots.some((s) => s.id === compare)) exit();
@@ -171,6 +175,7 @@ function Comparison({
     () => (leftJson && rightJson ? diffDocuments(leftJson, rightJson) : null),
     [leftJson, rightJson]
   );
+  const numbers = useMemo(() => diff && ([listNumbers(diff.left), listNumbers(diff.right)] as const), [diff]);
   const errors = [compare, to].flatMap((id) => (id && contents[id]?.error ? [contents[id].error] : []));
   const showsCurrent = sides?.some((s) => s.kind === "current") ?? false;
   const same = diff ? diff.additions + diff.removals === 0 : false;
@@ -211,7 +216,7 @@ function Comparison({
 
   const restore = async (snapshot: Snapshot): Promise<Notice | null> => {
     restoring.current = Infinity;
-    const error = await restoreSnapshot(snapshot.id);
+    const error = await restoreSnapshot(kind, snapshot.id);
     if (error) {
       restoring.current = 0;
       return { text: error, error: true };
@@ -258,6 +263,7 @@ function Comparison({
       {side.kind === "snapshot" && (
         <SnapshotActions
           key={side.snapshot.id}
+          kind={kind}
           snapshot={side.snapshot}
           json={(column ? rightJson : leftJson)!}
           column={columnRef}
@@ -312,11 +318,11 @@ function Comparison({
           </button>
         )}
         <button type="button" className="button button-small" onClick={exit}>
-          {phone ? "Back" : "Back to live Chapter"}
+          {phone ? "Back" : `Back to live ${noun}`}
         </button>
         {stale && showsCurrent && (
           <p className={styles.notice} role="status">
-            The Chapter has changed since you opened this. &middot;{" "}
+            The {noun} has changed since you opened this. &middot;{" "}
             <button type="button" className={styles.link} onClick={freeze}>
               Refresh
             </button>
@@ -361,6 +367,7 @@ function Comparison({
                         r={item.row}
                         row={diff.rows[item.row]!}
                         diff={diff}
+                        numbers={numbers!}
                         faded={changesOnly}
                       />
                     )
@@ -373,10 +380,12 @@ function Comparison({
               {sides.map((side, column) => (
                 <Column
                   key={column}
+                  kind={kind}
                   column={column}
                   side={side}
                   json={(column ? rightJson : leftJson)!}
                   blocks={column ? diff.right : diff.left}
+                  numbers={numbers![column]!}
                   rows={diff.rows}
                   items={same ? [] : items}
                   faded={changesOnly}
@@ -519,7 +528,21 @@ function Segments({ segments }: { segments: DiffSegment[] }) {
   });
 }
 
-function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSegment[] }) {
+/**
+ * A block as its side draws it. A list item's marker hangs in its indent, `number` for an ordered one, and is
+ * marked inserted when `newMarker`. `docPosition` doesn't count the marker (`data-list-marker`) as text.
+ */
+function BlockContent({
+  block,
+  segments,
+  number,
+  newMarker,
+}: {
+  block: DiffBlock;
+  segments?: DiffSegment[];
+  number?: number;
+  newMarker?: boolean;
+}) {
   if (block.type === "sceneBreak") return <hr data-scene-break="" />;
   if (block.element) {
     return (
@@ -530,16 +553,40 @@ function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSe
       </div>
     );
   }
+  const { list } = block;
+  const marker = list && !list.continued && (list.kind === "bullet" ? "•" : `${number}.`);
+  const className = [block.quoted && styles.quoted, list && styles.listed].filter(Boolean).join(" ") || undefined;
   return (
-    <p className={block.quoted ? styles.quoted : undefined} style={block.align && { textAlign: block.align }}>
+    <p
+      className={className}
+      style={{ textAlign: block.align, ...(list && ({ "--depth": list.depth } as React.CSSProperties)) }}
+    >
+      {marker && (
+        <span className={styles.marker} data-list-marker="" aria-hidden>
+          {newMarker ? <ins>{marker}</ins> : marker}
+        </span>
+      )}
       <Segments segments={segments ?? block.segments} />
     </p>
   );
 }
 
 /** A row on a phone's one column: the newer block, with the older one's removals inline. */
-function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: DocumentDiff; faded: boolean }) {
+function InlineRow({
+  r,
+  row,
+  diff,
+  numbers,
+  faded,
+}: {
+  r: number;
+  row: DiffRow;
+  diff: DocumentDiff;
+  numbers: readonly [(number | undefined)[], (number | undefined)[]];
+  faded: boolean;
+}) {
   const block = row.kind === "removed" ? diff.left[row.left]! : diff.right[row.right]!;
+  const number = row.kind === "removed" ? numbers[0][row.left] : numbers[1][row.right];
   return (
     <div
       className={styles.cell}
@@ -547,7 +594,12 @@ function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: Doc
       data-change={row.kind}
       data-faded={(faded && row.kind === "same") || undefined}
     >
-      <BlockContent block={block} segments={row.kind === "changed" ? row.merged : undefined} />
+      <BlockContent
+        block={block}
+        segments={row.kind === "changed" ? row.merged : undefined}
+        number={number}
+        newMarker={row.kind === "changed" && row.markerChanged}
+      />
     </div>
   );
 }
@@ -557,19 +609,23 @@ function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: Doc
  * of the DOM and a selection stays within it. The wrapper is `display: contents`.
  */
 function Column({
+  kind,
   column,
   side,
   json,
   blocks,
+  numbers,
   rows,
   items,
   faded,
   heading,
 }: {
+  kind: SnapshotKind;
   column: number;
   side: Side;
   json: JSONContent;
   blocks: DiffBlock[];
+  numbers: (number | undefined)[];
   rows: DiffRow[];
   /** The rows on show; a Fold's place is left for the full-width row the grid puts there. */
   items: FoldItem[];
@@ -586,7 +642,7 @@ function Column({
       role="group"
       aria-label={side.kind === "current" ? "Current text" : "Snapshot text"}
       onCopy={(e) => {
-        const copied = clipboardContent(json, e.currentTarget, true);
+        const copied = clipboardContent(kind, json, e.currentTarget, true);
         if (!copied) return;
         e.preventDefault();
         e.clipboardData.setData("text/html", copied.html);
@@ -615,7 +671,11 @@ function Column({
             data-change={row.kind}
             data-faded={(faded && row.kind === "same") || undefined}
           >
-            <BlockContent block={blocks[index]!} />
+            <BlockContent
+              block={blocks[index]!}
+              number={numbers[index]}
+              newMarker={column === 1 && row.kind === "changed" && row.markerChanged}
+            />
           </div>
         );
       })}
@@ -655,6 +715,7 @@ function Heading({
 }
 
 function SnapshotActions({
+  kind,
   snapshot,
   json,
   column,
@@ -664,6 +725,7 @@ function SnapshotActions({
   onRestore,
   onRenamed,
 }: {
+  kind: SnapshotKind;
   snapshot: Snapshot;
   json: JSONContent;
   /** Where Copy looks for a selection; without one it copies the whole Snapshot. */
@@ -679,6 +741,7 @@ function SnapshotActions({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [naming, setNaming] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const noun = SNAPSHOT_KINDS[kind].noun;
 
   async function run(task: () => Promise<Notice | null>) {
     setBusy(true);
@@ -692,7 +755,7 @@ function SnapshotActions({
 
   const copy = () =>
     run(async () => {
-      const { html, text, whole } = clipboardContent(json, column?.current ?? null, false)!;
+      const { html, text, whole } = clipboardContent(kind, json, column?.current ?? null, false)!;
       try {
         await navigator.clipboard.write([
           new ClipboardItem({
@@ -703,12 +766,12 @@ function SnapshotActions({
       } catch {
         return { text: "Couldn't copy. Select the text and press Ctrl+C instead.", error: true };
       }
-      return { text: `Copied ${whole ? "the whole Snapshot" : "the selection"}. Paste it into the Chapter.` };
+      return { text: `Copied ${whole ? "the whole Snapshot" : "the selection"}. Paste it into the ${noun}.` };
     });
 
   const rename = (formData: FormData) =>
     run(async () => {
-      const error = await nameSnapshot(snapshot.id, String(formData.get("name") ?? ""));
+      const error = await nameSnapshot(kind, snapshot.id, String(formData.get("name") ?? ""));
       if (error) return { text: error, error: true };
       setNaming(false);
       await onRenamed();
@@ -737,7 +800,7 @@ function SnapshotActions({
           }}
           title="Restore this Snapshot?"
           body={
-            "The Chapter's current text is saved as a Snapshot first." +
+            `The ${noun}'s current text is saved as a Snapshot first.` +
             (replacesOther ? " This replaces the current text, not the other Snapshot shown." : "")
           }
           action="Restore"
@@ -798,17 +861,18 @@ function SnapshotActions({
 }
 
 /**
- * A side's text for the clipboard, serialized from its own ProseMirror doc so the `author` marks paste
- * into the Chapter intact: the selection, if it lies within `column`, else the whole doc (or nothing,
+ * A side's text for the clipboard, serialized from its own ProseMirror doc so the `author` marks and lists
+ * paste into the document intact: the selection, if it lies within `column`, else the whole doc (or nothing,
  * with `selectionOnly`).
  */
-function clipboardContent(json: JSONContent, column: HTMLElement | null, selectionOnly: boolean) {
-  const doc = PMNode.fromJSON(chapterSchema, json);
+function clipboardContent(kind: SnapshotKind, json: JSONContent, column: HTMLElement | null, selectionOnly: boolean) {
+  const schema = kind === "chapter" ? chapterSchema : entrySchema;
+  const doc = PMNode.fromJSON(schema, json);
   const range = column && selectedRange(doc, column);
   if (!range && selectionOnly) return null;
   const [from, to] = range ?? [0, doc.content.size];
   const box = document.createElement("div");
-  box.append(DOMSerializer.fromSchema(chapterSchema).serializeFragment(doc.slice(from, to).content));
+  box.append(DOMSerializer.fromSchema(schema).serializeFragment(doc.slice(from, to).content));
   return { html: box.innerHTML, text: doc.textBetween(from, to, "\n\n"), whole: !range };
 }
 
@@ -822,8 +886,8 @@ function selectedRange(doc: PMNode, column: HTMLElement): [number, number] | nul
 }
 
 /**
- * A DOM point inside one of the column's cells, as a position in its doc: the cell's block (the n-th paragraph
- * Script line or Scene Break, at any depth, as DiffBlocks count them), plus the text before it.
+ * A DOM point inside one of the column's cells, as a position in its doc: the cell's block (the n-th paragraph,
+ * Script line or Scene Break, at any depth and in lists too, as DiffBlocks count them), plus the text before it.
  */
 function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, offset: number): number | null {
   const cell = (node instanceof Element ? node : node.parentElement)?.closest<HTMLElement>("[data-block]");
@@ -842,6 +906,8 @@ function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, of
   const before = document.createRange();
   before.selectNodeContents(cell);
   before.setEnd(node, offset);
-  const breaks = before.cloneContents().querySelectorAll("[data-line-break]").length;
-  return start + 1 + Math.min(before.toString().length + breaks, block.content.size);
+  const contents = before.cloneContents();
+  const breaks = contents.querySelectorAll("[data-line-break]").length;
+  for (const marker of contents.querySelectorAll("[data-list-marker]")) marker.remove();
+  return start + 1 + Math.min((contents.textContent ?? "").length + breaks, block.content.size);
 }

@@ -131,8 +131,8 @@ export function useLiveDocuments() {
 
 /**
  * Holds one live document open while mounted, and follows what apps/sync says about it: whether it's
- * read-only (which can change at any time), outdated, cut off or moved to the Trash, and (for Chapters)
- * the latest Snapshot state.
+ * read-only (which can change at any time), outdated, cut off or moved to the Trash, and (for Chapters and
+ * Entries) the latest Snapshot state.
  */
 export function useLiveSession(name: string, { reference = false }: { reference?: boolean } = {}) {
   const documents = useLiveDocuments();
