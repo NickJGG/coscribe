@@ -11,6 +11,9 @@
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
  *   cleared before the server starts listening. Reference connections (Pinned Entry bodies, whose token
  *   starts `ref:`) and Outlines don't count.
+ * - Writing Days: every edit a User sends to any document counts toward that day (see writing.ts). Server
+ *   writes (Restore, Import) run with no userId, so they credit nobody.
+ * - On SIGTERM, flushes Writing Days, then stores and unloads every open document before exiting.
  * - HTTP endpoints for the web app (Bearer SYNC_SECRET), which checks permissions first:
  *   - `POST /stories/<id>/refresh` re-checks every open connection to that story after the web app
  *     changes access: lowers or raises read-only live, or disconnects.
@@ -64,6 +67,7 @@ import {
   snapshotPreview,
   takeSnapshotNow,
 } from "./snapshots"
+import { noteEdit, startWritingFlush } from "./writing"
 
 type Context = {
   userId: string | null
@@ -132,6 +136,10 @@ const server = new Server<Context>({
 
   async onDisconnect({ context }) {
     depart(context)
+  },
+
+  async onChange({ context }) {
+    if (context.userId) noteEdit(context.userId)
   },
 
   async afterStoreDocument({ documentName, document }) {
@@ -264,7 +272,15 @@ async function refreshStory(instance: Hocuspocus<Context>, storyId: string) {
 }
 
 clearPresence().then(
-  () => server.listen(),
+  async () => {
+    await server.listen()
+    const stopWriting = startWritingFlush()
+    process.once("SIGTERM", async () => {
+      await stopWriting()
+      await server.destroy()
+      process.exit(0)
+    })
+  },
   (error) => {
     console.error("couldn't clear presence", error)
     process.exit(1)

@@ -92,6 +92,14 @@ _Avoid_: Quote, excerpt, highlight
 The color a **User** picks for their live cursor and their text tint, which a **Story** replaces with a free one when another **Writer** there already has it.
 _Avoid_: User color, cursor color
 
+**Writing Day**:
+A day in a **User**'s own time zone on which they edited any **Chapter**, **Entry** or **Outline**, shown on their profile shaded by their minutes writing.
+_Avoid_: Activity, contribution day
+
+**Streak**:
+A run of consecutive **Writing Days**; the current one stays alive until a whole day passes without one.
+_Avoid_: Chain, run
+
 ### Access
 
 **Visibility**:

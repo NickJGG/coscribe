@@ -409,14 +409,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "author_color": string,"bio": string | null,"changelog_seen": string,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"theme": Database["public"]['Enums']["theme"],"toolbar_layout": Json | null,"username": string
+                    "author_color": string,"bio": string | null,"changelog_seen": string,"created_at": string,"id": string,"last_seen": string | null,"show_online": boolean,"show_writing_days": boolean,"theme": Database["public"]['Enums']["theme"],"time_zone": string | null,"toolbar_layout": Json | null,"username": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_color": string,"bio"?: string | null,"changelog_seen"?: string,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"toolbar_layout"?: Json | null,"username": string
+                    "author_color": string,"bio"?: string | null,"changelog_seen"?: string,"created_at"?: string,"id": string,"last_seen"?: string | null,"show_online"?: boolean,"show_writing_days"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"time_zone"?: string | null,"toolbar_layout"?: Json | null,"username": string
                   }
                   Update: {
-                    "author_color"?: string,"bio"?: string | null,"changelog_seen"?: string,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"toolbar_layout"?: Json | null,"username"?: string
+                    "author_color"?: string,"bio"?: string | null,"changelog_seen"?: string,"created_at"?: string,"id"?: string,"last_seen"?: string | null,"show_online"?: boolean,"show_writing_days"?: boolean,"theme"?: Database["public"]['Enums']["theme"],"time_zone"?: string | null,"toolbar_layout"?: Json | null,"username"?: string
                   }
                   Relationships: [
                     
@@ -523,6 +523,46 @@ isOneToOne: false
       foreignKeyName: "story_presence_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"writing_days": {
+                  Row: {
+                    "day": string,"minutes": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "day": string,"minutes": number,"user_id": string
+                  }
+                  Update: {
+                    "day"?: string,"minutes"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "writing_days_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"writing_marks": {
+                  Row: {
+                    "last_minute": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "last_minute": string,"user_id": string
+                  }
+                  Update: {
+                    "last_minute"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "writing_marks_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -721,6 +761,9 @@ isOneToOne: false
                            },
 "set_story_notify":
 { Args: { "p_notify": string,"p_story": string }; Returns: undefined
+                           },
+"set_time_zone":
+{ Args: { "p_time_zone": string }; Returns: undefined
                            },
 "story_active":
 { Args: { "p_story": string }; Returns: boolean
