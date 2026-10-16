@@ -64,6 +64,26 @@ describe("chapter content", () => {
     expect(decodeChapter(Y.encodeStateAsUpdate(doc), "entry").toJSON()).toEqual(body)
   })
 
+  it("hashes and Restores Entry lists, telling bullets from numbers", () => {
+    const item = (text: string) => ({ type: "listItem", content: [para([text, mia])] })
+    const body = (list: string) => {
+      const attrs = list === "orderedList" ? { attrs: { start: 1, type: null } } : {}
+      return { type: "doc", content: [para(["Rules:", mia]), { type: list, ...attrs, content: [item("One"), item("Two")] }] }
+    }
+    const entry = (list: string) => {
+      const doc = new Y.Doc()
+      prosemirrorJSONToYXmlFragment(entrySchema, body(list), doc.getXmlFragment(DOCUMENT_FIELD))
+      return doc
+    }
+    const bullets = chapterContent(entry("bulletList"), "entry")
+    const numbers = chapterContent(entry("orderedList"), "entry")
+    expect(contentHash(bullets)).not.toBe(contentHash(numbers))
+
+    const live = entry("bulletList")
+    replaceChapterContent(live, decodeChapter(Y.encodeStateAsUpdate(entry("orderedList")), "entry"))
+    expect(chapterContent(live, "entry").toJSON()).toEqual(numbers.toJSON())
+  })
+
   it("round-trips block quotes, strikethrough and alignment", () => {
     const author = { type: "author", attrs: mia }
     const body = {

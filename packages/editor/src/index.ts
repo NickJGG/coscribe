@@ -170,7 +170,7 @@ export const DOCUMENT_TRASHED = "document-trashed"
 /** Stateless message apps/sync sends when a connection's edit rights change (lock, unlock). */
 export type AccessMessage = { type: "access"; readOnly: boolean }
 
-/** Stateless message apps/sync sends Chapter connections when taking a Snapshot would (or wouldn't) save anything. */
+/** Stateless message apps/sync sends Chapter and Entry connections when taking a Snapshot would (or wouldn't) save anything. */
 export type SnapshotMessage = { type: "snapshot"; changed: boolean; empty: boolean }
 
 /** Stateless message apps/sync sends a connection whose SCHEMA_VERSION isn't its own; it stays read-only. */

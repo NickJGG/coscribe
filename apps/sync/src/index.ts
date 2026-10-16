@@ -6,8 +6,8 @@
  * - onAuthenticate checks the Supabase token (optional: anonymous Viewers send none) against the
  *   story's membership, Visibility, status, and (for Chapters and their Outlines) lock state. A client whose `?schema=`
  *   isn't SCHEMA_VERSION is outdated: read-only for as long as it stays connected, and told so.
- * - Chapter Snapshots are taken from the store and unload hooks (see snapshots.ts), and open Chapters
- *   tell their connections whether taking one would save anything.
+ * - Chapter and Entry Snapshots are taken from the load, store and unload hooks (see snapshots.ts), and open
+ *   Chapters and Entries tell their connections whether taking one would save anything.
  * - Presence: connect and disconnect mirror who is where into the database (see presence.ts), which is
  *   cleared before the server starts listening. Reference connections (Pinned Entry bodies, whose token
  *   starts `ref:`) and Outlines don't count.
@@ -19,10 +19,10 @@
  *     changes access: lowers or raises read-only live, or disconnects.
  *   - `GET /stories/<id>/content` returns every Chapter and Entry body as ProseMirror JSON, for the
  *     Reader View, Credits and Export. With `?outlines=1` it adds every Outline with content, for a Draft Export.
- *   - `GET /snapshots/<id>` returns a Snapshot's content as ProseMirror JSON.
- *   - `POST /snapshots/<id>/restore` Restores a Snapshot into the live Chapter.
- *   - `POST /chapters/<id>/snapshot` takes a Snapshot of the live Chapter, with body `{ name: string | null }`:
- *     201 when taken, 409 when nothing changed since the last one, 404 when the Chapter is gone.
+ *   - `GET /snapshots/<id>` (`/entry-snapshots/<id>` for an Entry's) returns a Snapshot's content as ProseMirror JSON.
+ *   - `POST /snapshots/<id>/restore` (`/entry-snapshots/<id>/restore`) Restores a Snapshot into the live Chapter (Entry).
+ *   - `POST /chapters/<id>/snapshot` (`/entries/<id>/snapshot`) takes a Snapshot of the live Chapter (Entry), with
+ *     body `{ name: string | null }`: 201 when taken, 409 when nothing changed since the last one, 404 when it's gone.
  *   - `POST /stories/<id>/import` fills a just-created Story from an imported file (see import.ts), with body
  *     `{ userId, chapters, entries }`: 204 when imported, 400 when the body doesn't fit the schemas, 409 when the
  *     Story isn't fresh.
@@ -59,9 +59,10 @@ import { parseImportBody } from "./import-body"
 import { featurePassage, isTextPoint } from "./passages"
 import { arrive, clearPresence, depart, setMember } from "./presence"
 import {
-  chapterLoaded,
-  chapterStored,
-  chapterUnloading,
+  documentLoaded,
+  documentStored,
+  documentUnloading,
+  isSnapshotKind,
   restoreSnapshot,
   snapshotMessage,
   snapshotPreview,
@@ -80,7 +81,7 @@ type Context = {
 }
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-const ROUTE = new RegExp(`^/(stories|snapshots|chapters)/(${UUID})(?:/(refresh|restore|content|import|snapshot|feature))?(?:[?].*)?$`, "i")
+const ROUTE = new RegExp(`^/(stories|snapshots|entry-snapshots|chapters|entries)/(${UUID})(?:/(refresh|restore|content|import|snapshot|feature))?(?:[?].*)?$`, "i")
 
 const server = new Server<Context>({
   name: "coscribe-sync",
@@ -121,16 +122,19 @@ const server = new Server<Context>({
     } satisfies Context
   },
 
-  async afterLoadDocument({ documentName, document }) {
+  async afterLoadDocument({ documentName, document, context }) {
     const doc = parseDocumentName(documentName)
-    if (doc?.kind === "chapter") await snapshotting(chapterLoaded(doc.id, document))
+    if (doc && isSnapshotKind(doc.kind)) {
+      await snapshotting(documentLoaded({ kind: doc.kind, id: doc.id }, document, context.socketId !== "server"))
+    }
   },
 
   async connected({ context, connection }) {
     arrive(context, context)
     if (context.outdated) connection.sendStateless(JSON.stringify({ type: "outdated" } satisfies OutdatedMessage))
-    // Unknown until the Chapter finishes loading; chapterLoaded broadcasts it then.
-    const message = context.document.kind === "chapter" ? snapshotMessage(context.document.id) : undefined
+    // Unknown until the document finishes loading; documentLoaded broadcasts it then.
+    const { kind, id } = context.document
+    const message = isSnapshotKind(kind) ? snapshotMessage({ kind, id }) : undefined
     if (message) connection.sendStateless(message)
   },
 
@@ -144,12 +148,12 @@ const server = new Server<Context>({
 
   async afterStoreDocument({ documentName, document }) {
     const doc = parseDocumentName(documentName)
-    if (doc?.kind === "chapter") await snapshotting(chapterStored(doc.id, document))
+    if (doc && isSnapshotKind(doc.kind)) await snapshotting(documentStored({ kind: doc.kind, id: doc.id }, document))
   },
 
   async beforeUnloadDocument({ documentName, document }) {
     const doc = parseDocumentName(documentName)
-    if (doc?.kind === "chapter") await snapshotting(chapterUnloading(doc.id, document))
+    if (doc && isSnapshotKind(doc.kind)) await snapshotting(documentUnloading({ kind: doc.kind, id: doc.id }, document))
   },
 
   async onRequest({ request, response, instance }) {
@@ -190,17 +194,18 @@ async function route(
     if (!body) return response.writeHead(400).end()
     const result = await importStory(instance, id, body, (doc, storyId) => serverContext(doc.id, storyId, doc.kind))
     response.writeHead(result === "imported" ? 204 : 409).end()
-  } else if (method === "GET" && resource === "snapshots" && !action) {
-    const content = await snapshotPreview(id)
+  } else if (method === "GET" && (resource === "snapshots" || resource === "entry-snapshots") && !action) {
+    const content = await snapshotPreview(resource === "snapshots" ? "chapter" : "entry", id)
     if (!content) return response.writeHead(404).end()
     response.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ content }))
-  } else if (method === "POST" && resource === "snapshots" && action === "restore") {
-    const restored = await restoreSnapshot(instance, id, serverContext)
+  } else if (method === "POST" && (resource === "snapshots" || resource === "entry-snapshots") && action === "restore") {
+    const restored = await restoreSnapshot(instance, resource === "snapshots" ? "chapter" : "entry", id, serverContext)
     response.writeHead(restored ? 204 : 404).end()
-  } else if (method === "POST" && resource === "chapters" && action === "snapshot") {
+  } else if (method === "POST" && (resource === "chapters" || resource === "entries") && action === "snapshot") {
     const body = await readJson(request)
     const name = typeof body?.name === "string" ? body.name.trim() || null : null
-    const result = await takeSnapshotNow(instance, id, name, (storyId) => serverContext(id, storyId))
+    const kind = resource === "chapters" ? "chapter" : "entry"
+    const result = await takeSnapshotNow(instance, { kind, id }, name, (storyId) => serverContext(id, storyId, kind))
     response.writeHead({ taken: 201, unchanged: 409, gone: 404 }[result]).end()
   } else if (method === "POST" && resource === "chapters" && action === "feature") {
     const body = await readJson(request)

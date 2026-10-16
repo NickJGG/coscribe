@@ -117,11 +117,11 @@ _Avoid_: Share link, join link
 ### History and lifecycle
 
 **Snapshot**:
-A saved past state of a **Chapter**, taken automatically or on demand by a **Co-host** or **Host**, which can be named.
+A saved past state of a **Chapter**'s text or an **Entry**'s body, taken automatically or on demand by a **Co-host** or **Host**, which can be named.
 _Avoid_: Version, revision, backup
 
 **Restore**:
-Replacing a **Chapter**'s text with a **Snapshot**'s, recorded as a new change.
+Replacing a **Chapter**'s text or an **Entry**'s body with a **Snapshot**'s, recorded as a new change.
 _Avoid_: Revert, rollback, undo
 
 **Finished**:
@@ -201,7 +201,7 @@ _Avoid_: Alert, activity, update
 - A **Story** has exactly one **Host**, zero or more **Co-hosts**, and one to twelve **Writers** (the **Host** counts as one, and each has their own **Author Color**)
 - A **Story** has one or more ordered **Chapters** and exactly one **Story Bible**
 - A **Story Bible** has zero or more **Entries**
-- A **Chapter** has zero or more **Snapshots**
+- A **Chapter** or **Entry** has zero or more **Snapshots**
 - A **Chapter** has zero or more **Scripts**; a **Script** has one or more **Script Elements**
 - A **Chapter** has exactly one **Outline**, which may be empty; only **Writers** and above see it
 - An **Invite** makes exactly one **User** a **Writer** or **Viewer** of exactly one **Story**
@@ -228,4 +228,4 @@ _Avoid_: Alert, activity, update
 - "pinned" once described where a **Note** sits. Resolved: a **Note** is anchored to a passage; "pin" belongs to the **Pinned Entry**.
 - "Character" is both an **Entry Type** and a **Script Element**. Resolved: a Character **Entry** is a **Story Bible** card; a Character **Script Element** is a cue naming a speaker, which may or may not match one.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.
-- "restoring a backup" for bringing an **Export** back in. Resolved: that is an **Import**; **Restore** only ever means returning a **Chapter** to a **Snapshot**.
+- "restoring a backup" for bringing an **Export** back in. Resolved: that is an **Import**; **Restore** only ever means returning a **Chapter** or **Entry** to a **Snapshot**.
