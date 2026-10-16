@@ -46,6 +46,10 @@ _Avoid_: Home, story page, dashboard
 A **Chapter** read aloud by the browser's own voice, started with Listen, in the **Desk** or the **Reader View**. While Listening, the **Chapter** is read-only for you and clicking a paragraph moves Narration there.
 _Avoid_: TTS, read-aloud, audiobook, playback
 
+**Voice**:
+How a Character **Entry** sounds in **Narration** (Feminine, Masculine or Any, and a pitch), set by its **Writers**. Each device reads that **Character**'s dialogue in its closest matching voice, and a listener can pick a different one for themselves.
+_Avoid_: Casting, character voice setting
+
 **Scene Break**:
 The centered `* * *` divider between scenes inside a **Chapter**.
 _Avoid_: Separator, horizontal rule
@@ -233,4 +237,5 @@ _Avoid_: Alert, activity, update
 - "Character" is both an **Entry Type** and a **Script Element**. Resolved: a Character **Entry** is a **Story Bible** card; a Character **Script Element** is a cue naming a speaker, which may or may not match one.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.
 - "read aloud" for **Narration**. Resolved: it's too close to the **Reader View**; the feature is **Narration**, the button is Listen, the state is Listening.
+- "voice" is both a browser's speech voice and a Character **Entry**'s **Voice**. Resolved: a **Voice** is the portable description saved with the **Story**; the browser's voices are what each device matches it to, and what the player's Voice menu lists.
 - "restoring a backup" for bringing an **Export** back in. Resolved: that is an **Import**; **Restore** only ever means returning a **Chapter** or **Entry** to a **Snapshot**.

@@ -1,4 +1,5 @@
 import type { Node as PMNode } from "@tiptap/pm/model"
+import { type EntryMention, type EntryMentionTarget, entryNamed, findEntryMentions } from "./entry-mentions"
 
 /**
  * One step of Narration: what to say, and the part of a top-level block to highlight while saying it. `from` and
@@ -14,6 +15,16 @@ export type NarrationUnit = {
   speak: string
   pauseAfterMs: number
   kind: "sentence" | "heading" | "cue" | "pause" | "intro" | "end"
+  /** Who says it, if not the narrator. A cue carries the speaker of the Dialogue it introduces. */
+  speaker?: NarrationSpeaker
+}
+
+/** A Character Entry, or a Script cue that names no Entry: its text upper-cased with spacing collapsed. */
+export type NarrationSpeaker = { entryId: string } | { cue: string }
+
+/** A string that identifies a speaker, for maps and saved settings. */
+export function speakerKey(s: NarrationSpeaker): string {
+  return "entryId" in s ? `entry:${s.entryId}` : `cue:${s.cue}`
 }
 
 const SENTENCE_PAUSE_MS = 0
@@ -26,17 +37,30 @@ const INTRO_PAUSE_MS = 900
 /** Words that end in a full stop without ending the sentence. */
 const ABBREVIATION = /(?:^|[\s“"‘'(])(?:Mr|Mrs|Ms|Mx|Dr|St|Sr|Jr|Prof|Mt|Capt|Col|Gen|Lt|Sgt|Rev|vs|etc|e\.g|i\.e)\.\s*$/i
 
-export function narrationUnits(doc: PMNode): NarrationUnit[] {
+/**
+ * A Chapter's units in reading order. With `characters`, each unit a Character speaks names them: Script Dialogue
+ * by its cue, and the quoted words of prose dialogue as `attributeQuotes` works them out, cut from the rest of their
+ * sentence.
+ */
+export function narrationUnits(doc: PMNode, characters: readonly EntryMentionTarget[] = []): NarrationUnit[] {
   const units: NarrationUnit[] = []
+  const turns = new Turns()
   doc.forEach((node, _, block) => {
     if (node.type.name === "sceneBreak") {
+      turns.reset()
       units.push({ block, from: 0, to: 0, speak: "", pauseAfterMs: SCENE_BREAK_PAUSE_MS, kind: "pause" })
       return
     }
+    if (node.type.name === "script") turns.reset()
     let base = 0
+    let cue: NarrationSpeaker | undefined
     const visit = (textblock: PMNode) => {
       const text = textblock.textContent
-      units.push(...textblockUnits(textblock, text, block, base))
+      const element = textblock.type.name === "scriptElement" ? (textblock.attrs.element as string) : null
+      if (element === "character") cue = cueSpeaker(text, characters)
+      else if (element && element !== "dialogue" && element !== "parenthetical") cue = undefined
+      const quotes = !element && characters.length ? attributeQuotes(text, characters, turns) : []
+      units.push(...textblockUnits(element, text, block, base, cue, quotes))
       base += text.length
     }
     if (node.isTextblock) visit(node)
@@ -45,8 +69,14 @@ export function narrationUnits(doc: PMNode): NarrationUnit[] {
   return units
 }
 
-function textblockUnits(node: PMNode, text: string, block: number, base: number): NarrationUnit[] {
-  const element = node.type.name === "scriptElement" ? (node.attrs.element as string) : null
+function textblockUnits(
+  element: string | null,
+  text: string,
+  block: number,
+  base: number,
+  cue: NarrationSpeaker | undefined,
+  quotes: readonly SpokenQuote[]
+): NarrationUnit[] {
   if (element === "transition") return []
   if (element === "sceneHeading" || element === "character") {
     const [from, to] = trimmed(text, 0, text.length)
@@ -55,19 +85,166 @@ function textblockUnits(node: PMNode, text: string, block: number, base: number)
     return [
       element === "sceneHeading"
         ? { block, from: base + from, to: base + to, speak: expandSceneHeading(line), pauseAfterMs: HEADING_PAUSE_MS, kind: "heading" }
-        : { block, from: base + from, to: base + to, speak: cueName(line), pauseAfterMs: CUE_PAUSE_MS, kind: "cue" },
+        : { block, from: base + from, to: base + to, speak: cueName(line), pauseAfterMs: CUE_PAUSE_MS, kind: "cue", ...(cue && { speaker: cue }) },
     ]
   }
-  const units = sentences(text).map(([from, to]): NarrationUnit => ({
-    block,
-    from: base + from,
-    to: base + to,
-    speak: text.slice(from, to).replace(/\s+/g, " "),
-    pauseAfterMs: SENTENCE_PAUSE_MS,
-    kind: "sentence",
-  }))
+  const speaker = element === "dialogue" ? cue : undefined
+  const units: NarrationUnit[] = []
+  for (const [from, to] of sentences(text)) {
+    const cuts = [from, ...quotes.flatMap((q) => [q.from, q.to]).filter((edge) => edge > from && edge < to), to]
+    for (let i = 1; i < cuts.length; i++) {
+      const [a, b] = trimmed(text, cuts[i - 1]!, cuts[i]!)
+      if (a === b) continue
+      const said = quotes.find((q) => a >= q.from && b <= q.to)?.speaker ?? speaker
+      units.push({
+        block,
+        from: base + a,
+        to: base + b,
+        speak: text.slice(a, b).replace(/\s+/g, " "),
+        pauseAfterMs: SENTENCE_PAUSE_MS,
+        kind: "sentence",
+        ...(said && { speaker: said }),
+      })
+    }
+  }
   if (units.length) units.at(-1)!.pauseAfterMs = PARAGRAPH_PAUSE_MS
   return units
+}
+
+function cueSpeaker(line: string, characters: readonly EntryMentionTarget[]): NarrationSpeaker | undefined {
+  const name = cueName(line.trim()).trim()
+  if (!name) return undefined
+  const entry = entryNamed(name, characters)
+  return entry ? { entryId: entry.id } : { cue: name.replace(/\s+/g, " ").toUpperCase() }
+}
+
+/** A quotation in a paragraph, from its opening mark to just past its closing one. */
+export type QuoteSpan = { from: number; to: number; unclosed: boolean }
+type SpokenQuote = QuoteSpan & { speaker: NarrationSpeaker }
+
+/**
+ * The double-quoted spans in `text`, straight or curly. A quote that never closes runs to the end and is `unclosed`,
+ * as when a speech carries on into the next paragraph.
+ */
+export function quoteSpans(text: string): QuoteSpan[] {
+  const spans: QuoteSpan[] = []
+  let open = -1
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i]
+    if (open < 0 && (c === "“" || c === '"')) open = i
+    else if (open >= 0 && (c === "”" || c === '"')) {
+      spans.push({ from: open, to: i + 1, unclosed: false })
+      open = -1
+    }
+  }
+  if (open >= 0) spans.push({ from: open, to: text.length, unclosed: true })
+  return spans
+}
+
+const SPEECH_VERBS = (
+  "said says asked asks replied replies answered answers shouted shouts yelled yells called calls cried cries " +
+  "whispered whispers muttered mutters murmured murmurs told tells added adds snapped snaps sighed sighs began " +
+  "begins continued continues agreed agrees demanded demands insisted insists admitted admits laughed laughs " +
+  "growled growls hissed hisses breathed breathes screamed screams exclaimed exclaims protested protests " +
+  "offered offers warned warns explained explains repeated repeats interrupted interrupts mumbled mumbles " +
+  "grumbled grumbles stammered stammers sobbed sobs pleaded pleads promised promises suggested suggests"
+).replace(/ /g, "|")
+const VERB_AFTER = new RegExp(`^[^\\S\\n]+(?:${SPEECH_VERBS})(?![\\p{L}\\p{M}\\p{N}_])`, "iu")
+const VERB_BEFORE = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_])(?:${SPEECH_VERBS})[^\\S\\n]+$`, "iu")
+
+/** Who's speaking as one paragraph follows another: the turn-taking state of `attributeQuotes`. */
+class Turns {
+  prev?: string
+  last?: string
+  named = new Set<string>()
+  /** Who was speaking when the last quote paragraph's quote was left open: null for the narrator. */
+  open?: string | null
+
+  identify(id: string) {
+    if (id === this.last) return
+    this.prev = this.last
+    this.last = id
+  }
+
+  take(): string | undefined {
+    if (this.open !== undefined) return this.open ?? undefined
+    if (!this.prev || !this.last) return undefined
+    ;[this.prev, this.last] = [this.last, this.prev]
+    return this.last
+  }
+
+  reset() {
+    this.prev = this.last = this.open = undefined
+    this.named.clear()
+  }
+}
+
+/**
+ * The quotes in one prose paragraph that a Character speaks, as far as can be told. A speech tag in the quote's
+ * sentence ("Mara said") decides it; otherwise a paragraph naming exactly one Character outside its quotes is
+ * theirs; otherwise the speaker alternates between the last two identified, unless the last quote paragraph's quote
+ * was left open (the same speaker carries on) or a third Character has been named since the run began (no guess).
+ * Names inside quotes never count.
+ */
+function attributeQuotes(text: string, characters: readonly EntryMentionTarget[], turns: Turns): SpokenQuote[] {
+  const quotes = quoteSpans(text)
+  const names = findEntryMentions(text, characters).filter((m) => !quotes.some((q) => m.from < q.to && m.to > q.from))
+  for (const m of names) turns.named.add(m.entryId)
+
+  let ids: (string | undefined)[] = []
+  if (quotes.length) {
+    const ranges = sentences(text)
+    const tags = quotes.map((q, i) => speechTag(text, q, quotes[i - 1], quotes[i + 1], ranges, names))
+    if (tags.some(Boolean)) {
+      for (const tag of tags) if (tag) turns.identify(tag)
+      ids = tags.map((tag, i) => tag ?? tags.slice(0, i).findLast(Boolean) ?? tags.find(Boolean))
+    } else {
+      const beat = new Set(names.map((m) => m.entryId))
+      const id = beat.size === 1 ? [...beat][0]! : turns.take()
+      if (beat.size === 1) turns.identify(id!)
+      ids = quotes.map(() => id)
+    }
+    turns.open = quotes.at(-1)!.unclosed ? (ids.at(-1) ?? null) : undefined
+  }
+  if (turns.named.size >= 3) {
+    turns.prev = turns.last = undefined
+    turns.named.clear()
+  }
+  return quotes.flatMap((q, i) => {
+    const entryId = ids[i]
+    return entryId ? [{ ...q, speaker: { entryId } }] : []
+  })
+}
+
+/**
+ * The Character a quote's speech tag names: a name next to a speech verb ("Mara said", "said Mara") between the
+ * quote and the edge of its sentence or the next quote. A quote ending in `?`, `!`, `…` or a dash ends its sentence
+ * without ending the line, so its tag can be the next sentence ("“Ready?” Mara asked.").
+ */
+function speechTag(
+  text: string,
+  quote: QuoteSpan,
+  before: QuoteSpan | undefined,
+  after: QuoteSpan | undefined,
+  ranges: readonly [number, number][],
+  names: readonly EntryMention[]
+): string | undefined {
+  const at = (i: number) => ranges.findIndex(([from, to]) => i >= from && i < to)
+  const end = at(quote.to - 1)
+  const runsOn = end >= 0 && ranges[end]![1] === quote.to && /[?!…—–-]\W*$/u.test(text.slice(quote.from, quote.to))
+  const tail = ranges[runsOn ? end + 1 : end]?.[1] ?? quote.to
+  const head = ranges[at(quote.from)]?.[0] ?? quote.from
+  const regions: [number, number][] = [
+    [quote.to, Math.min(tail, after?.from ?? text.length)],
+    [Math.max(head, before?.to ?? 0), quote.from],
+  ]
+  for (const [from, to] of regions) {
+    for (const m of names) {
+      if (m.from < from || m.to > to) continue
+      if (VERB_AFTER.test(text.slice(m.to, to)) || VERB_BEFORE.test(text.slice(from, m.from))) return m.entryId
+    }
+  }
+  return undefined
 }
 
 /** `text`'s sentences as trimmed `[from, to)` ranges, keeping dialogue tags and abbreviations with their sentence. */
@@ -105,7 +282,7 @@ export function expandSceneHeading(text: string): string {
 }
 
 /** A Character cue as it's read: the name, without an extension like `(V.O.)` or `(CONT'D)`. */
-function cueName(text: string): string {
+export function cueName(text: string): string {
   return text.replace(/\s*\([^)]*\)\s*$/, "") || text
 }
 

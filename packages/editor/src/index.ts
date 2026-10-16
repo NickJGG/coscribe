@@ -53,16 +53,21 @@ export { SmartPunctuation, smartenSlice, smartenText, type SmartPunctuationStora
 export { Author, AUTHOR_RUN_MS, AuthorStamp, IMPORTED_AUTHOR, authorStampPlugin, type AuthorAttrs } from "./author"
 export {
   chapterIntro,
+  cueName,
   expandSceneHeading,
   narratedBlocks,
   narrationPoint,
   narrationPos,
   narrationUnits,
+  quoteSpans,
   sentences,
+  speakerKey,
   THE_END,
   unitAfter,
   unitAt,
+  type NarrationSpeaker,
   type NarrationUnit,
+  type QuoteSpan,
 } from "./narration"
 export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from "./passage"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
