@@ -13,6 +13,8 @@ import { PinnedSlot, PinnedSlotProvider } from "@/components/PinnedColumn";
 import { useHereNow } from "@/components/StoryPresence";
 import { PanelSlot, usePanelOpen, useStoryPanel } from "@/components/StoryPanel";
 import { useArrival } from "@/components/DeskArrival";
+import { NarrationPlayer } from "@/components/narration/NarrationPlayer";
+import { NarrationProvider } from "@/components/narration/NarrationProvider";
 import styles from "./desk.module.css";
 
 const SCROLL_KEY = "coscribe:desk-scroll:";
@@ -74,7 +76,7 @@ function show(page: HTMLElement, selector: string, all: boolean, otherwise: () =
 
 /**
  * The column beside the sidebar: the open document's toolbar row, the scrolling page, the footer, and
- * the right panel over all three. Pinned Entries too narrow to sit beside a Chapter go over the page's left. Each document reopens where this browser tab last left it,
+ * the right panel over all three. Narration's player sits above the footer while a Chapter is read aloud. Pinned Entries too narrow to sit beside a Chapter go over the page's left. Each document reopens where this browser tab last left it,
  * once its text has synced; until then nothing is saved, so the empty page can't overwrite the position.
  * A `#entry-mention-<entryId>` link opens at that Entry's first Entry Mention instead, a `?find=…&n=` link at that
  * search match (again on every step), and a `?note=` link leaves it to the Note.
@@ -160,30 +162,33 @@ export function DeskMain({ footer, children }: { footer: React.ReactNode; childr
   }, [doc, ready, finding]);
 
   return (
-    <DeskToolbar.Provider>
-      <PinnedSlotProvider>
-        <BackToTopSlot.Provider>
-          <div className={styles.main} data-desk-inert>
-            <DeskToolbar.Target className={styles.toolbarSlot} />
-            <div className={styles.page}>
-              <div
-                ref={scroller}
-                className={styles.scroll}
-                onScroll={(e) => {
-                  if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
-                }}
-              >
-                <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+    <NarrationProvider>
+      <DeskToolbar.Provider>
+        <PinnedSlotProvider>
+          <BackToTopSlot.Provider>
+            <div className={styles.main} data-desk-inert>
+              <DeskToolbar.Target className={styles.toolbarSlot} />
+              <div className={styles.page}>
+                <div
+                  ref={scroller}
+                  className={styles.scroll}
+                  onScroll={(e) => {
+                    if (restored.current) writeScroll(restored.current, e.currentTarget.scrollTop);
+                  }}
+                >
+                  <DeskScrollContext value={scroller}>{children}</DeskScrollContext>
+                </div>
+                <PinnedSlot />
+                <BackToTopSlot.Target />
               </div>
-              <PinnedSlot />
-              <BackToTopSlot.Target />
+              <NarrationPlayer />
+              {footer}
+              <PanelSlot />
             </div>
-            {footer}
-            <PanelSlot />
-          </div>
-        </BackToTopSlot.Provider>
-      </PinnedSlotProvider>
-    </DeskToolbar.Provider>
+          </BackToTopSlot.Provider>
+        </PinnedSlotProvider>
+      </DeskToolbar.Provider>
+    </NarrationProvider>
   );
 }
 

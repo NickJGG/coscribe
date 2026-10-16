@@ -1,13 +1,24 @@
 import { describe, expect, it } from "vitest"
 import { chapterSchema } from "./index"
-import { chapterIntro, expandSceneHeading, narratedBlocks, narrationUnits, sentences, unitAt } from "./narration"
+import {
+  chapterIntro,
+  expandSceneHeading,
+  narratedBlocks,
+  narrationPoint,
+  narrationPos,
+  narrationUnits,
+  sentences,
+  unitAfter,
+  unitAt,
+} from "./narration"
 
 const text = (text: string, ...marks: { type: string }[]) => ({ type: "text", text, ...(marks.length ? { marks } : {}) })
 const paragraph = (...runs: object[]) => ({ type: "paragraph", content: runs })
 const quote = (...paragraphs: object[]) => ({ type: "blockquote", content: paragraphs })
 const line = (element: string, words: string) => ({ type: "scriptElement", attrs: { element }, content: [text(words)] })
 const script = (...lines: object[]) => ({ type: "script", content: lines })
-const units = (...content: object[]) => narrationUnits(chapterSchema.nodeFromJSON({ type: "doc", content }))
+const doc = (...content: object[]) => chapterSchema.nodeFromJSON({ type: "doc", content })
+const units = (...content: object[]) => narrationUnits(doc(...content))
 const spoken = (...content: object[]) => units(...content).map((u) => u.speak)
 
 describe("sentences", () => {
@@ -113,5 +124,46 @@ describe("unitAt", () => {
 
   it("counts the blocks read from", () => {
     expect(narratedBlocks(all)).toEqual([0, 2])
+  })
+})
+
+describe("unitAfter", () => {
+  const all = units(paragraph(text("One. Two.")), { type: "sceneBreak" }, paragraph(text("Three.")))
+
+  it("passes over a unit the point is inside, and a pause it's at", () => {
+    expect(unitAfter(all, 0, 4)).toBe(1)
+    expect(unitAfter(all, 0, 2)).toBe(1)
+    expect(unitAfter(all, 0, 9)).toBe(2)
+    expect(unitAfter(all, 1, 0)).toBe(3)
+    expect(unitAfter(all, 2, 6)).toBe(-1)
+  })
+})
+
+describe("narrationPos and narrationPoint", () => {
+  const d = doc(
+    paragraph(text("Up"), { type: "hardBreak" }, text("down.")),
+    quote(paragraph(text("Dear Sam.")), paragraph(text("Come home."))),
+    { type: "sceneBreak" },
+    paragraph(text("End."))
+  )
+  const at = (pos: number, length: number) => d.textBetween(pos, pos + length)
+
+  it("finds a point's text, past line breaks and into a quote's paragraphs", () => {
+    expect(at(narrationPos(d, 0, 3), 4)).toBe("down")
+    expect(at(narrationPos(d, 1, 5), 3)).toBe("Sam")
+    expect(at(narrationPos(d, 1, 9), 4)).toBe("Come")
+    expect(at(narrationPos(d, 3, 0), 4)).toBe("End.")
+  })
+
+  it("biases a seam between a quote's paragraphs either way", () => {
+    expect(d.resolve(narrationPos(d, 1, 9, -1)).parent.textContent).toBe("Dear Sam.")
+    expect(d.resolve(narrationPos(d, 1, 9, 1)).parent.textContent).toBe("Come home.")
+    expect(d.resolve(narrationPos(d, 1, 19)).parent.textContent).toBe("Come home.")
+  })
+
+  it("round-trips", () => {
+    for (const [block, offset] of [[0, 0], [0, 3], [0, 8], [1, 5], [1, 12], [2, 0], [3, 2]] as const) {
+      expect(narrationPoint(d, narrationPos(d, block, offset))).toEqual({ block, offset })
+    }
   })
 })

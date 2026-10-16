@@ -133,3 +133,61 @@ export function narratedBlocks(units: readonly NarrationUnit[]): number[] {
   for (const u of units) if (u.block >= 0 && u.kind !== "pause" && blocks.at(-1) !== u.block) blocks.push(u.block)
   return blocks
 }
+
+/**
+ * The index of the first unit that starts at or after a point (one that's only partly after it is passed over), or
+ * -1. What follows a unit once its end is found again in a document others may have edited since.
+ */
+export function unitAfter(units: readonly NarrationUnit[], block: number, offset: number): number {
+  return units.findIndex((u) => u.block > block || (u.block === block && u.from >= offset && u.to > offset))
+}
+
+/**
+ * The document position of `offset` characters into top-level block `block`'s text, as `narrationUnits` counts
+ * them. At the seam between two text blocks of a quote or Script, `bias` 1 picks the start of the later one and -1
+ * the end of the earlier.
+ */
+export function narrationPos(doc: PMNode, block: number, offset: number, bias: 1 | -1 = 1): number {
+  if (block >= doc.childCount) return doc.content.size
+  let start = 0
+  for (let i = 0; i < block; i++) start += doc.child(i).nodeSize
+  const top = doc.child(block)
+  if (top.isTextblock) return start + 1 + textblockPos(top, offset)
+  if (top.isLeaf) return start
+
+  let rest = offset
+  let found: number | null = null
+  let lastEnd = start + 1
+  top.descendants((child, pos) => {
+    if (found !== null) return false
+    if (!child.isTextblock) return true
+    const length = child.textContent.length
+    const at = start + 1 + pos + 1
+    if (rest < length || (rest === length && bias < 0)) found = at + textblockPos(child, rest)
+    else rest -= length
+    lastEnd = at + child.content.size
+    return false
+  })
+  return found ?? lastEnd
+}
+
+function textblockPos(node: PMNode, offset: number): number {
+  let pos = 0
+  let chars = 0
+  for (let i = 0; i < node.childCount; i++) {
+    const child = node.child(i)
+    const length = child.isText ? child.text!.length : (child.type.spec.leafText?.(child).length ?? 0)
+    if (offset <= chars + length) return pos + (child.isText || offset === chars ? offset - chars : child.nodeSize)
+    chars += length
+    pos += child.nodeSize
+  }
+  return pos
+}
+
+/** Where document position `pos` is in Narration's coordinates: the inverse of `narrationPos`. */
+export function narrationPoint(doc: PMNode, pos: number): { block: number; offset: number } {
+  const $pos = doc.resolve(pos)
+  const block = $pos.index(0)
+  if ($pos.depth === 0) return { block, offset: 0 }
+  return { block, offset: doc.textBetween($pos.before(1), pos).length }
+}

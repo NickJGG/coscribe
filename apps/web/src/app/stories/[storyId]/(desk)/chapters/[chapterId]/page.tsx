@@ -69,6 +69,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       writer={writer}
       authors={authors}
       entryMentions={{ storyId: story.id, entries: mentionEntries }}
+      narration={{ number: index + 1, title: chapter.title }}
       toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
       outline={
         isWriter(myRole) && (

@@ -25,6 +25,8 @@ export type NarrationSource = {
   next(cursor: NarrationCursor | null): NarrationCursor | null;
   /** The first unit of top-level block `block`, or the first after it. */
   at(block: number): NarrationCursor | null;
+  /** `cursor` found again in text that may have changed since, as on resuming; null if nothing's left from there. */
+  refresh?(cursor: NarrationCursor): NarrationCursor | null;
   /** The top-level blocks with text to read, in order. */
   blocks(): number[];
   highlight(unit: NarrationUnit | null): void;
@@ -207,7 +209,7 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
       stop,
       pause,
       jumpTo,
-      resume: () => void play(s.cursor),
+      resume: () => void play(s.cursor && s.source?.refresh ? s.source.refresh(s.cursor) : s.cursor),
       /** -1 goes back to this paragraph's start, or the one before if already there; 1 to the next. */
       skip(direction: -1 | 1) {
         const { source, cursor } = s;
@@ -257,7 +259,7 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
     const fromPlayer = (e: Event) => e.target instanceof Element && e.target.closest("[data-narration-player]");
     const onScroll = (e: Event) => !fromPlayer(e) && api.unfollow();
     const onKey = (e: KeyboardEvent) => {
-      const field = e.target instanceof Element && e.target.closest("input, textarea, select, button, [contenteditable]");
+      const field = e.target instanceof Element && e.target.closest('input, textarea, select, button, [contenteditable="true"]');
       if (SCROLL_KEYS.has(e.key) && !field) api.unfollow();
     };
     addEventListener("wheel", onScroll, { passive: true });

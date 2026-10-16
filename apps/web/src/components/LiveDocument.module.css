@@ -73,6 +73,19 @@
   background: var(--accent);
 }
 
+/* Where the Formatting toolbar was, while Listening. */
+.listening {
+  margin: 0;
+}
+
+.listening kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.9em;
+}
+
 .toolbar {
   display: flex;
   align-items: center;
@@ -324,6 +337,29 @@
   content: "* * *";
   color: var(--ink-muted);
   letter-spacing: 0.5em;
+}
+
+/* While Listening, a click on a paragraph reads from there: it's tinted on hover, with a play mark in the margin. */
+.prose[data-narrating] > * {
+  position: relative;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.prose[data-narrating] > :hover {
+  background: var(--wash);
+  box-shadow: 0 0 0 4px var(--wash);
+}
+
+.prose[data-narrating] > :not(hr):hover::before {
+  content: "";
+  position: absolute;
+  top: calc(0.9em - 5px);
+  left: -22px;
+  width: 9px;
+  height: 10px;
+  background: var(--ink-muted);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
 .prose :global(hr.ProseMirror-selectednode) {

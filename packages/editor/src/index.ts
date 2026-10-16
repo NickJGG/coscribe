@@ -55,9 +55,12 @@ export {
   chapterIntro,
   expandSceneHeading,
   narratedBlocks,
+  narrationPoint,
+  narrationPos,
   narrationUnits,
   sentences,
   THE_END,
+  unitAfter,
   unitAt,
   type NarrationUnit,
 } from "./narration"

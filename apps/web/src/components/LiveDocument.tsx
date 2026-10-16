@@ -26,6 +26,8 @@ import { useArrival } from "./DeskArrival";
 import { DeskToolbar } from "./DeskToolbar";
 import { FormattingToolbar } from "./FormattingToolbar";
 import { Find, findKey, type FindConfig } from "./Find";
+import { Narration } from "./Narration";
+import { DeskListen, useDeskNarration, type NarratedChapter } from "./narration/DeskListen";
 import { FindBar } from "./FindBar";
 import { EntryMentionCards, entryMentionKey, EntryMentions, type EntryMentionConfig } from "./EntryMentions";
 import { useSnapshotCompare } from "./SnapshotCompare";
@@ -89,6 +91,8 @@ const TabKey = Extension.create({
  * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
+ * `narration` makes a Chapter listenable: while Listening it's read-only for everyone, and the toolbar row says how
+ * to get back to editing.
  *
  * `embedded` is a Pinned Entry's body beside a Chapter: a reference connection with no toolbar, Notes, find
  * or Snapshots, which tells the desk nothing and doesn't count as being in the document.
@@ -102,6 +106,7 @@ export function LiveDocument({
   outline,
   toolbarLayout = DEFAULT_TOOLBAR_LAYOUT,
   entryMentions,
+  narration = null,
   embedded = false,
 }: {
   kind: LiveKind;
@@ -112,6 +117,7 @@ export function LiveDocument({
   outline?: React.ReactNode;
   toolbarLayout?: ToolbarLayout;
   entryMentions?: DocumentEntryMentions;
+  narration?: NarratedChapter;
   embedded?: boolean;
 }) {
   const name = documentName(kind, id);
@@ -131,7 +137,10 @@ export function LiveDocument({
   const notes = embedded ? null : notesContext;
   const compare = embedded ? null : compareContext;
   const pinsSwitch = usePinsSwitch(entryMentions?.entries ?? NO_ENTRY_MENTIONS);
-  const toolbarShown = !outdated && !!editor && !readOnly;
+  const narrated = embedded ? null : narration;
+  const listen = useDeskNarration(editor, narrated, !readOnly);
+  const { listening } = listen;
+  const toolbarShown = !outdated && !!editor && !readOnly && !listening;
   // Turning read-only unmounts the Formatting toolbar and its draft; don't resume customizing after.
   if (customizing && !toolbarShown) setCustomizing(false);
   const attachCompare = compare?.setEditor;
@@ -176,6 +185,11 @@ export function LiveDocument({
 
   usePresence(embedded ? null : (session?.provider ?? null));
 
+  const stopListening = listen.stop;
+  useEffect(() => {
+    if (comparing && listening) stopListening();
+  }, [comparing, listening, stopListening]);
+
   // The page re-renders as the Trash notice, with who did it and Restore.
   useEffect(() => {
     if (connection === "trashed") router.refresh();
@@ -202,6 +216,11 @@ export function LiveDocument({
         <DeskToolbar.Fill>
           <div className={styles.toolRow}>
             {outdated && <Outdated />}
+            {listening && !readOnly && (
+              <p className={styles.listening} role="status">
+                Listening · press <kbd>Esc</kbd> or Stop to edit
+              </p>
+            )}
             {toolbarShown && (
               <FormattingToolbar
                 editor={editor}
@@ -219,6 +238,7 @@ export function LiveDocument({
             <div ref={asideRef} className={styles.toolAside}>
               {findQuery && <FindBar kind={kind} id={id} query={findQuery} current={findCurrent} editor={editor} />}
               {tools}
+              {narrated && <DeskListen source={listen.source} listening={listening} />}
               {outline}
               {notes && <NotesButton />}
               {kind === "chapter" && <PinnedButton entries={entryMentions?.entries ?? NO_ENTRY_MENTIONS} />}
@@ -255,7 +275,7 @@ export function LiveDocument({
               embedded={embedded}
               session={session}
               writer={writer}
-              editable={!readOnly}
+              editable={!readOnly && !listening}
               entryMentions={entryMentions?.entries}
               notes={noteOptions}
               find={{ query: findQuery, current: findCurrent }}
@@ -343,6 +363,7 @@ function LiveEditor({
       EntryMentions.configure({ entries: entryMentions, focusable: !editable }),
       ...(notes ? [NoteHighlights.configure(notes)] : []),
       Find.configure(find),
+      ...(kind === "chapter" && !embedded ? [Narration] : []),
       ...(kind === "chapter" && !embedded ? [CueSuggestions] : []),
       TabKey,
     ],
