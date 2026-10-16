@@ -8,8 +8,15 @@ export type DiffOp = "same" | "del" | "ins"
 export type DiffSegment = { text: string; marks?: JSONContent["marks"]; op: DiffOp }
 
 /**
+ * Where a paragraph sits in a list: its list's kind and nesting `depth` (0 at the top level). A list
+ * item's first paragraph carries its marker; the item's later paragraphs are `continued`, drawn without one.
+ */
+export type DiffList = { kind: "bullet" | "ordered"; depth: number; continued?: true }
+
+/**
  * A paragraph or Scene Break of one side, cut into segments (a Scene Break has none). A block quote's
- * paragraphs are blocks of their own, marked `quoted`, and so are a Script's lines, with their `element`.
+ * paragraphs are blocks of their own, marked `quoted`, and so are a Script's lines, with their `element`,
+ * and a list's paragraphs, with their `list`.
  */
 export type DiffBlock = {
   type: "paragraph" | "sceneBreak"
@@ -17,19 +24,21 @@ export type DiffBlock = {
   quoted?: boolean
   align?: "center" | "right"
   element?: ScriptElementType
+  list?: DiffList
 }
 
 /**
  * One aligned row: a block index on each side it has a block on. A changed row also has `merged`, both
- * sides' segments interleaved in reading order (the right side's for unchanged text), for one inline column.
+ * sides' segments interleaved in reading order (the right side's for unchanged text), for one inline column,
+ * and `markerChanged` when the two sides' list structure differs.
  */
 export type DiffRow =
   | { kind: "same"; left: number; right: number }
-  | { kind: "changed"; left: number; right: number; merged: DiffSegment[] }
+  | { kind: "changed"; left: number; right: number; merged: DiffSegment[]; markerChanged?: true }
   | { kind: "removed"; left: number; right?: never }
   | { kind: "added"; right: number; left?: never }
 
-export type ChapterDiff = {
+export type DocumentDiff = {
   rows: DiffRow[]
   left: DiffBlock[]
   right: DiffBlock[]
@@ -42,14 +51,26 @@ const PAIR_SIMILARITY = 0.5
 const SCENE_BREAK_KEY = "\u0000sceneBreak"
 
 type Run = { text: string; marks?: JSONContent["marks"] }
-type Block = Pick<DiffBlock, "type" | "quoted" | "align" | "element"> & { runs: Run[]; text: string; key: string }
+type Block = Pick<DiffBlock, "type" | "quoted" | "align" | "element" | "list"> & { runs: Run[]; text: string; key: string }
 type Range = { length: number; op: DiffOp }
 
-function blocksOf(doc: JSONContent): Block[] {
+/** `depth` is the depth a list met here would have. */
+function blocksOf(doc: JSONContent, depth = 0): Block[] {
   return (doc.content ?? []).flatMap((node): Block[] => {
     if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }]
-    if (node.type === "blockquote") return blocksOf(node).map((block) => ({ ...block, quoted: true }))
+    if (node.type === "blockquote") return blocksOf(node, depth).map((block) => ({ ...block, quoted: true }))
     if (node.type === "script") return blocksOf(node)
+    if (node.type === "bulletList" || node.type === "orderedList") {
+      const kind = node.type === "bulletList" ? "bullet" : "ordered"
+      return (node.content ?? []).flatMap((item) =>
+        blocksOf(item, depth + 1).map((block, n) => {
+          // A nested list's paragraphs already have their own.
+          if (block.list || block.type !== "paragraph") return block
+          const list: DiffList = { kind, depth, ...(n > 0 && { continued: true }) }
+          return { ...block, list, key: listKey(list, block.text) }
+        })
+      )
+    }
     const runs = (node.content ?? []).flatMap((n): Run[] => {
       if (n.type === "hardBreak") return [{ text: "\n", marks: n.marks }]
       return n.type === "text" && n.text ? [{ text: n.text, marks: n.marks }] : []
@@ -69,11 +90,21 @@ function blocksOf(doc: JSONContent): Block[] {
   })
 }
 
-function look(block: Block): Pick<DiffBlock, "quoted" | "align" | "element"> {
+/** Text plus list structure, so a paragraph that changes structure no longer anchors as unchanged. */
+function listKey(list: DiffList, text: string): string {
+  return `\u0000${list.kind}${list.depth}${list.continued ? "+" : ""}\u0000${text}`
+}
+
+function sameList(a?: DiffList, b?: DiffList): boolean {
+  return a?.kind === b?.kind && a?.depth === b?.depth && a?.continued === b?.continued
+}
+
+function look(block: Block): Pick<DiffBlock, "quoted" | "align" | "element" | "list"> {
   return {
     ...(block.quoted && { quoted: true }),
     ...(block.align && { align: block.align }),
     ...(block.element && { element: block.element }),
+    ...(block.list && { list: block.list }),
   }
 }
 
@@ -122,15 +153,17 @@ function changeRuns(ranges: Range[], op: DiffOp): number {
 }
 
 /**
- * What changed from `left` to `right`, two Chapters' ProseMirror JSON. Blocks are aligned first (equal
- * text anchors, then leftover paragraphs paired by word similarity), then words are diffed inside each
- * pair. Only text counts: formatting, quoting, alignment, Script elements, `author` and `note` changes are not differences,
- * and each side's blocks and segments keep that side's own look and marks.
+ * What changed from `left` to `right`, two Chapters' or two Entries' ProseMirror JSON. Blocks are aligned
+ * first (equal text and list structure anchor, then leftover paragraphs pair by word similarity), then
+ * words are diffed inside each pair. Only text and list structure count: a new list marker (a paragraph
+ * becoming a list item or the reverse, bullet ↔ numbered, a depth change) is one addition, while
+ * renumbering, formatting, quoting, alignment, Script elements, `author` and `note` changes are not
+ * differences. Each side's blocks and segments keep that side's own look and marks.
  */
-export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff {
+export function diffDocuments(left: JSONContent, right: JSONContent): DocumentDiff {
   const a = blocksOf(left)
   const b = blocksOf(right)
-  const diff: ChapterDiff = {
+  const diff: DocumentDiff = {
     rows: [],
     left: a.map((block) => whole(block, "same")),
     right: b.map((block) => whole(block, "same")),
@@ -170,11 +203,12 @@ export function diffChapters(left: JSONContent, right: JSONContent): ChapterDiff
       if (!part.added) l++
       merged.push(...rights[r++]!)
     }
-    diff.rows.push({ kind: "changed", left: i, right: j, merged })
+    const markerChanged = !sameList(a[i]!.list, b[j]!.list)
+    diff.rows.push({ kind: "changed", left: i, right: j, merged, ...(markerChanged && { markerChanged }) })
     diff.left[i] = { type: "paragraph", segments: lefts.flat(), ...look(a[i]!) }
     diff.right[j] = { type: "paragraph", segments: rights.flat(), ...look(b[j]!) }
     diff.removals += changeRuns(leftRanges, "del")
-    diff.additions += changeRuns(rightRanges, "ins")
+    diff.additions += changeRuns(rightRanges, "ins") + (markerChanged ? 1 : 0)
   }
 
   /** Pairs an unmatched stretch in order; whatever is left is removed before added at each spot. */

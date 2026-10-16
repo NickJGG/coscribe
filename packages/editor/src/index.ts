@@ -28,9 +28,9 @@ export {
 export { type Alignment } from "./format"
 export { countAuthorCharacters, type ContentJSON } from "./credits"
 export {
-  diffChapters,
+  diffDocuments,
   foldRows,
-  type ChapterDiff,
+  type DocumentDiff,
   type DiffBlock,
   type DiffOp,
   type DiffRow,

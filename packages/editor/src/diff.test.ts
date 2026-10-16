@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core"
 import { describe, expect, it } from "vitest"
-import { diffChapters, foldRows, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
+import { diffDocuments, foldRows, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
 
 type Text = string | { text: string; marks: JSONContent["marks"] }
 
@@ -28,6 +28,19 @@ function script(...lines: [string, string][]): JSONContent {
   }
 }
 
+/** A list item; a string is a paragraph of that text. */
+function li(...content: (string | JSONContent)[]): JSONContent {
+  return { type: "listItem", content: content.map((c) => (typeof c === "string" ? p(c) : c)) }
+}
+
+function ul(...items: JSONContent[]): JSONContent {
+  return { type: "bulletList", content: items }
+}
+
+function ol(...items: JSONContent[]): JSONContent {
+  return { type: "orderedList", attrs: { start: 1 }, content: items }
+}
+
 function doc(...blocks: JSONContent[]): JSONContent {
   return { type: "doc", content: blocks }
 }
@@ -46,10 +59,10 @@ function show(block: DiffBlock): string {
   return showSegments(block.segments)
 }
 
-describe("diffChapters", () => {
+describe("diffDocuments", () => {
   it("finds nothing between identical Chapters", () => {
     const chapter = doc(p("The tide came in."), hr, p("Morning."))
-    const diff = diffChapters(chapter, chapter)
+    const diff = diffDocuments(chapter, chapter)
     expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same"])
     expect(diff.additions).toBe(0)
     expect(diff.removals).toBe(0)
@@ -57,7 +70,7 @@ describe("diffChapters", () => {
   })
 
   it("diffs a word changed mid-sentence", () => {
-    const diff = diffChapters(doc(p("The quick fox ran.")), doc(p("The slow fox ran.")))
+    const diff = diffDocuments(doc(p("The quick fox ran.")), doc(p("The slow fox ran.")))
     expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0 }])
     expect(show(diff.left[0]!)).toBe("The [-quick-] fox ran.")
     expect(show(diff.right[0]!)).toBe("The {+slow+} fox ran.")
@@ -66,7 +79,7 @@ describe("diffChapters", () => {
   })
 
   it("aligns an added paragraph with a gap on the left", () => {
-    const diff = diffChapters(doc(p("One."), p("Three.")), doc(p("One."), p("Two, new."), p("Three.")))
+    const diff = diffDocuments(doc(p("One."), p("Three.")), doc(p("One."), p("Two, new."), p("Three.")))
     expect(diff.rows).toEqual([
       { kind: "same", left: 0, right: 0 },
       { kind: "added", right: 1 },
@@ -77,7 +90,7 @@ describe("diffChapters", () => {
   })
 
   it("aligns a removed paragraph with a gap on the right", () => {
-    const diff = diffChapters(doc(p("One."), p("Two."), p("Three.")), doc(p("One."), p("Three.")))
+    const diff = diffDocuments(doc(p("One."), p("Two."), p("Three.")), doc(p("One."), p("Three.")))
     expect(diff.rows).toEqual([
       { kind: "same", left: 0, right: 0 },
       { kind: "removed", left: 1 },
@@ -88,7 +101,7 @@ describe("diffChapters", () => {
   })
 
   it("pairs a rewritten paragraph by similarity, and leaves an unrelated one removed and added", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p("She walked down to the harbour at dawn."), p("Gulls.")),
       doc(p("She walked slowly down to the harbour at dawn."), p("Nothing alike here at all."))
     )
@@ -101,12 +114,12 @@ describe("diffChapters", () => {
   })
 
   it("puts removed rows before added rows at the same spot", () => {
-    const diff = diffChapters(doc(p("Alpha"), p("Old line.")), doc(p("Alpha"), p("Totally different words.")))
+    const diff = diffDocuments(doc(p("Alpha"), p("Old line.")), doc(p("Alpha"), p("Totally different words.")))
     expect(diff.rows.map((r) => r.kind)).toEqual(["same", "removed", "added"])
   })
 
   it("treats a Scene Break as a block", () => {
-    const diff = diffChapters(doc(p("Before."), p("After.")), doc(p("Before."), hr, p("After.")))
+    const diff = diffDocuments(doc(p("Before."), p("After.")), doc(p("Before."), hr, p("After.")))
     expect(diff.rows).toEqual([
       { kind: "same", left: 0, right: 0 },
       { kind: "added", right: 1 },
@@ -117,7 +130,7 @@ describe("diffChapters", () => {
   })
 
   it("ignores mark-only changes", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p({ text: "Bold move.", marks: [mia] })),
       doc(p({ text: "Bold", marks: [ben, bold] }, { text: " move.", marks: [ben] }))
     )
@@ -130,7 +143,7 @@ describe("diffChapters", () => {
   })
 
   it("keeps each text node's marks across split segments", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p({ text: "The tide ", marks: [mia] }, { text: "came in fast", marks: [mia, bold] })),
       doc(p({ text: "The tide ", marks: [mia] }, { text: "came in ", marks: [mia, bold] }, { text: "slowly", marks: [ben] }))
     )
@@ -148,7 +161,7 @@ describe("diffChapters", () => {
 
   it("flattens a block quote into rows of its paragraphs", () => {
     const chapter = doc(p("Before."), quote(p("Dear Ann,"), p("Come home.")), hr)
-    const diff = diffChapters(chapter, chapter)
+    const diff = diffDocuments(chapter, chapter)
     expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same", "same"])
     expect(diff.right.map((block) => [show(block), block.quoted])).toEqual([
       ["Before.", undefined],
@@ -159,7 +172,7 @@ describe("diffChapters", () => {
   })
 
   it("doesn't count quoting, alignment or strikethrough alone as a difference", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p("Dear Ann,"), p("The End"), p("Struck.")),
       doc(quote(p("Dear Ann,")), aligned("center", p("The End")), p({ text: "Struck.", marks: [strike] }))
     )
@@ -172,7 +185,7 @@ describe("diffChapters", () => {
   })
 
   it("keeps each side's look on a changed row", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(aligned("right", p("Yours, Ann"))),
       doc(quote(aligned("center", p("Yours ever, Ann"))))
     )
@@ -184,7 +197,7 @@ describe("diffChapters", () => {
 
   it("flattens a Script into rows of its lines, each with its element", () => {
     const chapter = doc(p("Before."), script(["sceneHeading", "INT. LIGHTHOUSE"], ["character", "Ann"], ["dialogue", "Hello."]), hr)
-    const diff = diffChapters(chapter, chapter)
+    const diff = diffDocuments(chapter, chapter)
     expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same", "same", "same"])
     expect(diff.right.map((block) => [show(block), block.element])).toEqual([
       ["Before.", undefined],
@@ -196,7 +209,7 @@ describe("diffChapters", () => {
   })
 
   it("doesn't count a Script element change alone as a difference, but shows each side's element", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p("The door opens."), script(["action", "Ann"])),
       doc(script(["action", "The door opens."], ["character", "Ann"]))
     )
@@ -207,7 +220,7 @@ describe("diffChapters", () => {
   })
 
   it("diffs text inside a Script line, keeping its element", () => {
-    const diff = diffChapters(doc(script(["dialogue", "Come home now."])), doc(script(["parenthetical", "(Come home soon.)"])))
+    const diff = diffDocuments(doc(script(["dialogue", "Come home now."])), doc(script(["parenthetical", "(Come home soon.)"])))
     expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0 }])
     expect(diff.left[0]).toMatchObject({ element: "dialogue" })
     expect(diff.right[0]).toMatchObject({ element: "parenthetical" })
@@ -215,14 +228,14 @@ describe("diffChapters", () => {
   })
 
   it("handles empty Chapters", () => {
-    expect(diffChapters(doc(), doc())).toEqual({ rows: [], left: [], right: [], additions: 0, removals: 0 })
-    const diff = diffChapters(doc(p()), doc(p("First words.")))
+    expect(diffDocuments(doc(), doc())).toEqual({ rows: [], left: [], right: [], additions: 0, removals: 0 })
+    const diff = diffDocuments(doc(p()), doc(p("First words.")))
     expect(diff.rows.map((r) => r.kind)).toEqual(["removed", "added"])
     expect(show(diff.right[0]!)).toBe("{+First words.+}")
   })
 
   it("interleaves both sides of a changed row in reading order", () => {
-    const diff = diffChapters(
+    const diff = diffDocuments(
       doc(p({ text: "The quick fox ", marks: [mia] }, { text: "ran.", marks: [mia, bold] })),
       doc(p({ text: "The ", marks: [ben] }, { text: "slow fox ran.", marks: [mia] }))
     )
@@ -239,13 +252,105 @@ describe("diffChapters", () => {
     const br: JSONContent = { type: "hardBreak", marks: [mia] }
     const lines = (...content: JSONContent[]): JSONContent => ({ type: "paragraph", content })
     const before = lines({ type: "text", text: "Roses are red," }, br, { type: "text", text: "violets are blue." })
-    const same = diffChapters(doc(before), doc(before))
+    const same = diffDocuments(doc(before), doc(before))
     expect(same.rows.map((r) => r.kind)).toEqual(["same"])
     expect(same.right[0]!.segments[1]).toEqual({ text: "\n", marks: [mia], op: "same" })
 
-    const joined = diffChapters(doc(before), doc(p("Roses are red, violets are blue.")))
+    const joined = diffDocuments(doc(before), doc(p("Roses are red, violets are blue.")))
     expect(show(joined.left[0]!)).toBe("Roses are red,[-\n-]violets are blue.")
     expect(show(joined.right[0]!)).toBe("Roses are red,{+ +}violets are blue.")
+  })
+})
+
+describe("diffDocuments with lists", () => {
+  const bullet = { kind: "bullet", depth: 0 }
+  const ordered = { kind: "ordered", depth: 0 }
+
+  it("finds nothing between identical lists, and gives each item its list", () => {
+    const entry = doc(p("Rules:"), ul(li("No magic at sea."), li("Debts are paid in salt.")))
+    const diff = diffDocuments(entry, entry)
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same"])
+    expect(diff.additions + diff.removals).toBe(0)
+    expect(diff.right.map((block) => [show(block), block.list])).toEqual([
+      ["Rules:", undefined],
+      ["No magic at sea.", bullet],
+      ["Debts are paid in salt.", bullet],
+    ])
+  })
+
+  it("diffs an item's text", () => {
+    const diff = diffDocuments(doc(ul(li("A"), li("Keeps a red lantern."))), doc(ul(li("A"), li("Keeps a green lantern."))))
+    expect(diff.rows).toMatchObject([{ kind: "same" }, { kind: "changed", left: 1, right: 1 }])
+    expect(diff.rows[1]).not.toHaveProperty("markerChanged")
+    expect(show(diff.right[1]!)).toBe("Keeps a {+green+} lantern.")
+    expect(diff.right[1]!.list).toEqual(bullet)
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(1)
+  })
+
+  it("aligns an added and a removed item", () => {
+    const diff = diffDocuments(doc(ul(li("One"), li("Two"), li("Three"))), doc(ul(li("One"), li("Three"), li("Four"))))
+    expect(diff.rows).toEqual([
+      { kind: "same", left: 0, right: 0 },
+      { kind: "removed", left: 1 },
+      { kind: "same", left: 2, right: 1 },
+      { kind: "added", right: 2 },
+    ])
+    expect(diff.right[2]).toMatchObject({ list: bullet })
+  })
+
+  it("counts a paragraph becoming a bullet as a marker change, with no text changed", () => {
+    const diff = diffDocuments(doc(p("Lives by the harbour.")), doc(ul(li("Lives by the harbour."))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0, markerChanged: true }])
+    const row = diff.rows[0]!
+    expect(row.kind === "changed" && row.merged.every((s) => s.op === "same")).toBe(true)
+    expect(diff.left[0]!.list).toBeUndefined()
+    expect(diff.right[0]!.list).toEqual(bullet)
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(0)
+  })
+
+  it("counts bullet to numbered as a marker change", () => {
+    const diff = diffDocuments(doc(ul(li("Light the lamp."))), doc(ol(li("Light the lamp."))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", markerChanged: true }])
+    expect(diff.left[0]!.list).toEqual(bullet)
+    expect(diff.right[0]!.list).toEqual(ordered)
+  })
+
+  it("counts a depth change as a marker change", () => {
+    const diff = diffDocuments(doc(ul(li("Ships"), li("The Gull"))), doc(ul(li("Ships", ul(li("The Gull"))))))
+    expect(diff.rows).toMatchObject([{ kind: "same" }, { kind: "changed", left: 1, right: 1, markerChanged: true }])
+    expect(diff.right[1]!.list).toEqual({ kind: "bullet", depth: 1 })
+  })
+
+  it("leaves later numbered items unchanged when one is inserted, since numbers aren't compared", () => {
+    const diff = diffDocuments(
+      doc(ol(li("Row out."), li("Drop anchor."), li("Wait."))),
+      doc(ol(li("Row out."), li("Check the tide."), li("Drop anchor."), li("Wait.")))
+    )
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "added", "same", "same"])
+    expect(diff.additions).toBe(1)
+  })
+
+  it("marks an item's later paragraphs as continued", () => {
+    const entry = doc(ol(li("Row out.", "Mind the rocks."), li("Wait.")))
+    const diff = diffDocuments(entry, entry)
+    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same"])
+    expect(diff.right.map((block) => block.list)).toEqual([ordered, { ...ordered, continued: true }, ordered])
+
+    const split = diffDocuments(entry, doc(ol(li("Row out."), li("Mind the rocks."), li("Wait."))))
+    expect(split.rows).toMatchObject([{ kind: "same" }, { kind: "changed", markerChanged: true }, { kind: "same" }])
+  })
+
+  it("keeps a quote holding a list both quoted and listed", () => {
+    const entry = doc(quote(p("Her rules:"), ul(li("Never whistle."))))
+    const diff = diffDocuments(entry, entry)
+    expect(diff.right.map((block) => [show(block), block.quoted, block.list])).toEqual([
+      ["Her rules:", true, undefined],
+      ["Never whistle.", true, bullet],
+    ])
+    const unquoted = diffDocuments(entry, doc(p("Her rules:"), ul(li("Never whistle."))))
+    expect(unquoted.rows.map((r) => r.kind)).toEqual(["same", "same"])
   })
 })
 

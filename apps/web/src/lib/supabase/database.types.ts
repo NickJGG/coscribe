@@ -153,6 +153,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"entry_snapshots": {
+                  Row: {
+                    "content_hash": string,"entry_id": string,"id": string,"name": string | null,"state": string,"taken_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "content_hash": string,"entry_id": string,"id"?: string,"name"?: string | null,"state": string,"taken_at"?: string
+                  }
+                  Update: {
+                    "content_hash"?: string,"entry_id"?: string,"id"?: string,"name"?: string | null,"state"?: string,"taken_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "entry_snapshots_entry_id_fkey"
+      columns: ["entry_id"]
+isOneToOne: false
+      referencedRelation: "entries"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"featured_passages": {
                   Row: {
                     "chapter_id": string,"content": NonNullable<Json>,"created_at": string,"story_id": string,"user_id": string
@@ -600,6 +620,12 @@ isOneToOne: true
 "author_palette":
 { Args: Record<PropertyKey, never>; Returns: (string)[]
                            },
+"authorize_entry_restore":
+{ Args: { "p_snapshot": string }; Returns: string
+                           },
+"authorize_entry_snapshot":
+{ Args: { "p_entry": string }; Returns: string
+                           },
 "authorize_restore":
 { Args: { "p_snapshot": string }; Returns: string
                            },
@@ -644,6 +670,9 @@ isOneToOne: true
                            },
 "entry_live":
 { Args: { "p_entry": string }; Returns: boolean
+                           },
+"entry_story":
+{ Args: { "p_entry": string }; Returns: string
                            },
 "finished_public_stories":
 { Args: Record<PropertyKey, never>; Returns: {

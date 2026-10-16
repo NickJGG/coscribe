@@ -6,9 +6,9 @@ import type { Transaction } from "@tiptap/pm/state";
 import { DOMSerializer, Node as PMNode } from "@tiptap/pm/model";
 import {
   chapterSchema,
-  diffChapters,
+  diffDocuments,
   foldRows,
-  type ChapterDiff,
+  type DocumentDiff,
   type DiffBlock,
   type DiffRow,
   type DiffSegment,
@@ -111,7 +111,7 @@ function Comparison({
   const section = useRef<HTMLElement>(null);
   const [changesOnly, setChangesOnly] = useState(true);
   const [opened, setOpened] = useState<{ pair: string; folds: Set<number> } | null>(null);
-  const [stepped, setStepped] = useState<{ diff: ChapterDiff; at: number } | null>(null);
+  const [stepped, setStepped] = useState<{ diff: DocumentDiff; at: number } | null>(null);
   const [contents, setContents] = useState<Record<string, SnapshotPreview>>({});
   const requested = useRef(new Set<string>());
   const [frozen, setFrozen] = useState<Frozen | null>(null);
@@ -168,7 +168,7 @@ function Comparison({
   const leftJson = sides && jsonOf(sides[0]);
   const rightJson = sides && jsonOf(sides[1]);
   const diff = useMemo(
-    () => (leftJson && rightJson ? diffChapters(leftJson, rightJson) : null),
+    () => (leftJson && rightJson ? diffDocuments(leftJson, rightJson) : null),
     [leftJson, rightJson]
   );
   const errors = [compare, to].flatMap((id) => (id && contents[id]?.error ? [contents[id].error] : []));
@@ -409,7 +409,7 @@ function Summary({
   authors,
   children,
 }: {
-  diff: ChapterDiff;
+  diff: DocumentDiff;
   authors: StoryAuthor[];
   children?: React.ReactNode;
 }) {
@@ -538,7 +538,7 @@ function BlockContent({ block, segments }: { block: DiffBlock; segments?: DiffSe
 }
 
 /** A row on a phone's one column: the newer block, with the older one's removals inline. */
-function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: ChapterDiff; faded: boolean }) {
+function InlineRow({ r, row, diff, faded }: { r: number; row: DiffRow; diff: DocumentDiff; faded: boolean }) {
   const block = row.kind === "removed" ? diff.left[row.left]! : diff.right[row.right]!;
   return (
     <div
