@@ -10,7 +10,8 @@ import {
   type NarrationUnit,
 } from "@coscribe/editor";
 import { livePosition, narrationKey, resolveLive, type LivePosition, type NarrationRange } from "../Narration";
-import type { NarrationCursor, NarrationSource } from "./NarrationProvider";
+import type { EntryMentionEntry } from "@/lib/entries";
+import { speakersOf, type NarrationCursor, type NarrationSource } from "./NarrationProvider";
 
 /** Where a unit was, as live positions; null for the intro, which has no place. */
 type Anchor = { from: LivePosition | null; to: LivePosition | null } | null;
@@ -27,20 +28,29 @@ export type DeskSource = NarrationSource & {
  */
 export function deskSource({
   editor,
+  storyId,
   number,
   title,
+  characters,
   scroll,
 }: {
   editor: Editor;
+  storyId: string;
   number: number;
   title: string;
+  characters: readonly EntryMentionEntry[];
   /** The Desk's scrolling page. */
   scroll: { readonly current: HTMLElement | null } | null;
 }): DeskSource {
   let last: Anchor = null;
   let ended = false;
 
-  const units = () => narrationUnits(editor.state.doc);
+  let cached: { doc: unknown; units: NarrationUnit[] } | null = null;
+  const units = () => {
+    const { doc } = editor.state;
+    if (cached?.doc !== doc) cached = { doc, units: narrationUnits(doc, characters) };
+    return cached.units;
+  };
   const range = ({ block, from, to }: NarrationUnit) => {
     const { doc } = editor.state;
     return { from: narrationPos(doc, block, from, 1), to: narrationPos(doc, block, to, -1) };
@@ -54,7 +64,10 @@ export function deskSource({
   const blockStart = (block: number) => narrationPos(editor.state.doc, block, 0);
 
   return {
+    storyId,
     title: `Chapter ${number} · ${title}`,
+    characters,
+    speakers: () => speakersOf(units()),
     next(cursor) {
       if (!cursor) return { unit: chapterIntro(number, title), anchor: null };
       const all = units();

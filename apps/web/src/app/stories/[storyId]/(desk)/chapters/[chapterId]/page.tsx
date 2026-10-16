@@ -56,6 +56,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
   const manage = canManageChapters(myRole) && story.status !== "finished";
   const writer = liveWriter(data);
   const mentionEntries = entryMentionEntries(entries);
+  const characters = mentionEntries.filter((e) => e.type === "character");
   const [viewer, outlined] = await Promise.all([
     getViewer(),
     isWriter(myRole) && getOutlineHasContent(chapter.id),
@@ -69,7 +70,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
       writer={writer}
       authors={authors}
       entryMentions={{ storyId: story.id, entries: mentionEntries }}
-      narration={{ number: index + 1, title: chapter.title }}
+      narration={{ storyId: story.id, number: index + 1, title: chapter.title, characters }}
       toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
       outline={
         isWriter(myRole) && (
@@ -77,7 +78,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
             storyId={story.id}
             chapterId={chapter.id}
             eyebrow={`Chapter ${index + 1} · ${chapter.title}`}
-            characters={mentionEntries.filter((e) => e.type === "character")}
+            characters={characters}
             entryEditable={story.status !== "finished"}
             writer={writer}
             authors={authors}

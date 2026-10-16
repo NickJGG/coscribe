@@ -10,6 +10,7 @@ import { ShowAuthors } from "@/components/ShowAuthors";
 import { FeaturePassage } from "@/components/FeaturePassage";
 import { ReaderListen } from "@/components/narration/ReaderListen";
 import { readingTime } from "@/lib/words";
+import { entryMentionEntries } from "@/lib/entries";
 import { Unavailable } from "../Unavailable";
 import scriptStyles from "@/components/Script.module.css";
 import styles from "../reader.module.css";
@@ -25,7 +26,7 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]/read
 
 export default async function ReaderChapterPage(props: PageProps<"/stories/[storyId]/read/[chapterId]">) {
   const { storyId, chapterId } = await props.params;
-  const { story, chapters, content, authors, myRole, viewer } = await requireReader(
+  const { story, chapters, entries, content, authors, myRole, viewer } = await requireReader(
     storyId,
     `/stories/${storyId}/read/${chapterId}`
   );
@@ -59,9 +60,11 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
             toggleClassName={styles.tools}
             tools={
               <ReaderListen
+                storyId={story.id}
                 content={text}
                 number={index + 1}
                 title={chapter.title}
+                characters={entryMentionEntries(entries).filter((e) => e.type === "character")}
                 next={nextRead ? `${base}/${nextRead.id}` : null}
                 credits={`${base}/credits`}
                 textId={TEXT_ID}

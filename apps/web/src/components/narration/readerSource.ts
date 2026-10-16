@@ -8,13 +8,14 @@ import {
   unitAt,
   type NarrationUnit,
 } from "@coscribe/editor";
-import type { NarrationCursor, NarrationSource } from "./NarrationProvider";
+import type { EntryMentionEntry } from "@/lib/entries";
+import { speakersOf, type NarrationCursor, type NarrationSource } from "./NarrationProvider";
 
 const HIGHLIGHT = "narration";
 
-function unitsOf(content: JSONContent): NarrationUnit[] {
+function unitsOf(content: JSONContent, characters: readonly EntryMentionEntry[]): NarrationUnit[] {
   try {
-    return narrationUnits(chapterSchema.nodeFromJSON(content));
+    return narrationUnits(chapterSchema.nodeFromJSON(content), characters);
   } catch {
     return [];
   }
@@ -51,22 +52,27 @@ function rangeIn(block: Element, from: number, to: number): Range | null {
  * server-rendered text is never touched.
  */
 export function readerSource({
+  storyId,
   content,
   number,
   title,
+  characters,
   last,
   container,
   onEnd,
 }: {
+  storyId: string;
   content: JSONContent;
   number: number;
   title: string;
+  characters: readonly EntryMentionEntry[];
   last: boolean;
   container: () => HTMLElement | null;
   onEnd: () => boolean;
 }): NarrationSource {
-  const units = [chapterIntro(number, title), ...unitsOf(content), ...(last ? [THE_END] : [])];
+  const units = [chapterIntro(number, title), ...unitsOf(content, characters), ...(last ? [THE_END] : [])];
   const blocks = narratedBlocks(units);
+  const speakers = speakersOf(units);
   const cursorAt = (i: number): NarrationCursor | null => (i >= 0 && i < units.length ? { unit: units[i]!, anchor: i } : null);
   const blockElement = (block: number) => container()?.querySelector(`[data-block="${block}"]`) ?? null;
   const rangeOf = (unit: NarrationUnit) => {
@@ -75,7 +81,10 @@ export function readerSource({
   };
 
   return {
+    storyId,
     title: `Chapter ${number} · ${title}`,
+    characters,
+    speakers: () => speakers,
     next: (cursor) => cursorAt(cursor ? (cursor.anchor as number) + 1 : 0),
     at: (block) => cursorAt(unitAt(units, block)),
     blocks: () => blocks,

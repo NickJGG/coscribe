@@ -1,15 +1,19 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { NarrationUnit } from "@coscribe/editor";
+import { speakerKey, type NarrationSpeaker, type NarrationUnit } from "@coscribe/editor";
+import { NO_VOICE, type EntryMentionEntry, type EntryVoice } from "@/lib/entries";
 import { useLocalSetting } from "@/lib/local-setting";
 import { cancel, speak } from "@/lib/narration/speaker";
-import { narratorVoice, useVoices, type VoiceSupport } from "@/lib/narration/voices";
+import { castVoices, narratorVoice, useVoices, type CastVoice, type VoiceSupport } from "@/lib/narration/voices";
 
 export const RATES = [0.75, 1, 1.25, 1.5, 2];
 const DEFAULT_RATE = 1;
 const RATE_KEY = "coscribe:narration-rate";
 const VOICE_KEY = "coscribe:narration-voice";
+const CHARACTER_VOICES_KEY = "coscribe:narration-character-voices";
+/** Per Story, a JSON object of speaker key to the voice name a listener chose for that speaker. */
+const castKey = (storyId: string) => `coscribe:narration-cast:${storyId}`;
 /** How long a finished Chapter waits for the next one's source to attach before Narration gives up. */
 const HANDOFF_MS = 15000;
 const SCROLL_KEYS = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
@@ -19,8 +23,13 @@ export type NarrationCursor = { unit: NarrationUnit; anchor: unknown };
 
 /** What Narration reads: a Chapter in the Reader View or the Desk. */
 export type NarrationSource = {
+  storyId: string;
   /** "Chapter n · Title", for the player. */
   title: string;
+  /** The Story's Character Entries, whose dialogue is read in their Voices. */
+  characters: readonly EntryMentionEntry[];
+  /** Who speaks in the Chapter, in the order they first do. */
+  speakers(): NarrationSpeaker[];
   /** The unit after `cursor`, or the first for null; null at the end. */
   next(cursor: NarrationCursor | null): NarrationCursor | null;
   /** The first unit of top-level block `block`, or the first after it. */
@@ -44,6 +53,53 @@ export type NarrationSource = {
 
 type Status = "idle" | "playing" | "paused";
 
+/** A speaker in the Chapter being read, and the voice their part is read in. */
+export type CastSpeaker = {
+  key: string;
+  name: string;
+  /** The Voice cast on their Character Entry; null for a Script cue that names no Entry. */
+  cast: EntryVoice | null;
+  reading: CastVoice<SpeechSynthesisVoice>;
+  /** Whether the listener picked `reading.voice` themselves. */
+  overridden: boolean;
+};
+
+export function speakersOf(units: readonly NarrationUnit[]): NarrationSpeaker[] {
+  const found = new Map<string, NarrationSpeaker>();
+  for (const { speaker } of units) {
+    if (speaker && !found.has(speakerKey(speaker))) found.set(speakerKey(speaker), speaker);
+  }
+  return [...found.values()];
+}
+
+const titleCase = (text: string) => text.toLowerCase().replace(/(^|\s)(\S)/gu, (_, space, c) => space + c.toUpperCase());
+
+function speakerName(source: NarrationSource, speaker: NarrationSpeaker) {
+  if ("cue" in speaker) return titleCase(speaker.cue);
+  return source.characters.find((c) => c.id === speaker.entryId)?.name ?? null;
+}
+
+function readOverrides(json: string): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(json || "{}");
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    return Object.fromEntries(Object.entries(parsed).filter((e): e is [string, string] => typeof e[1] === "string"));
+  } catch {
+    return {};
+  }
+}
+
+type CastSettings = {
+  voices: readonly SpeechSynthesisVoice[];
+  voice: SpeechSynthesisVoice | null;
+  overrides: Readonly<Record<string, string>>;
+};
+
+function castFor(source: NarrationSource, speakers: readonly NarrationSpeaker[], { voices, voice, overrides }: CastSettings) {
+  const cast = Object.fromEntries(source.characters.map((c) => [speakerKey({ entryId: c.id }), c.voice]));
+  return castVoices({ speakers: speakers.map(speakerKey), voices, narrator: voice, cast, overrides });
+}
+
 type Narration = {
   support: VoiceSupport;
   status: Status;
@@ -58,6 +114,15 @@ type Narration = {
   voices: SpeechSynthesisVoice[];
   voice: SpeechSynthesisVoice | null;
   setVoice: (name: string) => void;
+  /** Whether Characters' dialogue is read in their own voices, or everything by the narrator. */
+  characterVoices: boolean;
+  setCharacterVoices: (on: boolean) => void;
+  /** The name of whoever says the part being read; null for the narrator. */
+  speaker: string | null;
+  /** The Chapter's speakers, in the order they first speak. */
+  cast: CastSpeaker[];
+  /** Picks the voice a speaker is read in for this Story, or with null goes back to the one cast for them. */
+  setOverride: (key: string, voiceName: string | null) => void;
   rate: number;
   setRate: (rate: number) => void;
   start: (source: NarrationSource) => void;
@@ -100,8 +165,10 @@ function scrollToRect(scroller: HTMLElement | null, rect: DOMRect, force: boolea
 
 /**
  * Narration: reads a source aloud one unit at a time, highlighting each and keeping it in view until you scroll
- * away. Holds a Screen Wake Lock while playing, pauses when a phone's screen goes off, and remembers speed and
- * voice per browser. Mount it where it outlives the pages it reads, so one Chapter can hand off to the next.
+ * away. With Character voices on, a Character's part is read in their cast voice and a Script cue is a silent pause.
+ * Holds a Screen Wake Lock while playing, pauses when a phone's screen goes off, and remembers speed and voice per
+ * browser, and voice picks for Characters per Story too. Mount it where it outlives the pages it reads, so one
+ * Chapter can hand off to the next.
  */
 export function NarrationProvider({ children }: { children: React.ReactNode }) {
   const { voices, support } = useVoices();
@@ -109,6 +176,7 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
   const [voiceName, setVoiceName] = useLocalSetting(VOICE_KEY, "");
   const rate = RATES[rateIndex] ?? DEFAULT_RATE;
   const voice = narratorVoice(voices, voiceName);
+  const [characterVoices, setCharacterVoices] = useLocalSetting(CHARACTER_VOICES_KEY, true);
 
   const [status, setStatus] = useState<Status>("idle");
   const [active, setActive] = useState<NarrationSource | null>(null);
@@ -116,11 +184,16 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState({ paragraph: 0, paragraphs: 0 });
   const [following, setFollowing] = useState(true);
   const [behind, setBehind] = useState<"up" | "down">("down");
+  const [speaker, setSpeaker] = useState<string | null>(null);
+  const [speakers, setSpeakers] = useState<NarrationSpeaker[]>([]);
 
-  const settings = useRef({ voice, rate });
+  const [overridesJson, setOverridesJson] = useLocalSetting(castKey(active?.storyId ?? ""), "");
+  const overrides = useMemo(() => readOverrides(overridesJson), [overridesJson]);
+
+  const settings = useRef({ voice, rate, characterVoices, voices, overrides });
   useEffect(() => {
-    settings.current = { voice, rate };
-  }, [voice, rate]);
+    settings.current = { voice, rate, characterVoices, voices, overrides };
+  }, [voice, rate, characterVoices, voices, overrides]);
 
   const state = useRef({
     run: 0,
@@ -141,6 +214,10 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
 
     const show = (source: NarrationSource, { unit }: NarrationCursor) => {
       source.highlight(unit);
+      setSpeaker(unit.speaker ? speakerName(source, unit.speaker) : null);
+      const found = source.speakers();
+      const keys = (list: NarrationSpeaker[]) => list.map(speakerKey).join("\n");
+      setSpeakers((was) => (keys(was) === keys(found) ? was : found));
       const blocks = source.blocks();
       const i = unit.kind === "end" ? blocks.length - 1 : blocks.findIndex((b) => b >= unit.block);
       setProgress({ paragraph: (i < 0 ? blocks.length - 1 : i) + 1, paragraphs: blocks.length });
@@ -157,6 +234,16 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
       s.source = null;
       s.cursor = null;
       setActive(null);
+      setSpeaker(null);
+    };
+
+    /** The unit as it's said and the voice it's said in: a Character's part in theirs, a cue as a silent pause. */
+    const voiced = (source: NarrationSource, unit: NarrationUnit) => {
+      const { voice, rate, characterVoices } = settings.current;
+      if (!characterVoices || !unit.speaker) return { unit, voice, rate };
+      if (unit.kind === "cue") return { unit: { ...unit, speak: "" }, voice, rate };
+      const cast = castFor(source, source.speakers(), settings.current).get(speakerKey(unit.speaker));
+      return { unit, voice: cast?.voice ?? voice, rate, pitch: cast?.pitch };
     };
 
     const stop = () => {
@@ -172,7 +259,8 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
       for (let cursor = from; cursor; cursor = source.next(cursor)) {
         s.cursor = cursor;
         show(source, cursor);
-        const spoken = await speak(cursor.unit, settings.current);
+        const { unit, ...how } = voiced(source, cursor.unit);
+        const spoken = await speak(unit, how);
         if (run !== s.run) return;
         if (spoken === "blocked") return stop();
       }
@@ -337,6 +425,19 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
     };
   }, [playing, api]);
 
+  const cast = useMemo<CastSpeaker[]>(() => {
+    if (!active) return [];
+    const reading = castFor(active, speakers, { voices, voice, overrides });
+    return speakers.flatMap((speaker) => {
+      const key = speakerKey(speaker);
+      const name = speakerName(active, speaker);
+      const voiceOf = reading.get(key);
+      if (!name || !voiceOf) return [];
+      const cast = "entryId" in speaker ? (active.characters.find((c) => c.id === speaker.entryId)?.voice ?? NO_VOICE) : null;
+      return [{ key, name, cast, reading: voiceOf, overridden: voiceOf.voice !== null && voiceOf.voice.name === overrides[key] }];
+    });
+  }, [active, speakers, voices, voice, overrides]);
+
   const value: Narration = {
     support,
     status,
@@ -348,6 +449,16 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
     voices,
     voice,
     setVoice: setVoiceName,
+    characterVoices,
+    setCharacterVoices,
+    speaker,
+    cast,
+    setOverride(key, voiceName) {
+      const next = { ...overrides };
+      if (voiceName) next[key] = voiceName;
+      else delete next[key];
+      setOverridesJson(Object.keys(next).length ? JSON.stringify(next) : "");
+    },
     rate,
     setRate: (next) => setRateIndex(Math.max(0, RATES.indexOf(next))),
     start: api.start,

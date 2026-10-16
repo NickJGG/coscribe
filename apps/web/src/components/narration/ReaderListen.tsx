@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
+import type { EntryMentionEntry } from "@/lib/entries";
 import { HeadphonesIcon } from "../icons";
 import { useNarration } from "./NarrationProvider";
 import { readerSource } from "./readerSource";
@@ -12,16 +13,21 @@ import { readerSource } from "./readerSource";
  * `next`, and after the last one (no `next`) it says "The End." and opens `credits`.
  */
 export function ReaderListen({
+  storyId,
   content,
   number,
   title,
+  characters,
   next,
   credits,
   textId,
 }: {
+  storyId: string;
   content: JSONContent;
   number: number;
   title: string;
+  /** The Story's Character Entries, whose dialogue is read in their Voices. */
+  characters: EntryMentionEntry[];
   next: string | null;
   credits: string;
   textId: string;
@@ -33,9 +39,11 @@ export function ReaderListen({
   const source = useMemo(
     () =>
       readerSource({
+        storyId,
         content,
         number,
         title,
+        characters,
         last: !next,
         container: () => document.getElementById(textId),
         onEnd: () => {
@@ -43,7 +51,7 @@ export function ReaderListen({
           return next !== null;
         },
       }),
-    [content, number, title, next, credits, textId, router]
+    [storyId, content, number, title, characters, next, credits, textId, router]
   );
 
   useEffect(() => attach(source), [attach, source]);

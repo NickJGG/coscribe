@@ -2,14 +2,15 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import type { Editor } from "@tiptap/core";
+import type { EntryMentionEntry } from "@/lib/entries";
 import { hasOpenLayer } from "@/lib/layers";
 import { useDeskScroll } from "../DeskScroll";
 import { HeadphonesIcon } from "../icons";
 import { useNarration } from "./NarrationProvider";
 import { deskSource, type DeskSource } from "./deskSource";
 
-/** The Chapter a Desk document is, for Narration to announce; null for one it doesn't read. */
-export type NarratedChapter = { number: number; title: string } | null;
+/** The Chapter a Desk document is, for Narration to announce and its Characters to voice; null for one it doesn't read. */
+export type NarratedChapter = { storyId: string; number: number; title: string; characters: EntryMentionEntry[] } | null;
 
 /**
  * Narration of a Chapter open in the Desk, while it's on the page. While Listening, Escape stops it (and the find bar
@@ -19,15 +20,17 @@ export function useDeskNarration(editor: Editor | null, chapter: NarratedChapter
   const narration = useNarration();
   const { attach, stop } = narration;
   const scroll = useDeskScroll();
+  const storyId = chapter?.storyId;
   const number = chapter?.number;
   const title = chapter?.title;
+  const characters = chapter?.characters;
 
   const source = useMemo<DeskSource | null>(
     () =>
-      editor && number !== undefined && title !== undefined
-        ? deskSource({ editor, number, title, scroll })
+      editor && storyId !== undefined && number !== undefined && title !== undefined && characters
+        ? deskSource({ editor, storyId, number, title, characters, scroll })
         : null,
-    [editor, number, title, scroll]
+    [editor, storyId, number, title, characters, scroll]
   );
 
   useEffect(() => (source ? attach(source) : undefined), [attach, source]);
