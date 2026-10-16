@@ -42,6 +42,10 @@ _Avoid_: Editor, workspace
 A **Story**'s home page inside the **Desk**, showing its title, **Writers**, **Chapters** and **Story Bible** at a glance.
 _Avoid_: Home, story page, dashboard
 
+**Narration**:
+A **Chapter** read aloud by the browser's own voice, started with Listen, in the **Desk** or the **Reader View**. While Listening, the **Chapter** is read-only for you and clicking a paragraph moves Narration there.
+_Avoid_: TTS, read-aloud, audiobook, playback
+
 **Scene Break**:
 The centered `* * *` divider between scenes inside a **Chapter**.
 _Avoid_: Separator, horizontal rule
@@ -228,4 +232,5 @@ _Avoid_: Alert, activity, update
 - "pinned" once described where a **Note** sits. Resolved: a **Note** is anchored to a passage; "pin" belongs to the **Pinned Entry**.
 - "Character" is both an **Entry Type** and a **Script Element**. Resolved: a Character **Entry** is a **Story Bible** card; a Character **Script Element** is a cue naming a speaker, which may or may not match one.
 - "revert" vs. **Restore**: the product action is **Restore** (to a **Snapshot**); per-user selective revert does not exist.
+- "read aloud" for **Narration**. Resolved: it's too close to the **Reader View**; the feature is **Narration**, the button is Listen, the state is Listening.
 - "restoring a backup" for bringing an **Export** back in. Resolved: that is an **Import**; **Restore** only ever means returning a **Chapter** or **Entry** to a **Snapshot**.

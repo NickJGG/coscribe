@@ -4,7 +4,8 @@ import type { JSONContent } from "@tiptap/core";
  * Renders stored Chapter or Entry JSON as plain markup, server-side, matching the editor's output
  * (`span[data-author]` runs, `br` line breaks, `hr[data-scene-break]`, `p` with `text-align`, `div[data-script]` of `p[data-element]`)
  * so LiveDocument's prose, Script and authorship styles apply. `positions` numbers the top-level blocks with
- * `data-block` (a block quote or Script, not its lines), for mapping a selection back to the JSON.
+ * `data-block` (a block quote or Script, not its lines), for mapping a selection back to the JSON and Narration's
+ * sentences onto the page.
  */
 export function ProseView({ content, positions = false }: { content: JSONContent; positions?: boolean }) {
   return content.content?.map((node, i) => <Node key={i} node={node} block={positions ? i : undefined} />);

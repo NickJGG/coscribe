@@ -51,6 +51,16 @@ export {
 } from "./entry-mentions"
 export { SmartPunctuation, smartenSlice, smartenText, type SmartPunctuationStorage } from "./smart-punctuation"
 export { Author, AUTHOR_RUN_MS, AuthorStamp, IMPORTED_AUTHOR, authorStampPlugin, type AuthorAttrs } from "./author"
+export {
+  chapterIntro,
+  expandSceneHeading,
+  narratedBlocks,
+  narrationUnits,
+  sentences,
+  THE_END,
+  unitAt,
+  type NarrationUnit,
+} from "./narration"
 export { FEATURE_MAX_CHARS, featureError, sliceChapter, type TextPoint } from "./passage"
 export { Note, NotePaste, noteRanges, stripNoteMarks, stripNotesFromSlice, type NoteAttrs } from "./note"
 export {

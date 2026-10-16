@@ -1,0 +1,224 @@
+.player {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--hair);
+  background: var(--paper-raised);
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+/* The Reader View: a card floating at the bottom of the window, over the page's end. */
+.sticky {
+  position: sticky;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 5;
+  width: calc(100% - 2 * var(--gutter));
+  max-width: 44rem;
+  margin: 0 auto 12px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.icon:hover {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.play {
+  width: 40px;
+  height: 40px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.play:hover {
+  background: var(--ink);
+  color: var(--paper);
+  opacity: 0.85;
+}
+
+.play svg {
+  width: 18px;
+  height: 18px;
+}
+
+.where {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.title {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.progress {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rate {
+  min-width: 3.25em;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.settings .narrow {
+  display: none;
+}
+
+.back {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  border-radius: 999px;
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  width: 19rem;
+  max-height: min(60vh, 28rem);
+  padding: 6px;
+  overflow-y: auto;
+}
+
+/* Opens upwards, off the bottom of the window. Not a `fixed` Dropdown, which following's scrolls would close. */
+@media (min-width: 601px) {
+  .player .menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+}
+
+.heading {
+  padding: 8px 10px 4px;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover {
+  background: var(--wash);
+}
+
+.row[aria-pressed="true"] {
+  background: var(--wash);
+  font-weight: 600;
+}
+
+.lang {
+  flex: none;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.rates {
+  display: flex;
+  gap: 4px;
+  padding: 0 6px 6px;
+}
+
+.rates button {
+  flex: 1;
+  min-height: 40px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.rates button[aria-pressed="true"] {
+  border-color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  .player {
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .settings .wide {
+    display: none;
+  }
+
+  .settings .narrow {
+    display: inline-flex;
+  }
+
+  .progress {
+    font-size: 0.6875rem;
+  }
+}

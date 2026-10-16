@@ -4,6 +4,7 @@ import { createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLocalSetting } from "@/lib/local-setting";
+import { NarrationProvider } from "@/components/narration/NarrationProvider";
 import styles from "./reader.module.css";
 
 const SIZES = [0.9, 1, 1.125, 1.25];
@@ -15,15 +16,20 @@ const SizeContext = createContext<{ size: number; setSize: (size: number) => voi
   setSize: () => {},
 });
 
-/** The Reader's text size, remembered by this browser, applied to everything inside as `--reader-scale`. */
+/**
+ * The Reader's text size, remembered by this browser, applied to everything inside as `--reader-scale`, and its
+ * Narration, which lasts from one Chapter to the next.
+ */
 export function ReaderFrame({ className, children }: { className?: string; children: React.ReactNode }) {
   const [stored, setSize] = useLocalSetting(SIZE_KEY, DEFAULT_SIZE);
   const size = Number.isInteger(stored) && SIZES[stored] !== undefined ? stored : DEFAULT_SIZE;
   return (
     <SizeContext value={{ size, setSize }}>
-      <div className={className} style={{ "--reader-scale": SIZES[size] } as React.CSSProperties}>
-        {children}
-      </div>
+      <NarrationProvider>
+        <div className={className} style={{ "--reader-scale": SIZES[size] } as React.CSSProperties}>
+          {children}
+        </div>
+      </NarrationProvider>
     </SizeContext>
   );
 }

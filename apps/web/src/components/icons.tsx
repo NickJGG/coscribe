@@ -166,3 +166,48 @@ export function ArrowUpIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function HeadphonesIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M3.5 13.5v-3a6.5 6.5 0 0 1 13 0v3" />
+      <rect x="3.5" y="11.5" width="3" height="5" rx="1" />
+      <rect x="13.5" y="11.5" width="3" height="5" rx="1" />
+    </svg>
+  );
+}
+
+export function PlayIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <path d="M6.5 4.5v11l9-5.5z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function PauseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <rect x="5.5" y="4.5" width="3" height="11" rx="0.5" fill="currentColor" />
+      <rect x="11.5" y="4.5" width="3" height="11" rx="0.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A bar and a triangle pointing at it; `next` mirrors it. */
+export function SkipIcon({ next = false, className }: { next?: boolean; className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden style={next ? { transform: "scaleX(-1)" } : undefined}>
+      <path d="M5 5v10" />
+      <path d="M15 5v10l-7.5-5z" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function StopIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 20 20" aria-hidden>
+      <rect x="5" y="5" width="10" height="10" rx="1.5" fill="currentColor" />
+    </svg>
+  );
+}

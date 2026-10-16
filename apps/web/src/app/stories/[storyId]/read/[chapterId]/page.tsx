@@ -8,10 +8,13 @@ import { BackToTop } from "@/components/BackToTop";
 import { ProseView } from "@/components/ProseView";
 import { ShowAuthors } from "@/components/ShowAuthors";
 import { FeaturePassage } from "@/components/FeaturePassage";
+import { ReaderListen } from "@/components/narration/ReaderListen";
 import { readingTime } from "@/lib/words";
 import { Unavailable } from "../Unavailable";
 import scriptStyles from "@/components/Script.module.css";
 import styles from "../reader.module.css";
+
+const TEXT_ID = "chapter-text";
 
 export async function generateMetadata(props: PageProps<"/stories/[storyId]/read/[chapterId]">): Promise<Metadata> {
   const { storyId, chapterId } = await props.params;
@@ -34,6 +37,8 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
   const text = content?.chapter[chapter.id];
   const base = `/stories/${story.id}/read`;
   const time = readingTime(chapter.word_count);
+  // Narration skips blank Chapters, which have nothing to read.
+  const nextRead = chapters.slice(index + 1).find((c) => content?.chapter[c.id]?.content?.length);
 
   return (
     <div className={styles.page}>
@@ -49,8 +54,21 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
         <Unavailable />
       ) : text?.content?.length ? (
         <div>
-          <ShowAuthors authors={authors} toggleClassName={styles.tools}>
-            <div className={`${styles.text} ${scriptStyles.scripts}`}>
+          <ShowAuthors
+            authors={authors}
+            toggleClassName={styles.tools}
+            tools={
+              <ReaderListen
+                content={text}
+                number={index + 1}
+                title={chapter.title}
+                next={nextRead ? `${base}/${nextRead.id}` : null}
+                credits={`${base}/credits`}
+                textId={TEXT_ID}
+              />
+            }
+          >
+            <div id={TEXT_ID} className={`${styles.text} ${scriptStyles.scripts}`}>
               {isWriter(myRole) && viewer?.profile ? (
                 <FeaturePassage
                   storyId={story.id}
@@ -62,7 +80,7 @@ export default async function ReaderChapterPage(props: PageProps<"/stories/[stor
                   <ProseView content={text} positions />
                 </FeaturePassage>
               ) : (
-                <ProseView content={text} />
+                <ProseView content={text} positions />
               )}
             </div>
           </ShowAuthors>

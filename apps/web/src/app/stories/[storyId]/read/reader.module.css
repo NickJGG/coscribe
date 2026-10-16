@@ -305,9 +305,35 @@
   text-indent: 0;
 }
 
+/* While Listening, a click on a paragraph reads from there: it's tinted on hover, with a play mark in the margin. */
+.text[data-narrating] [data-block] {
+  position: relative;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.text[data-narrating] [data-block]:hover {
+  background: var(--wash);
+  box-shadow: 0 0 0 4px var(--wash);
+}
+
+.text[data-narrating] [data-block]:hover::before {
+  content: "";
+  position: absolute;
+  top: calc(0.9em - 5px);
+  left: calc(-1 * min(22px, var(--gutter)));
+  width: 9px;
+  height: 10px;
+  background: var(--ink-muted);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  text-indent: 0;
+}
+
 .tools {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
   font-size: 0.875rem;
 }

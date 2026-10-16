@@ -35,6 +35,11 @@
   left: 50%;
 }
 
+/* Above Narration's player. */
+:global(body:has([data-narration-player])) .reader {
+  bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
 .hidden {
   opacity: 0;
   transform: translate(-50%, 8px);

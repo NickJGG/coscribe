@@ -230,10 +230,27 @@ a {
   color: var(--ink-muted);
 }
 
-.button-ghost:hover:not(:disabled) {
+.button-ghost:hover:not(:disabled),
+.button-ghost[aria-pressed="true"] {
   border-color: transparent;
   background: var(--wash);
   color: var(--ink);
+}
+
+/* Disabled, but still focusable and hoverable so its `data-tip` can say why. */
+.button[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.button-ghost[aria-disabled="true"]:hover {
+  background: none;
+  color: var(--ink-muted);
+}
+
+/* The sentence Narration is reading (a CSS Custom Highlight). */
+::highlight(narration) {
+  background-color: var(--find);
 }
 
 .menu-item {
