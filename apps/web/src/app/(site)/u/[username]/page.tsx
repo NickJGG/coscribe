@@ -16,6 +16,7 @@ import { StorySection } from "@/components/StoryCard";
 import { FeaturedPassage, type Passage } from "./FeaturedPassage";
 import { FriendAction } from "./FriendAction";
 import { ProfileStoryCard } from "./ProfileStoryCard";
+import { WritingDays, type WritingHistory } from "./WritingDays";
 import styles from "./profile.module.css";
 
 const getProfile = cache(async (username: string) => {
@@ -38,7 +39,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
   if (!profile) notFound();
 
   const supabase = await createClient();
-  const [viewer, { data: rows }, { data: writingNow }, { data: featured }] = await Promise.all([
+  const [viewer, { data: rows }, { data: writingNow }, { data: featured }, { data: history }] = await Promise.all([
     getViewer(),
     profileStoryRows(supabase, profile.id),
     supabase.rpc("writing_now", { p_user: profile.id }),
@@ -47,6 +48,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
       .select("story_id, chapter_id, content, story:stories (title, status, chapters (id, position))")
       .eq("user_id", profile.id)
       .maybeSingle(),
+    supabase.rpc("writing_history", { p_user: profile.id }),
   ]);
   const viewerId = viewer?.profile ? viewer.userId : null;
   const self = viewerId === profile.id;
@@ -98,6 +100,7 @@ export default async function ProfilePage(props: PageProps<"/u/[username]">) {
 
         <div className={styles.work}>
           <FeaturedPassage passage={passage} userId={profile.id} self={self} canFeature={finished.length > 0} />
+          {history && <WritingDays history={history as WritingHistory} />}
           <Section title="Writing together" stories={together} lit={bothOfUs} />
           <Section title="Finished" stories={finished} lit={justThem} />
           <Section title="Being written" stories={writing} lit={justThem} />

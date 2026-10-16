@@ -257,6 +257,110 @@
   font-size: 0.875rem;
 }
 
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heatmapHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.streaks {
+  display: flex;
+  gap: 20px;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.streaks b {
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reversed so a narrow screen opens scrolled to the latest weeks. */
+.heatmapScroll {
+  display: flex;
+  flex-direction: row-reverse;
+  overflow-x: auto;
+}
+
+.heatmapGrid {
+  display: grid;
+  grid-template-rows: auto repeat(7, 11px);
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  gap: 3px;
+}
+
+.month {
+  height: 14px;
+  color: var(--faint);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+.cell {
+  border-radius: 2px;
+  background: var(--hair);
+}
+
+.heatmapGrid .cell:hover {
+  outline: 1px solid var(--ink-muted);
+  outline-offset: 1px;
+}
+
+.cell[data-level="1"] {
+  background: color-mix(in srgb, var(--author) 28%, var(--hair));
+}
+
+.cell[data-level="2"] {
+  background: color-mix(in srgb, var(--author) 52%, var(--hair));
+}
+
+.cell[data-level="3"] {
+  background: color-mix(in srgb, var(--author) 76%, var(--hair));
+}
+
+.cell[data-level="4"] {
+  background: var(--author);
+}
+
+.heatmapFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.legend .cell {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+}
+
+.legend span {
+  margin: 0 4px;
+}
+
+.heatmap .note a {
+  color: var(--accent);
+}
+
 @media (max-width: 760px) {
   .layout {
     grid-template-columns: 1fr;

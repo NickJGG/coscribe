@@ -87,6 +87,14 @@ export async function setShowOnline(show: boolean): Promise<void> {
   refresh();
 }
 
+/** Off hides your Writing Days heatmap from everyone else's view of your profile. */
+export async function setShowWritingDays(show: boolean): Promise<void> {
+  const me = await requireProfile("/settings");
+  const supabase = await createClient();
+  await supabase.from("profiles").update({ show_writing_days: show === true }).eq("id", me.userId);
+  refresh();
+}
+
 /** Saves the Formatting toolbar's order; the default is stored as null. */
 export async function setToolbarLayout(input: unknown): Promise<void> {
   const me = await requireProfile("/settings");

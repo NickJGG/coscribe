@@ -5,6 +5,7 @@ import { getViewer } from "@/lib/viewer";
 import { ProfileForm } from "@/components/ProfileForm";
 import { Card, InlineRow, Sub } from "@/components/SettingsCard";
 import { ShowOnlineSwitch } from "@/components/ShowOnlineSwitch";
+import { ShowWritingDaysSwitch } from "@/components/ShowWritingDaysSwitch";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -60,6 +61,18 @@ export default async function SettingsPage() {
               </p>
             </div>
             <ShowOnlineSwitch show={viewer.profile.show_online} />
+          </InlineRow>
+        </Sub>
+        <Sub>
+          <InlineRow>
+            <div>
+              <h3>Show my writing days</h3>
+              <p className="muted">
+                Your profile shows the days you wrote and your streaks, in every Story including Private ones. Off,
+                only you see them.
+              </p>
+            </div>
+            <ShowWritingDaysSwitch show={viewer.profile.show_writing_days} />
           </InlineRow>
         </Sub>
       </Card>

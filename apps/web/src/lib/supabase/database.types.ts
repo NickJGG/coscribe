@@ -800,6 +800,9 @@ isOneToOne: true
 "writer_mention_text":
 { Args: { "p_body": string }; Returns: string
                            },
+"writing_history":
+{ Args: { "p_user": string }; Returns: Json
+                           },
 "writing_now":
 { Args: { "p_user": string }; Returns: {
               "chapter_id": string,"chapter_number": number,"chapter_title": string,"story_id": string,"story_title": string
