@@ -123,14 +123,14 @@ isOneToOne: false
                   ]
                 },"entries": {
                   Row: {
-                    "aliases": (string)[],"created_at": string,"created_by": string | null,"deleted_after": string | null,"deleted_at": string | null,"deleted_by": string | null,"description": string,"id": string,"link_entry_mentions": boolean,"name": string,"position": number | null,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc": string | null
+                    "aliases": (string)[],"created_at": string,"created_by": string | null,"deleted_after": string | null,"deleted_at": string | null,"deleted_by": string | null,"description": string,"id": string,"link_entry_mentions": boolean,"name": string,"position": number | null,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"voice_kind": string | null,"voice_pitch": number,"ydoc": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"deleted_after"?: string | null,"deleted_at"?: string | null,"deleted_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name": string,"position"?: number | null,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"deleted_after"?: string | null,"deleted_at"?: string | null,"deleted_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name": string,"position"?: number | null,"story_id": string,"type": Database["public"]['Enums']["entry_type"],"voice_kind"?: string | null,"voice_pitch"?: number,"ydoc"?: string | null
                   }
                   Update: {
-                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"deleted_after"?: string | null,"deleted_at"?: string | null,"deleted_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name"?: string,"position"?: number | null,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"ydoc"?: string | null
+                    "aliases"?: (string)[],"created_at"?: string,"created_by"?: string | null,"deleted_after"?: string | null,"deleted_at"?: string | null,"deleted_by"?: string | null,"description"?: string,"id"?: string,"link_entry_mentions"?: boolean,"name"?: string,"position"?: number | null,"story_id"?: string,"type"?: Database["public"]['Enums']["entry_type"],"voice_kind"?: string | null,"voice_pitch"?: number,"ydoc"?: string | null
                   }
                   Relationships: [
                     {

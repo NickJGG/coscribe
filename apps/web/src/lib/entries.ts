@@ -50,14 +50,28 @@ export function readEntryFields(formData: FormData): { fields: EntryFields } | {
   return { fields: { type: type as EntryType, name, description } };
 }
 
+/** A Character's Voice for narration: the kind of speech voice (null is Any) and its pitch. */
+export type EntryVoice = { kind: VoiceKind | null; pitch: VoicePitch };
+export type VoiceKind = "feminine" | "masculine";
+export type VoicePitch = -1 | 0 | 1;
+
+export const NO_VOICE: EntryVoice = { kind: null, pitch: 0 };
+
 /** Fields editable in place on the Entry page; any subset may be sent at once. */
-export type EntryPatch = Partial<EntryFields & { aliases: string[]; linkEntryMentions: boolean }>;
+export type EntryPatch = Partial<EntryFields & { aliases: string[]; linkEntryMentions: boolean; voice: EntryVoice }>;
+
+type EntryColumns = Partial<
+  EntryFields & {
+    aliases: string[];
+    link_entry_mentions: boolean;
+    voice_kind: VoiceKind | null;
+    voice_pitch: VoicePitch;
+  }
+>;
 
 /** Row columns for an `EntryPatch`, validated. Aliases are tidied, and ones repeating each other are dropped. */
-export function readEntryPatch(
-  patch: EntryPatch
-): { columns: Partial<EntryFields & { aliases: string[]; link_entry_mentions: boolean }> } | { error: string } {
-  const columns: Partial<EntryFields & { aliases: string[]; link_entry_mentions: boolean }> = {};
+export function readEntryPatch(patch: EntryPatch): { columns: EntryColumns } | { error: string } {
+  const columns: EntryColumns = {};
   if (patch.type !== undefined) {
     if (!ENTRY_TYPES.includes(patch.type)) return { error: "Pick a type." };
     columns.type = patch.type;
@@ -92,6 +106,16 @@ export function readEntryPatch(
     columns.aliases = aliases;
   }
   if (patch.linkEntryMentions !== undefined) columns.link_entry_mentions = patch.linkEntryMentions === true;
+  if (patch.voice !== undefined) {
+    const voice: Partial<EntryVoice> | null = patch.voice;
+    const kind = voice?.kind;
+    const pitch = voice?.pitch;
+    if ((kind !== null && kind !== "feminine" && kind !== "masculine") || (pitch !== -1 && pitch !== 0 && pitch !== 1)) {
+      return { error: "Something went wrong. Try again." };
+    }
+    columns.voice_kind = kind;
+    columns.voice_pitch = pitch;
+  }
   return { columns };
 }
 
@@ -103,10 +127,27 @@ export type EntryMentionEntry = {
   description: string;
   aliases: string[];
   linkEntryMentions: boolean;
+  voice: EntryVoice;
 };
 
 export function entryMentionEntries(
-  rows: { id: string; type: EntryType; name: string; description: string; aliases: string[]; link_entry_mentions: boolean }[]
+  rows: {
+    id: string;
+    type: EntryType;
+    name: string;
+    description: string;
+    aliases: string[];
+    link_entry_mentions: boolean;
+    voice_kind: string | null;
+    voice_pitch: number;
+  }[]
 ): EntryMentionEntry[] {
-  return rows.map(({ link_entry_mentions, ...e }) => ({ ...e, linkEntryMentions: link_entry_mentions }));
+  return rows.map(({ link_entry_mentions, voice_kind, voice_pitch, ...e }) => ({
+    ...e,
+    linkEntryMentions: link_entry_mentions,
+    voice: {
+      kind: voice_kind === "feminine" || voice_kind === "masculine" ? voice_kind : null,
+      pitch: voice_pitch === -1 || voice_pitch === 1 ? voice_pitch : 0,
+    },
+  }));
 }

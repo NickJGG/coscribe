@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import type { NarrationUnit } from "@coscribe/editor";
 import { useLocalSetting } from "@/lib/local-setting";
 import { cancel, speak } from "@/lib/narration/speaker";
-import { useVoices, type VoiceSupport } from "@/lib/narration/voices";
+import { narratorVoice, useVoices, type VoiceSupport } from "@/lib/narration/voices";
 
 export const RATES = [0.75, 1, 1.25, 1.5, 2];
 const DEFAULT_RATE = 1;
@@ -108,7 +108,7 @@ export function NarrationProvider({ children }: { children: React.ReactNode }) {
   const [rateIndex, setRateIndex] = useLocalSetting(RATE_KEY, RATES.indexOf(DEFAULT_RATE));
   const [voiceName, setVoiceName] = useLocalSetting(VOICE_KEY, "");
   const rate = RATES[rateIndex] ?? DEFAULT_RATE;
-  const voice = voices.find((v) => v.name === voiceName) ?? voices[0] ?? null;
+  const voice = narratorVoice(voices, voiceName);
 
   const [status, setStatus] = useState<Status>("idle");
   const [active, setActive] = useState<NarrationSource | null>(null);

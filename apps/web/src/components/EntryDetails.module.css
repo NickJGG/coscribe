@@ -96,6 +96,23 @@
   font-size: var(--step--1);
 }
 
+.voiceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.voiceLabel {
+  color: var(--ink-muted);
+  font-size: var(--step--1);
+}
+
+.voiceRow :global(.segmented) button:disabled {
+  cursor: default;
+}
+
 .error {
   color: var(--danger);
   font-size: var(--step--1);

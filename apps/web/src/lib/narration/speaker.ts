@@ -20,7 +20,10 @@ function finish(result: Spoken) {
  * sentence keeps Chrome from cutting long ones off, and makes pausing and jumping exact: Narration pauses by
  * cancelling and later says the sentence again, since `speechSynthesis.pause()` is unreliable across browsers.
  */
-export function speak(unit: NarrationUnit, { voice, rate }: { voice: SpeechSynthesisVoice | null; rate: number }) {
+export function speak(
+  unit: NarrationUnit,
+  { voice, rate, pitch = 1 }: { voice: SpeechSynthesisVoice | null; rate: number; pitch?: number }
+) {
   cancel();
   return new Promise<Spoken>((resolve) => {
     settle = resolve;
@@ -33,6 +36,7 @@ export function speak(unit: NarrationUnit, { voice, rate }: { voice: SpeechSynth
     u.voice = voice;
     if (voice) u.lang = voice.lang;
     u.rate = rate;
+    u.pitch = pitch;
     u.onend = () => {
       if (utterance !== u) return;
       utterance = null;

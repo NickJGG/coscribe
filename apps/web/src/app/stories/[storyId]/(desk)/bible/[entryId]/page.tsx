@@ -92,7 +92,13 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
           )}
         </div>
         <EntryName key={entry.id} storyId={story.id} entry={entry} editable={editable} as="h1" className={styles.title} />
-        <EntryDetails key={entry.id} storyId={story.id} entry={entry} editable={editable} />
+        <EntryDetails
+          key={entry.id}
+          storyId={story.id}
+          entry={entry}
+          editable={editable}
+          castable={isWriter(myRole)}
+        />
         <PinError entryId={entry.id} className={styles.error} />
       </header>
 

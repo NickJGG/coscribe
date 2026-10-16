@@ -1,9 +1,22 @@
 "use client";
 
 import { useOptimistic, useState, useTransition } from "react";
+import { speakerKey } from "@coscribe/editor";
 import { editEntry } from "@/lib/actions/entries";
-import { DESCRIPTION_MAX, NAME_MAX, type EntryPatch, type EntryMentionEntry } from "@/lib/entries";
+import {
+  DESCRIPTION_MAX,
+  NAME_MAX,
+  type EntryPatch,
+  type EntryMentionEntry,
+  type EntryVoice,
+  type VoiceKind,
+  type VoicePitch,
+} from "@/lib/entries";
 import type { ActionResult } from "@/lib/action-result";
+import { castVoices } from "@/lib/narration/voices";
+import { speak } from "@/lib/narration/speaker";
+import { useNarration } from "./narration/NarrationProvider";
+import { HeadphonesIcon } from "./icons";
 import { InlineEdit } from "./InlineEdit";
 import { Switch } from "./Switch";
 import styles from "./EntryDetails.module.css";
@@ -38,17 +51,20 @@ export function EntryName({
 
 /**
  * An Entry's description and Aliases, each edited in place by Writers, and on the Entry page its Link Entry
- * Mentions switch. Viewers see the same fields as plain text, without the Alias controls.
+ * Mentions switch. Viewers see the same fields as plain text, without the Alias controls. A Character's Entry
+ * page also shows Writers its Voice (`castable`), read-only once the Story is Finished.
  */
 export function EntryDetails({
   storyId,
   entry,
   editable,
+  castable = false,
   variant = "page",
 }: {
   storyId: string;
   entry: EntryMentionEntry;
   editable: boolean;
+  castable?: boolean;
   variant?: "page" | "card";
 }) {
   const [error, setError] = useState<string | null>(null);
@@ -99,12 +115,101 @@ export function EntryDetails({
           </ul>
         )
       )}
+      {castable && variant === "page" && entry.type === "character" && (
+        <VoiceRow entry={entry} voice={shown.voice} editable={editable} onChange={(voice) => saveNow({ voice })} />
+      )}
       {error && (
         <p role="alert" className={styles.error}>
           {error}
         </p>
       )}
     </>
+  );
+}
+
+const KINDS: [VoiceKind | null, string][] = [
+  ["feminine", "Feminine"],
+  ["masculine", "Masculine"],
+  [null, "Any"],
+];
+
+const PITCHES: [VoicePitch, string][] = [
+  [-1, "Lower"],
+  [0, "Normal"],
+  [1, "Higher"],
+];
+
+/** A Character's Voice: the kind of voice and pitch its dialogue is narrated in, and a sample to hear it. */
+function VoiceRow({
+  entry,
+  voice,
+  editable,
+  onChange,
+}: {
+  entry: EntryMentionEntry;
+  voice: EntryVoice;
+  editable: boolean;
+  onChange: (voice: EntryVoice) => void;
+}) {
+  const narration = useNarration();
+  const unsupported = narration.support !== "ok";
+
+  function hear() {
+    if (unsupported) return;
+    if (narration.status === "playing") narration.pause();
+    const key = speakerKey({ entryId: entry.id });
+    const cast = castVoices({
+      speakers: [key],
+      voices: narration.voices,
+      narrator: narration.voice,
+      cast: { [key]: voice },
+    }).get(key);
+    void speak(
+      { block: -1, from: 0, to: 0, speak: `${entry.name}.`, pauseAfterMs: 0, kind: "sentence" },
+      { voice: cast?.voice ?? null, rate: narration.rate, pitch: cast?.pitch }
+    );
+  }
+
+  return (
+    <div className={styles.voiceRow}>
+      <span className={styles.voiceLabel}>Voice</span>
+      <span className="segmented" role="group" aria-label="Voice">
+        {KINDS.map(([kind, label]) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={voice.kind === kind}
+            disabled={!editable}
+            onClick={() => onChange({ ...voice, kind })}
+          >
+            {label}
+          </button>
+        ))}
+      </span>
+      <span className="segmented" role="group" aria-label="Pitch">
+        {PITCHES.map(([pitch, label]) => (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={voice.pitch === pitch}
+            disabled={!editable}
+            onClick={() => onChange({ ...voice, pitch })}
+          >
+            {label}
+          </button>
+        ))}
+      </span>
+      <button
+        type="button"
+        className="button button-ghost button-tiny with-icon"
+        aria-disabled={unsupported ? "true" : undefined}
+        data-tip={narration.support === "none" ? "This browser can't read aloud" : undefined}
+        onClick={hear}
+      >
+        <HeadphonesIcon />
+        Hear it
+      </button>
+    </div>
   );
 }
 

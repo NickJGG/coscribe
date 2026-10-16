@@ -49,6 +49,16 @@ describe("readEntryPatch", () => {
     expect(readEntryPatch({ type: "weapon" as never })).toHaveProperty("error");
     expect(readEntryPatch({ description: "x".repeat(281) })).toHaveProperty("error");
   });
+
+  it("maps a Voice to its columns and rejects unknown kinds and pitches", () => {
+    expect(readEntryPatch({ voice: { kind: "feminine", pitch: -1 } })).toEqual({
+      columns: { voice_kind: "feminine", voice_pitch: -1 },
+    });
+    expect(readEntryPatch({ voice: { kind: null, pitch: 0 } })).toEqual({ columns: { voice_kind: null, voice_pitch: 0 } });
+    expect(readEntryPatch({ voice: { kind: "robot" as never, pitch: 0 } })).toHaveProperty("error");
+    expect(readEntryPatch({ voice: { kind: null, pitch: 2 as never } })).toHaveProperty("error");
+    expect(readEntryPatch({ voice: null as never })).toHaveProperty("error");
+  });
 });
 
 describe("entryGroups", () => {
