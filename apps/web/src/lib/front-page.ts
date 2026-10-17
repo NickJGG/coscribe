@@ -1,16 +1,8 @@
 import { unstable_cache } from "next/cache";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/lib/supabase/database.types";
+import { anonClient } from "@/lib/supabase/anon";
 import { NO_DETAILS, storyCardDetails } from "@/lib/story-cards";
 
-/** The front page's lists are the same for every visitor, so they're fetched without the request's cookies. */
-function anonClient() {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } }
-  );
-}
+// The front page's lists are the same for every visitor, so they're fetched without the request's cookies.
 
 /** The cache stores JSON, so details are merged into each row rather than kept in a Map. */
 async function withDetails<T extends { id: string }>(supabase: ReturnType<typeof anonClient>, rows: T[]) {

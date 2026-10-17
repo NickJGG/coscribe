@@ -18,8 +18,11 @@ const script = Courier_Prime({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://coscribe.ink"),
   title: { default: "Coscribe", template: "%s · Coscribe" },
   description: "Write one story together, live, with your friends.",
+  openGraph: { siteName: "Coscribe", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 /** The one root layout: each shell (Site, desk, Reader) adds its own header beneath it. */

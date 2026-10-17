@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "/*": ["src/content/changelog/**/*.md"],
     // public/ isn't in server bundles, and the changelog checks which images have a dark variant.
     "/changelog": ["public/changelog/**/*.dark.*"],
+    "/**/opengraph-image*": ["src/lib/og/fonts/*.ttf"],
   },
 };
 

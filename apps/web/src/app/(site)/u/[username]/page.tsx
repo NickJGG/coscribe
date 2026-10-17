@@ -31,7 +31,7 @@ const getProfile = cache(async (username: string) => {
 
 export async function generateMetadata(props: PageProps<"/u/[username]">): Promise<Metadata> {
   const profile = await getProfile((await props.params).username);
-  return { title: profile?.username ?? "Not found" };
+  return { title: profile?.username ?? "Not found", description: profile?.bio ?? undefined };
 }
 
 export default async function ProfilePage(props: PageProps<"/u/[username]">) {
