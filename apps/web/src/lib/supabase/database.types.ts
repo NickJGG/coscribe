@@ -708,6 +708,11 @@ isOneToOne: true
 "invite_friend":
 { Args: { "p_role"?: Database["public"]['Enums']["member_role"],"p_story": string,"p_user": string }; Returns: undefined
                            },
+"invite_link_card":
+{ Args: { "p_token": string }; Returns: {
+              "expires_at": string,"inviter_color": string,"inviter_username": string,"role": Database["public"]['Enums']["member_role"],"story_blurb": string,"story_title": string,"writers": Json
+            }[]
+                           },
 "invite_link_preview":
 { Args: { "p_token": string }; Returns: {
               "expired": boolean,"inviter_username": string,"role": Database["public"]['Enums']["member_role"],"story_id": string,"story_title": string,"used": boolean

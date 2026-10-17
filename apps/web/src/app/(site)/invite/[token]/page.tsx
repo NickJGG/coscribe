@@ -6,8 +6,17 @@ import { getStory } from "@/lib/story";
 import { isWriter } from "@/lib/story-roles";
 import { acceptInviteLink } from "@/lib/actions/invites";
 import { ActionForm } from "@/components/ActionForm";
+import { inviteLinkCard } from "@/lib/invite-card";
 
-export const metadata: Metadata = { title: "Invite", robots: { index: false } };
+export async function generateMetadata(props: PageProps<"/invite/[token]">): Promise<Metadata> {
+  const card = await inviteLinkCard((await props.params).token);
+  if (!card) return { title: "Invite", robots: { index: false } };
+  return {
+    title: `${card.inviter} invited you to ${card.reading ? "read" : "write"} ${card.title}`,
+    description: "Open the link to join on Coscribe.",
+    robots: { index: false },
+  };
+}
 
 export default async function InvitePage(props: PageProps<"/invite/[token]">) {
   const { token } = await props.params;
