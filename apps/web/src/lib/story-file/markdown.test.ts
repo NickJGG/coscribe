@@ -50,6 +50,12 @@ const story: StoryFile = {
         p(text("Characters: not the Outline line")),
         p(text("  indented and trailing  ")),
         { type: "blockquote", content: [p(text("A quoted line.")), p(text("And another."))] },
+        {
+          type: "orderedList",
+          attrs: { start: 2 },
+          content: [{ type: "listItem", content: [p(text("Flour")), bullets([p(text("rye"))], [p(text("wheat"))])] }],
+        },
+        { type: "blockquote", content: [p(text("The note said:")), bullets([p(text("Run"))])] },
         { type: "sceneBreak" },
         p(text("Brackets [x] <tags> & ~tildes~ `ticks` _under_ back\\slash.")),
         {
@@ -217,10 +223,18 @@ describe("fromMarkdown with files from elsewhere", () => {
     expect(file.blurb).toBe("Quoted");
   });
 
-  it("turns Chapter lists and code into paragraphs, and drops HTML with a warning", () => {
-    const { file, warnings } = fromMarkdown("# One\n\n- a\n- b\n\n<div>x</div>\n\n```\ncode line\n```\n", "x.md");
-    expect(file.chapters[0]!.content.content!.map((n) => n.content?.[0]?.text)).toEqual(["a", "b", "code line"]);
-    expect(warnings).toEqual(["HTML in the file was left out.", "Lists in Chapters became paragraphs."]);
+  it("turns code into paragraphs, and drops HTML with a warning", () => {
+    const { file, warnings } = fromMarkdown("# One\n\n<div>x</div>\n\n```\ncode line\n```\n", "x.md");
+    expect(file.chapters[0]!.content.content!.map((n) => n.content?.[0]?.text)).toEqual(["code line"]);
+    expect(warnings).toEqual(["HTML in the file was left out."]);
+  });
+
+  it("keeps a Chapter's lists, flattening what list items can't hold to paragraphs", () => {
+    const { file, warnings } = fromMarkdown("# One\n\n- a\n\n  > quoted\n\n  ***\n\n  ```\n  code\n  ```\n- b\n", "x.md");
+    expect(warnings).toEqual([]);
+    expect(file.chapters[0]!.content).toEqual(
+      plain(doc(bullets([p(text("a")), p(text("quoted")), p(text("code"))], [p(text("b"))])), chapterSchema)
+    );
   });
 
   it("reads hard breaks as line breaks and soft breaks as spaces, and none in Outlines or headings", () => {
@@ -250,7 +264,7 @@ describe("summarize", () => {
   it("counts what an import would make", () => {
     expect(summarize(story)).toEqual({
       chapters: 2,
-      words: 53,
+      words: 60,
       entries: [
         { type: "character", count: 2 },
         { type: "place", count: 1 },

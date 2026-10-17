@@ -264,7 +264,7 @@ export function fromMarkdown(markdown: string, fileName: string): { file: StoryF
     chapters: chapters.map(
       (chapter): ChapterFile => ({
         title: chapter.title,
-        content: toDoc(fitChapter(chapter.blocks, warn), chapterSchema),
+        content: toDoc(fitChapter(chapter.blocks), chapterSchema),
         ...(chapter.outline && {
           outline: {
             fields: chapter.outline.fields.map((field) => ({
@@ -460,23 +460,29 @@ function paragraphsOf(node: JSONContent): Blocks {
   return (node.content ?? []).flatMap(paragraphsOf);
 }
 
-function fitChapter(nodes: Blocks, warn: (warning: string) => void): Blocks {
+function fitChapter(nodes: Blocks): Blocks {
   const out: Blocks = [];
   for (const node of nodes) {
     const last = out.at(-1);
     if (node.type === "script" && last?.type === "script") {
       last.content = [...(last.content ?? []), ...(node.content ?? [])];
     } else if (node.type === "blockquote") {
-      const content = (node.content ?? []).flatMap(paragraphsOf);
+      const content = paragraphsAndLists(node.content ?? []);
       if (content.length) out.push({ type: "blockquote", content });
     } else if (node.type === "bulletList" || node.type === "orderedList") {
-      warn("Lists in Chapters became paragraphs.");
-      out.push(...paragraphsOf(node));
+      out.push(fitList(node, paragraphsAndLists));
     } else {
       out.push(node);
     }
   }
   return out;
+}
+
+/** What a Chapter's block quotes and list items hold: lists stay, and everything else becomes paragraphs. */
+function paragraphsAndLists(nodes: Blocks): Blocks {
+  return nodes.flatMap((node) =>
+    node.type === "bulletList" || node.type === "orderedList" ? [fitList(node, paragraphsAndLists)] : paragraphsOf(node)
+  );
 }
 
 function fitList(list: JSONContent, fit: (nodes: Blocks) => Blocks): JSONContent {

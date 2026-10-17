@@ -54,17 +54,25 @@ export function narrationUnits(doc: PMNode, characters: readonly EntryMentionTar
     if (node.type.name === "script") turns.reset()
     let base = 0
     let cue: NarrationSpeaker | undefined
-    const visit = (textblock: PMNode) => {
+    const visit = (textblock: PMNode, number?: number) => {
       const text = textblock.textContent
       const element = textblock.type.name === "scriptElement" ? (textblock.attrs.element as string) : null
       if (element === "character") cue = cueSpeaker(text, characters)
       else if (element && element !== "dialogue" && element !== "parenthetical") cue = undefined
       const quotes = !element && characters.length ? attributeQuotes(text, characters, turns) : []
-      units.push(...textblockUnits(element, text, block, base, cue, quotes))
+      const blockUnits = textblockUnits(element, text, block, base, cue, quotes)
+      if (number !== undefined && blockUnits.length) blockUnits[0]!.speak = `${number}. ${blockUnits[0]!.speak}`
+      units.push(...blockUnits)
       base += text.length
     }
+    // A numbered list item's first paragraph says its number.
+    const walk = (parent: PMNode, number?: number) =>
+      parent.forEach((child, _, index) => {
+        if (child.isTextblock) visit(child, index === 0 ? number : undefined)
+        else walk(child, parent.type.name === "orderedList" ? (parent.attrs.start ?? 1) + index : undefined)
+      })
     if (node.isTextblock) visit(node)
-    else node.descendants((child) => (child.isTextblock ? (visit(child), false) : true))
+    else walk(node)
   })
   return units
 }

@@ -225,7 +225,7 @@ export function LiveDocument({
               <FormattingToolbar
                 editor={editor}
                 layout={toolbarLayout}
-                lists={kind === "entry"}
+                typedLists={kind === "entry"}
                 scripts={kind === "chapter"}
                 onAddNote={notes?.startDraft}
                 customizing={customizing}

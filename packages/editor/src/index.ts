@@ -8,7 +8,7 @@ import Paragraph from "@tiptap/extension-paragraph"
 import Strike from "@tiptap/extension-strike"
 import Text from "@tiptap/extension-text"
 import { Author } from "./author"
-import { Align, ChapterBlockquote, EntryBlockquote } from "./format"
+import { Align, ChapterBulletList, ChapterListItem, ChapterOrderedList, StoryBlockquote } from "./format"
 import { LineBreak, LineBreakPaste } from "./hard-break"
 import { Note, NotePaste } from "./note"
 import { SceneBreak } from "./scene-break"
@@ -89,10 +89,11 @@ export {
 } from "./outline"
 
 /**
- * Paragraphs (left, centered or right-aligned) that can hold line breaks, block quotes of paragraphs, Scene Breaks,
- * Scripts of Script Elements (a `scriptElement` with its kind in `element`, and no line breaks), and bold, italic and
- * strikethrough, plus the `author` mark on every run of text and `note` marks on noted passages. Every client
- * and apps/sync must share this schema: y-tiptap drops text carrying a mark it doesn't know.
+ * Paragraphs (left, centered or right-aligned) that can hold line breaks, bulleted and numbered lists (nesting, and
+ * holding only paragraphs and lists), block quotes of paragraphs and lists, Scene Breaks, Scripts of Script Elements
+ * (a `scriptElement` with its kind in `element`, and no line breaks), and bold, italic and strikethrough, plus the
+ * `author` mark on every run of text and `note` marks on noted passages. Every client and apps/sync must share this
+ * schema: y-tiptap drops text carrying a mark it doesn't know.
  */
 export const chapterExtensions = [
   Document,
@@ -104,7 +105,11 @@ export const chapterExtensions = [
   Italic,
   Strike,
   SceneBreak,
-  ChapterBlockquote,
+  StoryBlockquote,
+  ChapterBulletList,
+  ChapterOrderedList,
+  ChapterListItem,
+  ListKeymap,
   Script,
   ScriptElement,
   Align,
@@ -118,21 +123,25 @@ export const chapterExtensions = [
  * y-prosemirror deletes nodes it doesn't know from the shared document. Bump it whenever
  * `chapterExtensions`, `entryExtensions` or `outlineExtensions` gains or loses a node, mark or attribute.
  */
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 /** Server-side (apps/sync) view of a Chapter, for Snapshot previews and Restores. */
 export const chapterSchema = getSchema(chapterExtensions)
 
-/** A Chapter's formatting, less Scripts, plus bulleted and numbered lists, which block quotes can hold too. */
+const NOT_IN_ENTRIES = new Set<(typeof chapterExtensions)[number]>([
+  Script,
+  ScriptElement,
+  ChapterBulletList,
+  ChapterOrderedList,
+  ChapterListItem,
+])
+
+/** A Chapter's formatting, less Scripts, with lists that start from typing `- ` or `1. ` and hold any block. */
 export const entryExtensions = [
-  ...chapterExtensions.filter(
-    (extension) => extension !== ChapterBlockquote && extension !== Script && extension !== ScriptElement
-  ),
-  EntryBlockquote,
+  ...chapterExtensions.filter((extension) => !NOT_IN_ENTRIES.has(extension)),
   BulletList,
   OrderedList,
   ListItem,
-  ListKeymap,
 ]
 
 /** Server-side (apps/sync) view of an Entry body, for the Reader View. */

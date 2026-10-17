@@ -1,4 +1,5 @@
 import { canInsertNode, InputRule, isNodeSelection, mergeAttributes, Node, nodeInputRule } from "@tiptap/core"
+import type { NodeType, ResolvedPos } from "@tiptap/pm/model"
 import { NodeSelection, TextSelection } from "@tiptap/pm/state"
 
 declare module "@tiptap/core" {
@@ -32,7 +33,7 @@ export const SceneBreak = Node.create({
       insertSceneBreak:
         () =>
         ({ chain, state }) => {
-          if (!canInsertNode(state, this.type)) return false
+          if (!canInsertNode(state, this.type) || refusedByList(state.selection.$from, this.type)) return false
           const insert = chain()
           if (isNodeSelection(state.selection)) {
             insert.insertContentAt(state.selection.$to.pos, { type: this.name })
@@ -71,10 +72,24 @@ export const SceneBreak = Node.create({
     return [
       new InputRule({
         find: rule.find,
-        // Not in a Script line, which would split the Script around the break.
-        handler: (props) =>
-          props.state.doc.resolve(props.range.from).parent.type.name === "scriptElement" ? null : rule.handler(props),
+        // Not in a Script line or a Chapter's list item, which would split the Script or list around the break.
+        handler: (props) => {
+          const $from = props.state.doc.resolve(props.range.from)
+          if ($from.parent.type.name === "scriptElement" || refusedByList($from, this.type)) return null
+          return rule.handler(props)
+        },
       }),
     ]
   },
 })
+
+/** In a list item that can't hold a Scene Break (a Chapter's), where inserting one would split the list around it. */
+function refusedByList($pos: ResolvedPos, type: NodeType): boolean {
+  for (let depth = $pos.depth; depth > 0; depth--) {
+    const node = $pos.node(depth)
+    if (node.type.name === "listItem") {
+      return !node.type.contentMatch.matchType(node.type.schema.nodes.paragraph!)?.matchType(type)
+    }
+  }
+  return false
+}

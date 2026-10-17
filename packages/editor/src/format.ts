@@ -1,11 +1,17 @@
 import Blockquote from "@tiptap/extension-blockquote"
+import { BulletList, ListItem, OrderedList } from "@tiptap/extension-list"
 import TextAlign from "@tiptap/extension-text-align"
 
-/** A Chapter's block quote: paragraphs only, so no Scene Breaks inside. */
-export const ChapterBlockquote = Blockquote.extend({ content: "paragraph+" })
+/** A block quote of paragraphs and lists, so no Scene Breaks or Scripts inside. */
+export const StoryBlockquote = Blockquote.extend({ content: "(paragraph | bulletList | orderedList)+" })
 
-/** An Entry's block quote, which can also hold lists. */
-export const EntryBlockquote = Blockquote.extend({ content: "(paragraph | bulletList | orderedList)+" })
+/** A Chapter's lists start only from the toolbar, their shortcuts or a paste: `- ` and `1. ` stay as typed. */
+export const ChapterBulletList = BulletList.extend({ addInputRules: () => [] })
+
+export const ChapterOrderedList = OrderedList.extend({ addInputRules: () => [] })
+
+/** A Chapter's list item: paragraphs and nested lists, never a Scene Break, Script or block quote. */
+export const ChapterListItem = ListItem.extend({ content: "paragraph (paragraph | bulletList | orderedList)*" })
 
 export type Alignment = "left" | "center" | "right"
 

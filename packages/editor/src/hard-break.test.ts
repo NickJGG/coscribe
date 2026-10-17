@@ -10,11 +10,11 @@ const br: JSONContent = { type: "hardBreak" }
 const p = (...content: JSONContent[]): JSONContent => ({ type: "paragraph", content })
 
 describe("line breaks", () => {
-  it("are in Chapters and Entries but not Outlines, at schema version 4", () => {
+  it("are in Chapters and Entries but not Outlines, at schema version 5", () => {
     expect(chapterSchema.nodes.hardBreak).toBeDefined()
     expect(entrySchema.nodes.hardBreak).toBeDefined()
     expect(outlineSchema.nodes.hardBreak).toBeUndefined()
-    expect(SCHEMA_VERSION).toBe(4)
+    expect(SCHEMA_VERSION).toBe(5)
   })
 
   it("read as one \\n, so text offsets are ProseMirror offsets", () => {

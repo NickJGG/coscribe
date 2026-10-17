@@ -20,6 +20,9 @@ const paragraph = (...runs: object[]) => ({ type: "paragraph", content: runs })
 const quote = (...paragraphs: object[]) => ({ type: "blockquote", content: paragraphs })
 const line = (element: string, words: string) => ({ type: "scriptElement", attrs: { element }, content: [text(words)] })
 const script = (...lines: object[]) => ({ type: "script", content: lines })
+const item = (...content: object[]) => ({ type: "listItem", content })
+const bullets = (...items: object[]) => ({ type: "bulletList", content: items })
+const numbered = (start: number, ...items: object[]) => ({ type: "orderedList", attrs: { start }, content: items })
 const doc = (...content: object[]) => chapterSchema.nodeFromJSON({ type: "doc", content })
 const units = (...content: object[]) => narrationUnits(doc(...content))
 const spoken = (...content: object[]) => units(...content).map((u) => u.speak)
@@ -139,6 +142,53 @@ describe("unitAfter", () => {
     expect(unitAfter(all, 0, 9)).toBe(2)
     expect(unitAfter(all, 1, 0)).toBe(3)
     expect(unitAfter(all, 2, 6)).toBe(-1)
+  })
+})
+
+describe("narrationUnits with lists", () => {
+  it("reads a bulleted list's items as plain lines", () => {
+    const all = units(bullets(item(paragraph(text("Eggs."))), item(paragraph(text("Milk. Bread.")))))
+    expect(all.map((u) => [u.speak, u.from, u.to, u.pauseAfterMs])).toEqual([
+      ["Eggs.", 0, 5, 250],
+      ["Milk.", 5, 10, 0],
+      ["Bread.", 11, 17, 250],
+    ])
+  })
+
+  it("says a numbered item's number, counting from the list's start, without highlighting it", () => {
+    const all = units(numbered(3, item(paragraph(text("Eggs. Milk."))), item(paragraph(text("Bread.")))))
+    expect(all.map((u) => [u.speak, u.from, u.to])).toEqual([
+      ["3. Eggs.", 0, 5],
+      ["Milk.", 6, 11],
+      ["4. Bread.", 11, 17],
+    ])
+  })
+
+  it("counts a nested numbered list on its own", () => {
+    expect(
+      spoken(
+        numbered(
+          1,
+          item(paragraph(text("Pack.")), numbered(1, item(paragraph(text("Socks."))), item(paragraph(text("Hat."))))),
+          item(paragraph(text("Leave.")), paragraph(text("Lock up.")))
+        )
+      )
+    ).toEqual(["1. Pack.", "1. Socks.", "2. Hat.", "2. Leave.", "Lock up."])
+  })
+
+  it("numbers a list inside a block quote", () => {
+    expect(spoken(quote(paragraph(text("Dear Sam.")), numbered(1, item(paragraph(text("Come home."))))))).toEqual([
+      "Dear Sam.",
+      "1. Come home.",
+    ])
+  })
+
+  it("finds points across item seams", () => {
+    const d = doc(paragraph(text("List:")), numbered(1, item(paragraph(text("Eggs."))), item(paragraph(text("Milk.")))))
+    expect(narratedBlocks(narrationUnits(d))).toEqual([0, 1])
+    expect(d.resolve(narrationPos(d, 1, 5, -1)).parent.textContent).toBe("Eggs.")
+    expect(d.resolve(narrationPos(d, 1, 5, 1)).parent.textContent).toBe("Milk.")
+    for (const offset of [0, 3, 5, 7, 10]) expect(narrationPoint(d, narrationPos(d, 1, offset))).toEqual({ block: 1, offset })
   })
 })
 

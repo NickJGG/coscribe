@@ -1,15 +1,19 @@
-import { getSchema } from "@tiptap/core"
+import { Editor, getSchema } from "@tiptap/core"
+import { TextSelection } from "@tiptap/pm/state"
 import { describe, expect, it } from "vitest"
 import { chapterExtensions, countWords, documentName, entryExtensions, parseDocumentName } from "./index"
 
 describe("chapter schema", () => {
   const schema = getSchema(chapterExtensions)
 
-  it("allows only paragraphs, line breaks, block quotes, Scene Breaks, Scripts, bold, italic, strikethrough, authorship, and Notes", () => {
+  it("allows only paragraphs, line breaks, lists, block quotes, Scene Breaks, Scripts, bold, italic, strikethrough, authorship, and Notes", () => {
     expect(Object.keys(schema.nodes).sort()).toEqual([
       "blockquote",
+      "bulletList",
       "doc",
       "hardBreak",
+      "listItem",
+      "orderedList",
       "paragraph",
       "sceneBreak",
       "script",
@@ -45,6 +49,45 @@ describe("chapter schema", () => {
     expect(countWords(doc)).toBe(4)
   })
 
+  const p = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] })
+  const item = (...content: object[]) => ({ type: "listItem", content })
+  const check = (...content: object[]) => () => schema.nodeFromJSON({ type: "doc", content }).check()
+
+  it("accepts lists, nested lists, and lists in block quotes", () => {
+    expect(
+      check(
+        { type: "bulletList", content: [item(p("Eggs")), item(p("Milk"), { type: "orderedList", content: [item(p("Whole"))] })] },
+        { type: "blockquote", content: [p("Dear Sam,"), { type: "orderedList", attrs: { start: 3 }, content: [item(p("Come"))] }] }
+      )
+    ).not.toThrow()
+  })
+
+  it("keeps Scene Breaks, Scripts and block quotes out of list items, and lists out of Scripts", () => {
+    const list = (...content: object[]) => ({ type: "bulletList", content: [item(p("A"), ...content)] })
+    expect(check(list({ type: "sceneBreak" }))).toThrow()
+    expect(check(list({ type: "script", content: [{ type: "scriptElement", content: [] }] }))).toThrow()
+    expect(check(list({ type: "blockquote", content: [p("B")] }))).toThrow()
+    expect(check({ type: "script", content: [list()] })).toThrow()
+  })
+
+  it("won't insert a Scene Break or start a Script from inside a list item", () => {
+    const e = new Editor({ element: null, extensions: chapterExtensions, content: { type: "doc", content: [{ type: "bulletList", content: [item(p("Eggs"))] }] } })
+    e.view.dispatch(e.state.tr.setSelection(TextSelection.create(e.state.doc, 5)))
+    expect(e.can().insertSceneBreak()).toBe(false)
+    expect(e.can().toggleScript()).toBe(false)
+  })
+
+  it("won't start a list from inside a Script", () => {
+    const e = new Editor({
+      element: null,
+      extensions: chapterExtensions,
+      content: { type: "doc", content: [{ type: "script", content: [{ type: "scriptElement", content: [{ type: "text", text: "MIA" }] }] }] },
+    })
+    e.view.dispatch(e.state.tr.setSelection(TextSelection.create(e.state.doc, 3)))
+    expect(e.can().toggleBulletList()).toBe(false)
+    expect(e.can().toggleOrderedList()).toBe(false)
+  })
+
   it("accepts a Chapter with a Scene Break between paragraphs", () => {
     const doc = schema.nodeFromJSON({
       type: "doc",
@@ -61,7 +104,7 @@ describe("chapter schema", () => {
 describe("entry schema", () => {
   const schema = getSchema(entryExtensions)
 
-  it("adds bulleted and numbered lists to the Chapter schema", () => {
+  it("has the Chapter schema's nodes less Scripts", () => {
     expect(Object.keys(schema.nodes).sort()).toEqual([
       "blockquote",
       "bulletList",

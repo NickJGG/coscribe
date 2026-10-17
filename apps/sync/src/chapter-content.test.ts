@@ -84,6 +84,34 @@ describe("chapter content", () => {
     expect(chapterContent(live, "entry").toJSON()).toEqual(numbers.toJSON())
   })
 
+  it("hashes and Restores Chapter lists, nested and in block quotes", () => {
+    const item = (text: string, ...lists: object[]) => ({ type: "listItem", content: [para([text, mia]), ...lists] })
+    const body = (list: string) => {
+      const attrs = list === "orderedList" ? { attrs: { start: 1, type: null } } : {}
+      return {
+        type: "doc",
+        content: [
+          { type: list, ...attrs, content: [item("One", { type: "bulletList", content: [item("Inner")] }), item("Two")] },
+          { type: "blockquote", content: [para(["Dear Sam,", mia]), { type: "bulletList", content: [item("Come")] }] },
+        ],
+      }
+    }
+    const chapter = (list: string) => {
+      const doc = new Y.Doc()
+      prosemirrorJSONToYXmlFragment(chapterSchema, body(list), doc.getXmlFragment(DOCUMENT_FIELD))
+      return doc
+    }
+    expect(decodeChapter(Y.encodeStateAsUpdate(chapter("orderedList"))).toJSON()).toEqual(body("orderedList"))
+    const bullets = chapterContent(chapter("bulletList"))
+    const numbers = chapterContent(chapter("orderedList"))
+    expect(contentHash(bullets)).not.toBe(contentHash(numbers))
+    expect(chapterStats(numbers).words).toBe(6)
+
+    const live = chapter("bulletList")
+    replaceChapterContent(live, decodeChapter(Y.encodeStateAsUpdate(chapter("orderedList"))))
+    expect(chapterContent(live).toJSON()).toEqual(numbers.toJSON())
+  })
+
   it("round-trips block quotes, strikethrough and alignment", () => {
     const author = { type: "author", attrs: mia }
     const body = {

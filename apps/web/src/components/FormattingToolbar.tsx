@@ -58,6 +58,7 @@ type Active = {
   note: boolean;
   script: boolean;
   canScript: boolean;
+  canSceneBreak: boolean;
   scriptElement: ScriptElementType | null;
 };
 
@@ -65,6 +66,8 @@ type Tool = {
   label: string;
   tip?: string;
   keys?: string;
+  /** A typed shortcut, which only some documents have. */
+  typed?: string;
   icon: (active: Active) => React.ReactNode;
   pressed?: (active: Active) => boolean;
   run: (editor: Editor, onAddNote?: () => void) => void;
@@ -120,14 +123,16 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   },
   bulletList: {
     label: "Bulleted list",
-    keys: "Type - and a space",
+    keys: "Ctrl+Shift+8",
+    typed: "type - and a space",
     icon: () => <BulletListIcon />,
     pressed: (a) => a.bulletList,
     run: (editor) => editor.chain().focus().toggleBulletList().run(),
   },
   orderedList: {
     label: "Numbered list",
-    keys: "Type 1. and a space",
+    keys: "Ctrl+Shift+7",
+    typed: "type 1. and a space",
     icon: () => <NumberedListIcon />,
     pressed: (a) => a.orderedList,
     run: (editor) => editor.chain().focus().toggleOrderedList().run(),
@@ -149,11 +154,15 @@ const GROUP_LABELS: Record<GroupId, string> = {
 };
 
 /** Tools that don't apply inside a Script. */
-const NOT_IN_SCRIPT = new Set<ToolId>(["sceneBreak", "lineBreak", "blockquote", "align"]);
+const NOT_IN_SCRIPT = new Set<ToolId>(["sceneBreak", "lineBreak", "blockquote", "align", "bulletList", "orderedList"]);
 
 function toolDisabled(tool: ToolId, active: Active): boolean {
   if (active.script && NOT_IN_SCRIPT.has(tool)) return true;
-  return (tool === "addNote" && !active.note) || (tool === "script" && !active.canScript);
+  return (
+    (tool === "addNote" && !active.note) ||
+    (tool === "script" && !active.canScript) ||
+    (tool === "sceneBreak" && !active.canSceneBreak)
+  );
 }
 
 const labelOf = (tool: ToolId) => (tool === "align" ? "Alignment" : TOOLS[tool].label);
@@ -190,13 +199,13 @@ function alignmentOf(editor: Editor): Alignment {
  * The desk's Formatting toolbar, in the signed-in account's order. `customizing` is started from the View options
  * menu: it reorders groups by their grips and tools within their group, and the order is saved once, on Done.
  * Cancel, Escape or unmounting drops the draft. Either way it ends with `onFinish`.
- * Lists show only on an Entry, the Script tool only on a Chapter, and Add Note only with `onAddNote`. While the
- * caret is in a Script, its element picker heads the toolbar.
+ * The list tools hint at typing `- ` or `1. ` only with `typedLists` (an Entry), the Script tool shows only on a
+ * Chapter, and Add Note only with `onAddNote`. While the caret is in a Script, its element picker heads the toolbar.
  */
 export function FormattingToolbar({
   editor,
   layout,
-  lists,
+  typedLists,
   scripts,
   onAddNote,
   customizing,
@@ -204,7 +213,7 @@ export function FormattingToolbar({
 }: {
   editor: Editor;
   layout: ToolbarLayout;
-  lists: boolean;
+  typedLists: boolean;
   scripts: boolean;
   onAddNote?: () => void;
   customizing: boolean;
@@ -223,6 +232,7 @@ export function FormattingToolbar({
       note: canAddNote(editor),
       script: editor.isActive("script"),
       canScript: scripts && editor.can().toggleScript(),
+      canSceneBreak: editor.can().insertSceneBreak(),
       scriptElement: scriptElementOf(editor),
     }),
   });
@@ -234,7 +244,7 @@ export function FormattingToolbar({
   const toolbarRef = useRef<HTMLDivElement>(null);
   const layoutShown = customizing ? (draft ?? saved) : saved;
   const shown = layoutShown
-    .filter(([group]) => (group !== "lists" || lists) && (group !== "note" || onAddNote))
+    .filter(([group]) => group !== "note" || onAddNote)
     .map(([group, tools]): [GroupId, ToolId[]] => [group, tools.filter((tool) => tool !== "script" || scripts)]);
 
   useEffect(() => {
@@ -284,6 +294,7 @@ export function FormattingToolbar({
                     key={tool}
                     tool={TOOLS[tool]}
                     active={active}
+                    typed={typedLists}
                     disabled={toolDisabled(tool, active)}
                     onMouseDown={tool === "addNote" ? keepEditorFocus : undefined}
                     onClick={() => TOOLS[tool].run(editor, onAddNote)}
@@ -318,14 +329,19 @@ export function FormattingToolbar({
   );
 }
 
-function ToolButton({ tool, active, ...props }: { tool: Tool; active: Active } & React.ComponentProps<"button">) {
+function ToolButton({
+  tool,
+  active,
+  typed,
+  ...props
+}: { tool: Tool; active: Active; typed?: boolean } & React.ComponentProps<"button">) {
   return (
     <button
       type="button"
       className={styles.tool}
       aria-pressed={tool.pressed?.(active)}
       data-tip={tool.tip ?? tool.label}
-      data-keys={tool.keys}
+      data-keys={typed && tool.typed ? `${tool.keys} · ${tool.typed}` : tool.keys}
       aria-label={tool.label}
       {...props}
     >

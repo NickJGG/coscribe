@@ -210,8 +210,14 @@
 .passage > blockquote * + blockquote,
 .passage > blockquote blockquote + *,
 .passage > blockquote * + :global(div[data-script]),
-.passage > blockquote :global(div[data-script]) + * {
+.passage > blockquote :global(div[data-script]) + *,
+.passage > blockquote * + :is(ul, ol),
+.passage > blockquote :is(ul, ol) + * {
   margin-top: 0.6em;
+}
+
+.passage > blockquote :is(ul, ol) {
+  padding-left: 1.5em;
 }
 
 .passage > blockquote blockquote {
