@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { getSchema } from "@tiptap/core";
 import { chapterExtensions } from "@coscribe/editor";
-import { groupNotes, isWhole, markerGroups, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
+import {
+  groupNotes,
+  isWhole,
+  latestActivity,
+  markerGroups,
+  NOTE_QUOTE_MAX,
+  noteQuote,
+  stackCards,
+  type Note,
+  type NoteReply,
+} from "./notes";
 
 function note(id: string, created_at: string, resolved_at: string | null = null, quote: string | null = "quote"): Note {
   return {
@@ -78,6 +88,30 @@ describe("isWhole", () => {
   it("is true only for a Note without a quote", () => {
     expect(isWhole(note("a", "2026-10-07T10:00:00Z", null, null))).toBe(true);
     expect(isWhole(note("b", "2026-10-07T10:00:00Z"))).toBe(false);
+  });
+});
+
+describe("latestActivity", () => {
+  const reply = (note_id: string, created_at: string): NoteReply => ({
+    id: `${note_id}-${created_at}`,
+    note_id,
+    chapter_id: null,
+    entry_id: null,
+    author_id: "u1",
+    body: "reply",
+    edited_at: null,
+    created_at,
+  });
+
+  it("orders open Notes by their newest reply or, without one, when they were written", () => {
+    const notes = [
+      note("old-with-reply", "2026-10-07T08:00:00Z", null, null),
+      note("newest", "2026-10-07T11:00:00Z", null, null),
+      note("quiet", "2026-10-07T09:00:00Z", null, null),
+      note("resolved", "2026-10-07T12:00:00Z", "2026-10-07T12:30:00Z", null),
+    ];
+    const replies = [reply("old-with-reply", "2026-10-07T10:00:00Z"), reply("old-with-reply", "2026-10-07T09:30:00Z")];
+    expect(latestActivity(notes, replies).map((n) => n.id)).toEqual(["newest", "old-with-reply", "quiet"]);
   });
 });
 

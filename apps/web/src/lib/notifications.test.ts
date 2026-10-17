@@ -127,7 +127,14 @@ describe("notificationHref", () => {
     expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1/bible/e4?note=n7");
     expect(notificationHref({ ...reply, kind: "note_mention" })).toBe("/stories/s1/bible/e4?note=n7");
     expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/bible/e4");
-    expect(notificationHref({ ...reply, detail: {} })).toBe("/stories/s1");
+  });
+
+  it("opens the Overview with a Story Note expanded", () => {
+    const reply = { ...base, kind: "note_reply" as const, note_id: "n7", detail: {} };
+    expect(notificationHref(reply)).toBe("/stories/s1?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_mention" })).toBe("/stories/s1?note=n7");
+    expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1");
   });
 
   it("opens Story Chat at the message", () => {

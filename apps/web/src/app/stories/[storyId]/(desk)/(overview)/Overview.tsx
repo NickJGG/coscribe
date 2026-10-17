@@ -1,7 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
+import { latestActivity } from "@/lib/notes";
 import { Avatar } from "@/components/Avatar";
+import { NoteCard } from "@/components/notes/NoteMargin";
+import { NoteThreadContext } from "@/components/notes/NoteThreads";
+import { useStoryNotes } from "@/components/notes/StoryNotesProvider";
+import { useStoryPanel } from "@/components/StoryPanel";
 import { useHereNow, type HereNow } from "@/components/StoryPresence";
 import { useDeskFrame } from "../DeskFrame";
 import styles from "./overview.module.css";
@@ -75,5 +81,54 @@ export function BrowseButton() {
         Browse Chapters and the Story Bible
       </button>
     </div>
+  );
+}
+
+const OPEN_NOTES_SHOWN = 5;
+
+/**
+ * The open Story Notes with the latest activity, each opening the Notes panel on itself, and "Show all".
+ * Nothing for Viewers or when none are open.
+ */
+export function OpenStoryNotes() {
+  const story = useStoryNotes();
+  const show = useStoryPanel()?.show;
+  const notes = story?.notes;
+  const replies = story?.replies;
+  const open = useMemo(() => (notes && replies ? latestActivity(notes, replies) : []), [notes, replies]);
+  if (!story || !show || !open.length) return null;
+
+  const openPanel = (id: string | null) => {
+    story.setExpanded(id);
+    show("notes");
+  };
+
+  return (
+    <section className={styles.section} aria-labelledby="overview-notes">
+      <div className={styles.notesHead}>
+        <h2 id="overview-notes" className="smallcaps">
+          Open Notes
+        </h2>
+        <button type="button" className="button button-ghost button-tiny" onClick={() => openPanel(null)}>
+          Show all
+        </button>
+      </div>
+      <NoteThreadContext value={story.thread}>
+        <ol className={styles.notes}>
+          {open.slice(0, OPEN_NOTES_SHOWN).map((note) => (
+            <li key={note.id}>
+              <NoteCard
+                note={note}
+                quote={null}
+                replies={story.replies.filter((r) => r.note_id === note.id)}
+                active={false}
+                onActivate={() => openPanel(note.id)}
+                onDeactivate={() => {}}
+              />
+            </li>
+          ))}
+        </ol>
+      </NoteThreadContext>
+    </section>
   );
 }

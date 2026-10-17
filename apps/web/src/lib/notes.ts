@@ -3,7 +3,7 @@ import { noteRanges } from "@coscribe/editor";
 import type { Database } from "@/lib/supabase/database.types";
 
 // Notes: threads pinned to a passage of a Chapter or Entry by a `note` mark (supabase/migrations/0018_notes.sql),
-// or on a whole Chapter or Entry, with no quote (0054).
+// on a whole Chapter or Entry, with no quote, or on the Story, with no document either (0054).
 
 type Tables = Database["public"]["Tables"];
 
@@ -49,6 +49,14 @@ export function groupNotes(notes: readonly Note[], ranges: ReadonlyMap<string, {
   groups.resolved.sort((a, b) => time(b.resolved_at!) - time(a.resolved_at!));
   groups.detached.sort((a, b) => time(a.created_at) - time(b.created_at));
   return groups;
+}
+
+/** Open Notes, the one with the newest reply (or, without replies, the newest) first. */
+export function latestActivity(notes: readonly Note[], replies: readonly NoteReply[]): Note[] {
+  const latest = new Map<string, number>();
+  for (const r of replies) latest.set(r.note_id, Math.max(latest.get(r.note_id) ?? 0, time(r.created_at)));
+  const at = (note: Note) => Math.max(time(note.created_at), latest.get(note.id) ?? 0);
+  return notes.filter((n) => !n.resolved_at).sort((a, b) => at(b) - at(a));
 }
 
 /**

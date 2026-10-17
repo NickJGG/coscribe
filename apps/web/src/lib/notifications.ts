@@ -148,8 +148,9 @@ export function notificationHref(
   const story = `/stories/${n.story_id}`;
   if (n.kind === "note_reply" || n.kind === "note_mention" || n.kind === "note_resolved") {
     const { path, id } = noteDocument(n.detail);
-    if (!id) return story;
-    return n.note_id ? `${story}/${path}/${id}?note=${n.note_id}` : `${story}/${path}/${id}`;
+    // A Story Note is on neither, so it opens on the Overview.
+    const at = id ? `${story}/${path}/${id}` : story;
+    return n.note_id ? `${at}?note=${n.note_id}` : at;
   }
   if (n.kind === "chapter_added") {
     const chapter = detailText(n.detail, "chapter_id");

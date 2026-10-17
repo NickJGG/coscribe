@@ -7,14 +7,15 @@ import { canDeleteNote, type MemberRole } from "@/lib/story-roles";
 import { NOTE_COLUMNS, REPLY_COLUMNS, type Note, type NoteReply } from "@/lib/notes";
 import type { StoryAuthor } from "../LiveDocument";
 
-export type NoteScope = { kind: "chapter" | "entry"; id: string };
+/** A Chapter's or Entry's Notes, or the Story's own (Story Notes), which are on neither. */
+export type NoteScope = { kind: "chapter" | "entry" | "story"; id: string };
 
 type Person = { name: string; color: string };
 
 /** What a Note's card needs to show its thread and act on it, whichever provider holds the Notes. */
 export type NoteThreadValue = {
-  /** Where a quoteless card says its Note is, like "Whole Chapter". */
-  wholeLabel: string;
+  /** Where a quoteless card says its Note is, like "Whole Chapter"; null for Story Notes, which say nothing. */
+  wholeLabel: string | null;
   /** On a Finished story, Notes can be read but nothing else. */
   readOnly: boolean;
   person: (id: string | null) => Person;
@@ -33,11 +34,13 @@ export function useNoteThread() {
 }
 
 const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
-const WHOLE_LABELS = { chapter: "Whole Chapter", entry: "Whole Entry" } as const;
+const WHOLE_LABELS = { chapter: "Whole Chapter", entry: "Whole Entry", story: null } as const;
 
 function documentIds({ kind, id }: NoteScope) {
-  return kind === "chapter" ? { chapter_id: id, entry_id: null } : { chapter_id: null, entry_id: id };
+  return { chapter_id: kind === "chapter" ? id : null, entry_id: kind === "entry" ? id : null };
 }
+
+const onNoDocument = (row: { chapter_id: string | null; entry_id: string | null }) => !row.chapter_id && !row.entry_id;
 
 function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
   const byId = new Map(current.map((x) => [x.id, x]));
@@ -47,8 +50,8 @@ function merge<T extends { id: string; created_at: string }>(current: T[], incom
 
 /**
  * A scope's Notes and replies, live from `notes` and `note_replies`, with the actions on their threads.
- * `post` adds a Note on a passage, or on the whole document with a null quote, and gives its id unless it
- * failed; it marks no text.
+ * `post` adds a Note on a passage, or on the whole document with a null quote (always, for the Story), and
+ * gives its id unless it failed; it marks no text.
  */
 export function useNoteThreads({
   scope,
@@ -69,7 +72,7 @@ export function useNoteThreads({
   const [replies, setReplies] = useState<NoteReply[]>([]);
   const [loaded, setLoaded] = useState(false);
   const known = useRef({ notes: new Set<string>(), replies: new Set<string>() });
-  const column = kind === "chapter" ? "chapter_id" : "entry_id";
+  const column = kind === "chapter" ? "chapter_id" : kind === "entry" ? "entry_id" : "story_id";
 
   useEffect(() => {
     known.current = { notes: new Set(notes.map((n) => n.id)), replies: new Set(replies.map((r) => r.id)) };
@@ -79,33 +82,42 @@ export function useNoteThreads({
   useEffect(() => {
     let live = true;
     const load = async () => {
-      const [n, r] = await Promise.all([
-        supabase.from("notes").select(NOTE_COLUMNS).eq(column, scopeId),
-        supabase.from("note_replies").select(REPLY_COLUMNS).eq(column, scopeId),
-      ]);
+      const noteRows = supabase.from("notes").select(NOTE_COLUMNS).eq(column, scopeId);
+      const replyRows = supabase.from("note_replies").select(REPLY_COLUMNS).eq(column, scopeId);
+      const [n, r] = await Promise.all(
+        kind === "story"
+          ? [noteRows.is("chapter_id", null).is("entry_id", null), replyRows.is("chapter_id", null).is("entry_id", null)]
+          : [noteRows, replyRows]
+      );
       if (!live) return;
       if (n.data) setNotes((current) => merge(current, n.data));
       if (r.data) setReplies((current) => merge(current, r.data));
       setLoaded(true);
     };
     const filter = `${column}=eq.${scopeId}`;
+    // Realtime takes one filter, so the Story's rows include every document's: keep only its own.
+    const keep = kind === "story" ? onNoDocument : () => true;
     const channel = supabase
       .channel(`notes:${scopeId}`)
-      .on<Note>("postgres_changes", { event: "INSERT", schema: "public", table: "notes", filter }, ({ new: note }) =>
-        setNotes((current) => merge(current, [note]))
-      )
-      .on<Note>("postgres_changes", { event: "UPDATE", schema: "public", table: "notes", filter }, ({ new: note }) =>
-        setNotes((current) => merge(current, [note]))
-      )
+      .on<Note>("postgres_changes", { event: "INSERT", schema: "public", table: "notes", filter }, ({ new: note }) => {
+        if (keep(note)) setNotes((current) => merge(current, [note]));
+      })
+      .on<Note>("postgres_changes", { event: "UPDATE", schema: "public", table: "notes", filter }, ({ new: note }) => {
+        if (keep(note)) setNotes((current) => merge(current, [note]));
+      })
       .on<NoteReply>(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "note_replies", filter },
-        ({ new: reply }) => setReplies((current) => merge(current, [reply]))
+        ({ new: reply }) => {
+          if (keep(reply)) setReplies((current) => merge(current, [reply]));
+        }
       )
       .on<NoteReply>(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "note_replies", filter },
-        ({ new: reply }) => setReplies((current) => merge(current, [reply]))
+        ({ new: reply }) => {
+          if (keep(reply)) setReplies((current) => merge(current, [reply]));
+        }
       )
       // Realtime can't filter deletes, so each brings only an id: drop it only if it's one of ours.
       .on<{ id: string }>("postgres_changes", { event: "DELETE", schema: "public", table: "notes" }, ({ old }) => {
@@ -123,7 +135,7 @@ export function useNoteThreads({
       live = false;
       void supabase.removeChannel(channel);
     };
-  }, [supabase, column, scopeId]);
+  }, [supabase, kind, column, scopeId]);
 
   const post = useCallback(
     async (quote: string | null, body: string): Promise<{ id: string | null; error: ActionResult }> => {
@@ -131,13 +143,15 @@ export function useNoteThreads({
       const { error } =
         kind === "chapter"
           ? await supabase.rpc("add_note", { p_id: id, p_chapter: scopeId, p_quote: quote ?? "", p_body: body })
-          : await supabase.rpc("add_entry_note", { p_id: id, p_entry: scopeId, p_quote: quote ?? "", p_body: body });
+          : kind === "entry"
+            ? await supabase.rpc("add_entry_note", { p_id: id, p_entry: scopeId, p_quote: quote ?? "", p_body: body })
+            : await supabase.rpc("add_story_note", { p_id: id, p_story: scopeId, p_body: body });
       if (error) return { id: null, error: errorText(error) };
       const note: Note = {
         id,
         ...documentIds({ kind, id: scopeId }),
         author_id: me,
-        quote,
+        quote: kind === "story" ? null : quote,
         body: body.trim(),
         edited_at: null,
         resolved_at: null,

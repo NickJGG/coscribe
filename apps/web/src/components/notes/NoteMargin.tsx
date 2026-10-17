@@ -264,31 +264,62 @@ export function DraftCard({
   onPosted?: () => void;
 }) {
   const { addNote, cancelDraft, addWhole, setWholeDraft } = useNotes()!;
-  const { wholeLabel } = useNoteThread();
   const whole = quote === null;
 
   return (
+    <NewNoteCard
+      ref={ref}
+      style={style}
+      quote={quote}
+      onSubmit={async (body) => {
+        const result = await (whole ? addWhole(body) : addNote(body));
+        if (!result) onPosted?.();
+        return result;
+      }}
+      onCancel={whole ? () => setWholeDraft(false) : cancelDraft}
+    />
+  );
+}
+
+/** A Note being written, whichever provider posts it. A null quote shows the thread's whole label, if it has one. */
+export function NewNoteCard({
+  ref,
+  style,
+  quote,
+  onSubmit,
+  onCancel,
+}: {
+  ref?: React.Ref<HTMLDivElement>;
+  style?: React.CSSProperties;
+  quote: string | null;
+  onSubmit: (body: string) => Promise<ActionResult>;
+  onCancel: () => void;
+}) {
+  return (
     <div ref={ref} className={styles.card} data-active style={style}>
-      {whole ? <span className={`smallcaps ${styles.whole}`}>{wholeLabel}</span> : <blockquote className={styles.quote}>{quote}</blockquote>}
-      <Compose
-        placeholder="Add a Note…"
-        submit="Note"
-        onSubmit={async (body) => {
-          const result = await (whole ? addWhole(body) : addNote(body));
-          if (!result) onPosted?.();
-          return result;
-        }}
-        onCancel={whole ? () => setWholeDraft(false) : cancelDraft}
-        autoFocus
-      />
+      <Place quote={quote} />
+      <Compose placeholder="Add a Note…" submit="Note" onSubmit={onSubmit} onCancel={onCancel} autoFocus />
     </div>
   );
+}
+
+/** What a card is on: its passage's quote, or for a quoteless Note the thread's whole label, if any. */
+function Place({ quote, detached = false }: { quote: string | null; detached?: boolean }) {
+  const { wholeLabel } = useNoteThread();
+  if (quote !== null) {
+    return (
+      <blockquote className={styles.quote} data-detached={detached || undefined}>
+        {quote}
+      </blockquote>
+    );
+  }
+  return wholeLabel && <span className={`smallcaps ${styles.whole}`}>{wholeLabel}</span>;
 }
 
 /**
  * A Note's thread. Active, it can be replied to and Resolved; a Resolved one can only be Reopened. A
  * `detached` Note's passage is gone from its document, so it shows the quote it was written on, struck out.
- * A null `quote` is a Note on the whole document, labelled as such instead.
+ * A null `quote` is a Note on the whole document, labelled as such instead, or on the Story, with no label.
  */
 export function NoteCard({
   ref,
@@ -311,7 +342,7 @@ export function NoteCard({
   onActivate: () => void;
   onDeactivate: () => void;
 }) {
-  const { readOnly, reply, setResolved, person, wholeLabel } = useNoteThread();
+  const { readOnly, reply, setResolved, person } = useNoteThread();
   const [error, setError] = useState<string | null>(null);
   const resolved = !!note.resolved_at;
 
@@ -337,13 +368,7 @@ export function NoteCard({
       }}
     >
       {detached && <span className={styles.detached}>Passage removed</span>}
-      {quote === null ? (
-        <span className={`smallcaps ${styles.whole}`}>{wholeLabel}</span>
-      ) : (
-        <blockquote className={styles.quote} data-detached={detached || undefined}>
-          {quote}
-        </blockquote>
-      )}
+      <Place quote={quote} detached={detached} />
       <Message kind="note" message={note} active={active && !resolved} />
       {replies.length > 0 && (
         <ol className={styles.replies}>

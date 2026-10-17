@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { getChapters, getEntries, getPins, getStory } from "@/lib/story";
+import { getChapters, getEntries, getPins, getStory, storyAuthors } from "@/lib/story";
 import { canDeleteEntries, canManageChapters, canManageInvites, isWriter } from "@/lib/story-roles";
 import { moveTargets } from "@/lib/chapter-order";
 import { ENTRY_TYPE_LABEL, ENTRY_TYPES, entryGroups, NAME_MAX } from "@/lib/entries";
@@ -10,6 +10,7 @@ import { addEntry } from "@/lib/actions/entries";
 import { ActionForm } from "@/components/ActionForm";
 import { AccountMenus } from "@/components/SiteHeader";
 import { LiveStatusProvider } from "@/components/LiveStatus";
+import { StoryNotesProvider } from "@/components/notes/StoryNotesProvider";
 import { PinnedEntriesProvider } from "@/components/PinnedEntries";
 import { SignInLink } from "@/components/SignInLink";
 import { SmartPunctuationProvider } from "@/components/SmartPunctuation";
@@ -28,8 +29,8 @@ import styles from "./desk.module.css";
 
 /**
  * The desk: the Overview, Settings, Search, Chapter and Entry pages beside one sidebar, over one sync connection
- * for the Story. Layouts don't re-render between sibling pages, so the socket, sidebar scroll and
- * collapsed state carry over.
+ * for the Story. Layouts don't re-render between sibling pages, so the socket, sidebar scroll, collapsed
+ * state and Story Notes carry over.
  */
 export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]">) {
   const { storyId } = await props.params;
@@ -177,7 +178,21 @@ export default async function DeskLayout(props: LayoutProps<"/stories/[storyId]"
                       )
                     }
                   />
-                  <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>{props.children}</DeskMain>
+                  <DeskMain footer={<DeskFooter member={writer} signedOut={!viewer} storyWords={storyWords} />}>
+                    {writer && myRole && viewer ? (
+                      <StoryNotesProvider
+                        storyId={story.id}
+                        me={viewer.userId}
+                        myRole={myRole}
+                        authors={storyAuthors(data)}
+                        finished={story.status === "finished"}
+                      >
+                        {props.children}
+                      </StoryNotesProvider>
+                    ) : (
+                      props.children
+                    )}
+                  </DeskMain>
                 </div>
               </PinnedEntriesProvider>
             </StorySearchProvider>

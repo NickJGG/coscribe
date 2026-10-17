@@ -16,9 +16,10 @@ import { ActionForm } from "@/components/ActionForm";
 import { Avatar, AvatarStack } from "@/components/Avatar";
 import { ContributionRibbon } from "@/components/ContributionRibbon";
 import { ExportMenu } from "@/components/ExportMenu";
+import { StoryNotesButton, StoryNotesPanel } from "@/components/notes/NotesPanel";
 import { ChapterPresence } from "@/components/StoryPresence";
 import { TrashUndo } from "@/components/TrashUndo";
-import { BrowseButton, HereDot, WritingNow } from "./Overview";
+import { BrowseButton, HereDot, OpenStoryNotes, WritingNow } from "./Overview";
 import { readingTime } from "@/lib/words";
 import styles from "./overview.module.css";
 
@@ -34,7 +35,7 @@ export async function generateMetadata(props: PageProps<"/stories/[storyId]">): 
   return { title: data?.story.title ?? "Story", description: data?.story.blurb ?? undefined };
 }
 
-/** The Story's Overview: who's writing now, what changed lately, and who writes it. */
+/** The Story's Overview: who's writing now, what changed lately, its open Story Notes, and who writes it. */
 export default async function OverviewPage(props: PageProps<"/stories/[storyId]">) {
   const { storyId } = await props.params;
   const data = await getStory(storyId);
@@ -150,6 +151,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
               </Link>
             )}
             {canExport && <ExportMenu storyId={story.id} finished={finished} hasEntries={entries.length > 0} />}
+            <StoryNotesButton />
           </div>
         )}
       </header>
@@ -190,6 +192,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
               </ol>
             </section>
           )}
+          {!finished && <OpenStoryNotes />}
         </div>
 
         <section className={`${styles.section} ${styles.side}`} aria-labelledby="overview-writers">
@@ -211,6 +214,7 @@ export default async function OverviewPage(props: PageProps<"/stories/[storyId]"
           </ul>
         </section>
       </div>
+      <StoryNotesPanel />
       {undoable && (
         <TrashUndo
           key={undoable.id}

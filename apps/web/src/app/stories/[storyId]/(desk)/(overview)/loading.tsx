@@ -17,6 +17,7 @@ export default function OverviewLoading() {
           <div className={`row-actions ${styles.actions}`}>
             <Bar width={180} height={40} />
             <Bar width={120} height={40} />
+            <Bar width={90} height={40} />
           </div>
         </header>
 
