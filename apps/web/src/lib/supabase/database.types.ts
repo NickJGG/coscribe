@@ -271,14 +271,14 @@ isOneToOne: false
                   ]
                 },"note_replies": {
                   Row: {
-                    "author_id": string | null,"body": string,"chapter_id": string,"created_at": string,"edited_at": string | null,"id": string,"note_id": string,"story_id": string
+                    "author_id": string | null,"body": string,"chapter_id": string | null,"created_at": string,"edited_at": string | null,"entry_id": string | null,"id": string,"note_id": string,"story_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_id"?: string | null,"body": string,"chapter_id": string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"note_id": string,"story_id": string
+                    "author_id"?: string | null,"body": string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id"?: string,"note_id": string,"story_id": string
                   }
                   Update: {
-                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"note_id"?: string,"story_id"?: string
+                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id"?: string,"note_id"?: string,"story_id"?: string
                   }
                   Relationships: [
                     {
@@ -292,6 +292,12 @@ isOneToOne: false
       columns: ["chapter_id"]
 isOneToOne: false
       referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "note_replies_entry_id_fkey"
+      columns: ["entry_id"]
+isOneToOne: false
+      referencedRelation: "entries"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "note_replies_note_id_fkey"
@@ -309,14 +315,14 @@ isOneToOne: false
                   ]
                 },"notes": {
                   Row: {
-                    "author_id": string | null,"body": string,"chapter_id": string,"created_at": string,"edited_at": string | null,"id": string,"quote": string,"resolved_at": string | null,"resolved_by": string | null,"story_id": string
+                    "author_id": string | null,"body": string,"chapter_id": string | null,"created_at": string,"edited_at": string | null,"entry_id": string | null,"id": string,"quote": string,"resolved_at": string | null,"resolved_by": string | null,"story_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_id"?: string | null,"body": string,"chapter_id": string,"created_at"?: string,"edited_at"?: string | null,"id": string,"quote": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id": string
+                    "author_id"?: string | null,"body": string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id": string,"quote": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id": string
                   }
                   Update: {
-                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string,"created_at"?: string,"edited_at"?: string | null,"id"?: string,"quote"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id"?: string
+                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id"?: string,"quote"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id"?: string
                   }
                   Relationships: [
                     {
@@ -330,6 +336,12 @@ isOneToOne: false
       columns: ["chapter_id"]
 isOneToOne: false
       referencedRelation: "chapters"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "notes_entry_id_fkey"
+      columns: ["entry_id"]
+isOneToOne: false
+      referencedRelation: "entries"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "notes_resolved_by_fkey"
@@ -608,6 +620,9 @@ isOneToOne: true
 "add_chapter":
 { Args: { "p_story": string,"p_title": string }; Returns: string
                            },
+"add_entry_note":
+{ Args: { "p_body": string,"p_entry": string,"p_id": string,"p_quote": string }; Returns: undefined
+                           },
 "add_note":
 { Args: { "p_body": string,"p_chapter": string,"p_id": string,"p_quote": string }; Returns: undefined
                            },
@@ -731,6 +746,9 @@ isOneToOne: true
                            },
 "next_free_color":
 { Args: { "p_preferred": string,"p_taken": (string)[] }; Returns: string
+                           },
+"note_detail":
+{ Args: { "p_chapter": string,"p_entry": string }; Returns: Json
                            },
 "notify":
 { Args: { "p_detail"?: Json,"p_invite"?: string,"p_kind": Database["public"]['Enums']["notification_kind"],"p_note"?: string,"p_recipients": (string)[],"p_story": string }; Returns: undefined

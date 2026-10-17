@@ -25,7 +25,7 @@ const PanelContext = createContext<StoryPanel | null>(null);
 const Slot = createSlot();
 
 /**
- * The right-hand panel inside a Story: Chat, History or a Chapter's Notes, one at a time. It lives in the Story layout so
+ * The right-hand panel inside a Story: Chat, History or a Chapter's or Entry's Notes, one at a time. It lives in the Story layout so
  * Chat's unread count and subscription survive moving between pages; the Desk places a PanelSlot
  * where the panel should appear.
  */

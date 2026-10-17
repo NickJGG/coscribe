@@ -34,7 +34,7 @@ const NO_IDS: string[] = [];
 
 /**
  * Laid over the Authorship box: with Show notes on, the margin of cards beside the text, one per open Note
- * whose passage is in the Chapter, plus the one being written. Collapsed, the active Note (or the one being
+ * whose passage is in the document, plus the one being written. Collapsed, the active Note (or the one being
  * written) opens in a popover instead. The "+ Note" button lives in SelectionActions.
  */
 export function NoteLayer({ editor }: { editor: Editor }) {
@@ -273,7 +273,7 @@ function DraftCard({
 
 /**
  * A Note's thread. Active, it can be replied to and Resolved; a Resolved one can only be Reopened. A
- * `detached` Note's passage is gone from the Chapter, so it shows the quote it was written on, struck out.
+ * `detached` Note's passage is gone from its document, so it shows the quote it was written on, struck out.
  */
 export function NoteCard({
   ref,

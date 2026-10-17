@@ -18,6 +18,8 @@ import { SnapshotCompareProvider } from "@/components/SnapshotCompare";
 import { SnapshotCompareView } from "@/components/SnapshotCompareView";
 import { SnapshotButton } from "@/components/SnapshotButton";
 import { SnapshotHistory } from "@/components/SnapshotHistory";
+import { NotesProvider } from "@/components/notes/NotesProvider";
+import { NotesPanel } from "@/components/notes/NotesPanel";
 import { PinButton, PinError } from "@/components/PinnedEntries";
 import { EntryDetails, EntryName } from "@/components/EntryDetails";
 import { EntryTypePicker } from "./EntryTypePicker";
@@ -51,6 +53,7 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
   const editable = isWriter(myRole) && story.status !== "finished";
   const snapshots = canManageSnapshots(myRole);
   const authors = storyAuthors(data);
+  const writer = liveWriter(data);
   const viewer = await getViewer();
 
   const live = (
@@ -58,13 +61,30 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
       key={entry.id}
       kind="entry"
       id={entry.id}
-      writer={liveWriter(data)}
+      writer={writer}
       authors={authors}
       toolbarLayout={resolveToolbarLayout(viewer?.profile?.toolbar_layout)}
       entryMentions={{ storyId: story.id, entries: entries.map((e) => (e.id === entry.id ? { ...e, linkEntryMentions: false } : e)) }}
       tools={snapshots && story.status !== "finished" && <SnapshotButton kind="entry" id={entry.id} />}
     />
   );
+
+  const text =
+    myRole && writer ? (
+      <NotesProvider
+        key={entry.id}
+        doc={{ kind: "entry", id: entry.id }}
+        me={writer.userId}
+        myRole={myRole}
+        authors={authors}
+        finished={story.status === "finished"}
+      >
+        {live}
+        <NotesPanel />
+      </NotesProvider>
+    ) : (
+      live
+    );
 
   return (
     <div className={styles.page}>
@@ -104,12 +124,12 @@ export default async function EntryPage(props: PageProps<"/stories/[storyId]/bib
 
       {snapshots ? (
         <SnapshotCompareProvider key={entry.id} kind="entry" id={entry.id}>
-          {live}
+          {text}
           <SnapshotCompareView authors={authors} canRestore={story.status !== "finished"} canName />
           <SnapshotHistory kind="entry" id={entry.id} title={entry.name} />
         </SnapshotCompareProvider>
       ) : (
-        live
+        text
       )}
 
       <section className={styles.entryMentioned} aria-labelledby="mentioned-in">

@@ -37,6 +37,18 @@ describe("notificationVerb", () => {
     expect(notificationVerb({ kind: "note_resolved", detail: {} })).toBe("resolved your Note in");
   });
 
+  it("names the Note's Entry", () => {
+    expect(notificationVerb({ kind: "note_reply", detail: { entry_name: "Mara Vell" } })).toBe(
+      "replied to a Note on “Mara Vell” in"
+    );
+    expect(notificationVerb({ kind: "note_mention", detail: { entry_name: "Mara Vell" } })).toBe(
+      "mentioned you in a Note on “Mara Vell” in"
+    );
+    expect(notificationVerb({ kind: "note_resolved", detail: { entry_name: "Mara Vell" } })).toBe(
+      "resolved your Note on “Mara Vell” in"
+    );
+  });
+
   it("says where you were mentioned", () => {
     expect(notificationVerb({ kind: "note_mention", detail: { chapter_title: "The Tide" } })).toBe(
       "mentioned you in a Note on “The Tide” in"
@@ -107,6 +119,15 @@ describe("notificationHref", () => {
     expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1/chapters/c9?note=n7");
     expect(notificationHref({ ...reply, kind: "note_mention" })).toBe("/stories/s1/chapters/c9?note=n7");
     expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/chapters/c9");
+  });
+
+  it("opens the Entry with the Note active", () => {
+    const reply = { ...base, kind: "note_reply" as const, note_id: "n7", detail: { entry_id: "e4" } };
+    expect(notificationHref(reply)).toBe("/stories/s1/bible/e4?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_resolved" })).toBe("/stories/s1/bible/e4?note=n7");
+    expect(notificationHref({ ...reply, kind: "note_mention" })).toBe("/stories/s1/bible/e4?note=n7");
+    expect(notificationHref({ ...reply, note_id: null })).toBe("/stories/s1/bible/e4");
+    expect(notificationHref({ ...reply, detail: {} })).toBe("/stories/s1");
   });
 
   it("opens Story Chat at the message", () => {

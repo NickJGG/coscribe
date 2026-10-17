@@ -335,8 +335,15 @@
   border-top: 1px solid var(--hair);
 }
 
-.open {
+.openRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
+}
+
+.open {
   color: var(--accent);
   font-size: var(--step--1);
   font-weight: 600;

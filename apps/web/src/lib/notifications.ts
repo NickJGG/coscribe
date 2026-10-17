@@ -56,6 +56,13 @@ function detailText(detail: Json, key: string): string | null {
   return typeof value === "string" ? value : null;
 }
 
+/** The Chapter or Entry a Note notification is about. */
+function noteDocument(detail: Json): { path: "chapters" | "bible"; id: string | null; title: string | null } {
+  const title = detailText(detail, "chapter_title") ?? detailText(detail, "entry_name");
+  const entry = detailText(detail, "entry_id");
+  return entry ? { path: "bible", id: entry, title } : { path: "chapters", id: detailText(detail, "chapter_id"), title };
+}
+
 /** An `invite_received` for a Viewer Invite. */
 export function isViewerInvite(n: Pick<Notification, "detail">): boolean {
   return detailText(n.detail, "role") === "viewer";
@@ -107,17 +114,17 @@ export function notificationVerb(n: Pick<Notification, "kind" | "detail">): stri
     case "removed":
       return "removed you from";
     case "note_reply": {
-      const title = detailText(n.detail, "chapter_title");
+      const { title } = noteDocument(n.detail);
       return title ? `replied to a Note on “${title}” in` : "replied to a Note in";
     }
     case "note_mention": {
-      const title = detailText(n.detail, "chapter_title");
+      const { title } = noteDocument(n.detail);
       return title ? `mentioned you in a Note on “${title}” in` : "mentioned you in a Note in";
     }
     case "chat_mention":
       return "mentioned you in Story Chat in";
     case "note_resolved": {
-      const title = detailText(n.detail, "chapter_title");
+      const { title } = noteDocument(n.detail);
       return title ? `resolved your Note on “${title}” in` : "resolved your Note in";
     }
     case "role_changed": {
@@ -140,9 +147,9 @@ export function notificationHref(
   if (!n.story_id || n.kind === "story_deleted" || n.kind === "removed") return null;
   const story = `/stories/${n.story_id}`;
   if (n.kind === "note_reply" || n.kind === "note_mention" || n.kind === "note_resolved") {
-    const chapter = detailText(n.detail, "chapter_id");
-    if (!chapter) return story;
-    return n.note_id ? `${story}/chapters/${chapter}?note=${n.note_id}` : `${story}/chapters/${chapter}`;
+    const { path, id } = noteDocument(n.detail);
+    if (!id) return story;
+    return n.note_id ? `${story}/${path}/${id}?note=${n.note_id}` : `${story}/${path}/${id}`;
   }
   if (n.kind === "chapter_added") {
     const chapter = detailText(n.detail, "chapter_id");

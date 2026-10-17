@@ -109,7 +109,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
     myRole && writer ? (
       <NotesProvider
         key={chapter.id}
-        chapterId={chapter.id}
+        doc={{ kind: "chapter", id: chapter.id }}
         me={writer.userId}
         myRole={myRole}
         authors={authors}

@@ -6,6 +6,7 @@ import { ENTRY_TYPE_LABEL, type EntryMentionEntry } from "@/lib/entries";
 import { EntryDetails, EntryName } from "../EntryDetails";
 import { LiveDocument, type StoryAuthor, type Writer } from "../LiveDocument";
 import { CloseIcon } from "../icons";
+import { EntryNoteCount } from "../notes/EntryNoteCount";
 import modal from "../Modal.module.css";
 import styles from "./outline.module.css";
 
@@ -61,9 +62,12 @@ export function OutlineEntryCard({
         <div className={styles.cardDocument}>
           <LiveDocument kind="entry" id={entry.id} writer={writer} authors={authors} embedded />
         </div>
-        <Link href={`/stories/${storyId}/bible/${entry.id}`} className={styles.open}>
-          Open Entry &rarr;
-        </Link>
+        <div className={styles.openRow}>
+          <EntryNoteCount storyId={storyId} entryId={entry.id} />
+          <Link href={`/stories/${storyId}/bible/${entry.id}`} className={styles.open}>
+            Open Entry &rarr;
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -7,6 +7,7 @@ import { visiblePins } from "@/lib/pins";
 import { useNarrowDesk } from "./DeskScroll";
 import { CloseIcon } from "./icons";
 import { LiveDocument, type StoryAuthor, type Writer } from "./LiveDocument";
+import { EntryNoteCount } from "./notes/EntryNoteCount";
 import { PinButton, PinError, usePhone, usePinnedEntries } from "./PinnedEntries";
 import { createSlot } from "./Slot";
 import { useStoryPanel } from "./StoryPanel";
@@ -169,6 +170,7 @@ function PinnedCard({
             {expanded ? "Show less" : "Show all"}
           </button>
         )}
+        <EntryNoteCount storyId={storyId} entryId={entry.id} className={styles.noteCount} />
         <Link href={`/stories/${storyId}/bible/${entry.id}`} className={styles.open}>
           Open Entry &rarr;
         </Link>

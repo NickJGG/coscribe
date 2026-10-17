@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useEditorState } from "@tiptap/react";
 import { noteRanges } from "@coscribe/editor";
 import { groupNotes, noteQuote, type Note } from "@/lib/notes";
@@ -13,17 +14,26 @@ import styles from "./notes.module.css";
 type Passage = { id: string; from: number; quote: string };
 
 /**
- * Every Note on the Chapter in the Story's right panel: Open ones in document order, which jump to their
+ * Every Note on the Chapter or Entry in the Story's right panel: Open ones in document order, which jump to their
  * passage; then Resolved ones, which can be Reopened; then open ones whose passage is gone (Detached),
- * which can still be replied to and Resolved here. Closes with the Chapter.
+ * which can still be replied to and Resolved here. Closes with the document.
  */
 export function NotesPanel() {
   const { notes, replies, editor, narrow, reveal } = useNotes()!;
-  const close = useStoryPanel()?.close;
+  const panel = useStoryPanel();
+  const close = panel?.close;
+  const showPanel = panel?.show;
   const open = usePanelOpen("notes");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const linked = useSearchParams().has("notes");
 
   useEffect(() => () => close?.("notes"), [close]);
+
+  // A `?notes` link (from an embedded Entry's Note count) opens the panel. A param, not show() before
+  // navigating, since the page being left closes the panel as it unmounts.
+  useEffect(() => {
+    if (linked) showPanel?.("notes");
+  }, [linked, showPanel]);
 
   const passages = useEditorState({
     editor,

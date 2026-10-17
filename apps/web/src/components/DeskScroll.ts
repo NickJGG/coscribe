@@ -10,7 +10,7 @@ export function useDeskScroll() {
 }
 
 /**
- * The narrowest page with its margins (chapter.module.css): the text centered between two columns of a gap
+ * The narrowest page with its margins (chapter.module.css, entry.module.css): the text centered between two columns of a gap
  * and the narrowest cards, plus both gutters. Narrower, the text would have to move over to fit them.
  * desk.module.css caps the sidebar's width with the same numbers.
  */

@@ -8,9 +8,24 @@
   gap: 24px;
 }
 
+/* With Show notes on, room on the right for the Note cards, as on a Chapter (chapter.module.css). */
+.page:has([data-note-margin]) {
+  position: relative;
+  container-type: inline-size;
+  max-width: calc(var(--measure) + 2 * (18rem + 32px) + 2 * var(--gutter));
+  display: grid;
+  grid-template-columns: 1fr minmax(0, var(--measure)) 1fr;
+  row-gap: 24px;
+}
+
+.page:has([data-note-margin]) > * {
+  grid-column: 2;
+}
+
 /* A Snapshot comparison's two columns, kept clear of the History panel laid over the desk on desktop. */
 .page:has([data-compare]) {
   max-width: calc(2 * var(--measure) + 40px + 2 * var(--gutter));
+  display: flex;
 }
 
 @media (min-width: 601px) {

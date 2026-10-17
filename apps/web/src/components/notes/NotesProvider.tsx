@@ -10,7 +10,7 @@ import { useLocalSetting } from "@/lib/local-setting";
 import { canDeleteNote, type MemberRole } from "@/lib/story-roles";
 import { NOTE_COLUMNS, noteQuote, REPLY_COLUMNS, type Note, type NoteReply } from "@/lib/notes";
 import { useNarrowDesk } from "../DeskScroll";
-import type { StoryAuthor } from "../LiveDocument";
+import type { LiveKind, StoryAuthor } from "../LiveDocument";
 import { useStoryPanel } from "../StoryPanel";
 import { canAddNote, noteClass, noteDraft, noteHighlightKey, type NoteHighlightMeta } from "./NoteHighlights";
 
@@ -49,7 +49,7 @@ type NotesValue = {
 
 const NotesContext = createContext<NotesValue | null>(null);
 
-/** The open Chapter's Notes, or null where there are none to show (Entries, Viewers). */
+/** The open Chapter's or Entry's Notes, or null where there are none to show (embedded Entry bodies, Viewers). */
 export function useNotes() {
   return useContext(NotesContext);
 }
@@ -58,6 +58,10 @@ const SHOW_KEY = "coscribe:show-notes";
 const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
 const REVEAL_TRIES = 10;
 
+function documentIds(kind: LiveKind, id: string) {
+  return kind === "chapter" ? { chapter_id: id, entry_id: null } : { chapter_id: null, entry_id: id };
+}
+
 function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
   const byId = new Map(current.map((x) => [x.id, x]));
   for (const x of incoming) byId.set(x.id, x);
@@ -65,19 +69,19 @@ function merge<T extends { id: string; created_at: string }>(current: T[], incom
 }
 
 /**
- * A Chapter's Notes for its members, live from `notes` and `note_replies`, plus the actions on them. The
- * Chapter's LiveDocument hands over its editor, which carries the `note` marks and the highlights; a
- * `?note=<id>` link activates that Note and scrolls to it once both have loaded.
+ * A Chapter's or Entry's Notes for its members, live from `notes` and `note_replies`, plus the actions on
+ * them. The document's LiveDocument hands over its editor, which carries the `note` marks and the
+ * highlights; a `?note=<id>` link activates that Note and scrolls to it once both have loaded.
  */
 export function NotesProvider({
-  chapterId,
+  doc: { kind, id: docId },
   me,
   myRole,
   authors,
   finished,
   children,
 }: {
-  chapterId: string;
+  doc: { kind: LiveKind; id: string };
   me: string;
   myRole: MemberRole;
   authors: StoryAuthor[];
@@ -98,6 +102,7 @@ export function NotesProvider({
   const narrow = !!useNarrowDesk();
   const panelOpen = !!useStoryPanel()?.open;
   const collapsed = narrow || panelOpen;
+  const column = kind === "chapter" ? "chapter_id" : "entry_id";
 
   useEffect(() => {
     known.current = { notes: new Set(notes.map((n) => n.id)), replies: new Set(replies.map((r) => r.id)) };
@@ -108,17 +113,17 @@ export function NotesProvider({
     let live = true;
     const load = async () => {
       const [n, r] = await Promise.all([
-        supabase.from("notes").select(NOTE_COLUMNS).eq("chapter_id", chapterId),
-        supabase.from("note_replies").select(REPLY_COLUMNS).eq("chapter_id", chapterId),
+        supabase.from("notes").select(NOTE_COLUMNS).eq(column, docId),
+        supabase.from("note_replies").select(REPLY_COLUMNS).eq(column, docId),
       ]);
       if (!live) return;
       if (n.data) setNotes((current) => merge(current, n.data));
       if (r.data) setReplies((current) => merge(current, r.data));
       setLoaded(true);
     };
-    const filter = `chapter_id=eq.${chapterId}`;
+    const filter = `${column}=eq.${docId}`;
     const channel = supabase
-      .channel(`notes:${chapterId}`)
+      .channel(`notes:${docId}`)
       .on<Note>("postgres_changes", { event: "INSERT", schema: "public", table: "notes", filter }, ({ new: note }) =>
         setNotes((current) => merge(current, [note]))
       )
@@ -151,7 +156,7 @@ export function NotesProvider({
       live = false;
       void supabase.removeChannel(channel);
     };
-  }, [supabase, chapterId]);
+  }, [supabase, column, docId]);
 
   const openIds = useMemo(() => new Set(notes.filter((n) => !n.resolved_at).map((n) => n.id)), [notes]);
   const shownActive = active && openIds.has(active) ? active : null;
@@ -217,7 +222,10 @@ export function NotesProvider({
       const quote = noteQuote(ed.state.doc.textBetween(draft.from, draft.to, " ", " "));
       if (!quote) return "Select some text to note.";
       const id = crypto.randomUUID();
-      const { error } = await supabase.rpc("add_note", { p_id: id, p_chapter: chapterId, p_quote: quote, p_body: body });
+      const { error } =
+        kind === "chapter"
+          ? await supabase.rpc("add_note", { p_id: id, p_chapter: docId, p_quote: quote, p_body: body })
+          : await supabase.rpc("add_entry_note", { p_id: id, p_entry: docId, p_quote: quote, p_body: body });
       if (error) return errorText(error);
 
       // Others may have edited while the insert ran; the draft range has moved with their edits.
@@ -233,7 +241,7 @@ export function NotesProvider({
         merge(current, [
           {
             id,
-            chapter_id: chapterId,
+            ...documentIds(kind, docId),
             author_id: me,
             quote,
             body: body.trim(),
@@ -247,7 +255,7 @@ export function NotesProvider({
       setActive(id);
       return null;
     },
-    [supabase, chapterId, me]
+    [supabase, kind, docId, me]
   );
 
   const reply = useCallback(
@@ -255,11 +263,11 @@ export function NotesProvider({
       const { data, error } = await supabase.rpc("reply_note", { p_note: noteId, p_body: body });
       if (error) return errorText(error);
       const now = new Date().toISOString();
-      const mine = { id: data, note_id: noteId, chapter_id: chapterId, author_id: me, body: body.trim() };
+      const mine = { id: data, note_id: noteId, ...documentIds(kind, docId), author_id: me, body: body.trim() };
       setReplies((current) => merge(current, [{ ...mine, edited_at: null, created_at: now }]));
       return null;
     },
-    [supabase, chapterId, me]
+    [supabase, kind, docId, me]
   );
 
   const edit = useCallback(

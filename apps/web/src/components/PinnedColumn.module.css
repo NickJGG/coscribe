@@ -226,6 +226,14 @@
   font-weight: 600;
 }
 
+.noteCount {
+  margin-left: auto;
+}
+
+.noteCount + .open {
+  margin-left: 0;
+}
+
 .error {
   color: var(--danger);
 }

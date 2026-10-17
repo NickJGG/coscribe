@@ -420,3 +420,29 @@
     inset: -12px;
   }
 }
+
+.entryCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--note);
+  color: var(--ink);
+  font-size: var(--step--1);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.entryCount::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--note-line);
+}
+
+.entryCount:hover {
+  background: var(--note-strong);
+}

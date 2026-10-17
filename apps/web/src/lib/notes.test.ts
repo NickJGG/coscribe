@@ -7,6 +7,7 @@ function note(id: string, created_at: string, resolved_at: string | null = null)
   return {
     id,
     chapter_id: "c1",
+    entry_id: null,
     author_id: "u1",
     quote: "quote",
     body: "body",

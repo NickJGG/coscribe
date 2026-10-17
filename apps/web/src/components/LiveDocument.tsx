@@ -52,7 +52,7 @@ export type DocumentEntryMentions = { storyId: string; entries: EntryMentionEntr
 
 export type { StoryAuthor } from "./Authorship";
 
-type LiveKind = "chapter" | "entry";
+export type LiveKind = "chapter" | "entry";
 
 const KINDS = {
   chapter: { extensions: chapterExtensions, noun: "Chapter", label: "Chapter text", placeholder: "Start writing…" },
@@ -88,7 +88,7 @@ const TabKey = Extension.create({
  * It opens through the desk's SyncSocketProvider; its connection, Writers present and word
  * count go to the desk through LiveStatus, and its toolbar row fills the desk's. `tools` sit at the
  * row's end, then `outline` (shown even when read-only), before the View options menu; `toolbarLayout` is the signed-in account's Formatting toolbar order. `entryMentions` underlines those Entries' Entry Mentions, with a card on hover.
- * Inside a NotesProvider (a member's Chapter) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
+ * Inside a NotesProvider (a member's Chapter or Entry) it also shows and adds Notes. A selection can add a Note or an Entry. A `?find=` link from Story
  * search tints its matches, with `&n=` marking the current one, and puts the find bar in the toolbar row.
  * While a Snapshot comparison is open it stays connected but hidden, and leaves the toolbar row to it.
  * `narration` makes a Chapter listenable: while Listening it's read-only for everyone, and the toolbar row says how

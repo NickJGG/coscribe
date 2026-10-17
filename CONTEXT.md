@@ -163,7 +163,7 @@ The chat panel inside a **Story**, visible to **Writers** and above.
 _Avoid_: Comments, messages
 
 **Note**:
-A remark anchored to a passage of a **Chapter**'s text that others can reply to, open until it is **Resolved**.
+A remark anchored to a passage of a **Chapter**'s or an **Entry**'s text that others can reply to, open until it is **Resolved**.
 _Avoid_: Comment, annotation, margin note
 
 **Resolved**:
@@ -171,7 +171,7 @@ A **Note** that is settled and leaves the margin. Any **Writer** can Resolve one
 _Avoid_: Closed, done, archived
 
 **Detached**:
-An open **Note** whose passage is gone from the **Chapter**, through deletion or a **Restore**. It can still be replied to and **Resolved**, and comes back if the passage does.
+An open **Note** whose passage is gone from its **Chapter** or **Entry**, through deletion or a **Restore**. It can still be replied to and **Resolved**, and comes back if the passage does.
 _Avoid_: Orphaned, broken
 
 **Alias**:
@@ -215,7 +215,7 @@ _Avoid_: Alert, activity, update
 - An **Invite** makes exactly one **User** a **Writer** or **Viewer** of exactly one **Story**
 - **Visibility** controls who sees a **Story**. Editing always requires an **Invite**.
 - An **Entry** has zero or more **Aliases**; a **Chapter** has zero or more **Entry Mentions**
-- A **Chapter** has zero or more **Notes**; only **Writers** and above see them
+- A **Chapter** or **Entry** has zero or more **Notes**; only **Writers** and above see them
 - A **Writer** or **Viewer** has zero or more **Pinned Entries** per **Story**; signed-out readers have none
 - A **Notification** has exactly one recipient **User**
 - **Viewers** have no **Presence**; they are only ever counted, never named, except in a **Private** **Story**'s member list

@@ -2,15 +2,15 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { noteRanges } from "@coscribe/editor";
 import type { Database } from "@/lib/supabase/database.types";
 
-// Notes: threads pinned to a passage of a Chapter by a `note` mark (supabase/migrations/0018_notes.sql).
+// Notes: threads pinned to a passage of a Chapter or Entry by a `note` mark (supabase/migrations/0018_notes.sql).
 
 type Tables = Database["public"]["Tables"];
 
 export type Note = Omit<Tables["notes"]["Row"], "story_id">;
 export type NoteReply = Omit<Tables["note_replies"]["Row"], "story_id">;
 
-export const NOTE_COLUMNS = "id, chapter_id, author_id, quote, body, edited_at, resolved_at, resolved_by, created_at";
-export const REPLY_COLUMNS = "id, note_id, chapter_id, author_id, body, edited_at, created_at";
+export const NOTE_COLUMNS = "id, chapter_id, entry_id, author_id, quote, body, edited_at, resolved_at, resolved_by, created_at";
+export const REPLY_COLUMNS = "id, note_id, chapter_id, entry_id, author_id, body, edited_at, created_at";
 
 export const NOTE_BODY_MAX = 2000;
 export const NOTE_QUOTE_MAX = 300;
