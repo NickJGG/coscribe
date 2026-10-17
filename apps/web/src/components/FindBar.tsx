@@ -118,7 +118,7 @@ export function FindBar({
     const d = within(dir) ? null : neighbor(dir);
     return d ? `${word}: ${d.label}` : `${word} match`;
   };
-  const keys = (dir: 1 | -1) => (dir > 0 ? "Ctrl+G" : "Shift+Ctrl+G");
+  const keys = (dir: 1 | -1) => (dir > 0 ? "Mod+G" : "Shift+Mod+G");
   const canStep = local > 0 || neighbor(1) !== null;
 
   let position: string;

@@ -76,21 +76,21 @@ type Tool = {
 const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   bold: {
     label: "Bold",
-    keys: "Ctrl+B",
+    keys: "Mod+B",
     icon: () => <strong>B</strong>,
     pressed: (a) => a.bold,
     run: (editor) => editor.chain().focus().toggleBold().run(),
   },
   italic: {
     label: "Italic",
-    keys: "Ctrl+I",
+    keys: "Mod+I",
     icon: () => <em>I</em>,
     pressed: (a) => a.italic,
     run: (editor) => editor.chain().focus().toggleItalic().run(),
   },
   strike: {
     label: "Strikethrough",
-    keys: "Ctrl+Shift+S",
+    keys: "Mod+Shift+S",
     icon: () => <s>S</s>,
     pressed: (a) => a.strike,
     run: (editor) => editor.chain().focus().toggleStrike().run(),
@@ -109,7 +109,7 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   },
   blockquote: {
     label: "Block quote",
-    keys: "Ctrl+Shift+B · type > and a space",
+    keys: "Mod+Shift+B · type > and a space",
     icon: () => <BlockQuoteIcon />,
     pressed: (a) => a.blockquote,
     run: (editor) => editor.chain().focus().toggleBlockquote().run(),
@@ -123,7 +123,7 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   },
   bulletList: {
     label: "Bulleted list",
-    keys: "Ctrl+Shift+8",
+    keys: "Mod+Shift+8",
     typed: "type - and a space",
     icon: () => <BulletListIcon />,
     pressed: (a) => a.bulletList,
@@ -131,7 +131,7 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   },
   orderedList: {
     label: "Numbered list",
-    keys: "Ctrl+Shift+7",
+    keys: "Mod+Shift+7",
     typed: "type 1. and a space",
     icon: () => <NumberedListIcon />,
     pressed: (a) => a.orderedList,
@@ -140,7 +140,7 @@ const TOOLS: Record<Exclude<ToolId, "align">, Tool> = {
   addNote: {
     label: "Add Note",
     tip: "Add Note on the selected text",
-    keys: "Ctrl+Alt+M",
+    keys: "Mod+Alt+M",
     icon: () => <AddNoteIcon />,
     run: (_, onAddNote) => onAddNote?.(),
   },
@@ -168,8 +168,8 @@ function toolDisabled(tool: ToolId, active: Active): boolean {
 const labelOf = (tool: ToolId) => (tool === "align" ? "Alignment" : TOOLS[tool].label);
 
 const ALIGNMENTS = [
-  { align: "left", label: "Align left", keys: "Ctrl+Shift+L" },
-  { align: "center", label: "Center", keys: "Ctrl+Shift+E" },
+  { align: "left", label: "Align left", keys: "Mod+Shift+L" },
+  { align: "center", label: "Center", keys: "Mod+Shift+E" },
   { align: "right", label: "Align right", keys: undefined },
 ] satisfies { align: Alignment; label: string; keys?: string }[];
 

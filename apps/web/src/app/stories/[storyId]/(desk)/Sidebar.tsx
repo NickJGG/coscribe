@@ -118,7 +118,7 @@ export function Sidebar({
             className={styles.stripButton}
             onClick={toggle}
             data-tip="Show the sidebar"
-            data-keys="Ctrl+\"
+            data-keys="Mod+\"
             data-side="right"
           >
             <PanelIcon />
@@ -198,7 +198,7 @@ export function Sidebar({
                 className={styles.stripButton}
                 onClick={toggle}
                 data-tip="Hide the sidebar"
-                data-keys="Ctrl+\"
+                data-keys="Mod+\"
               >
                 <PanelIcon />
                 <span className="sr-only">Hide the sidebar</span>

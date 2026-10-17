@@ -18,6 +18,7 @@ import {
   type FoldItem,
 } from "@coscribe/editor";
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
+import { formatKeys } from "@/lib/keys";
 import { authorColorCss } from "@/lib/profile-rules";
 import { SNAPSHOT_KINDS, type SnapshotKind } from "@/lib/snapshots";
 import { DeskToolbar } from "./DeskToolbar";
@@ -480,7 +481,7 @@ function Stepper({ at, count, onStep }: { at: number | null; count: number; onSt
           className={liveStyles.tool}
           onClick={() => onStep(dir)}
           data-tip={dir > 0 ? "Next change" : "Previous change"}
-          data-keys={dir > 0 ? "Ctrl+G" : "Shift+Ctrl+G"}
+          data-keys={dir > 0 ? "Mod+G" : "Shift+Mod+G"}
           aria-label={dir > 0 ? "Next change" : "Previous change"}
         >
           {dir > 0 ? <>&rsaquo;</> : <>&lsaquo;</>}
@@ -764,7 +765,7 @@ function SnapshotActions({
           }),
         ]);
       } catch {
-        return { text: "Couldn't copy. Select the text and press Ctrl+C instead.", error: true };
+        return { text: `Couldn't copy. Select the text and press ${formatKeys("Mod+C")} instead.`, error: true };
       }
       return { text: `Copied ${whole ? "the whole Snapshot" : "the selection"}. Paste it into the ${noun}.` };
     });

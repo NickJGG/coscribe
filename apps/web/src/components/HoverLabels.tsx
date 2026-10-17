@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { formatKeys } from "@/lib/keys";
 
 const LONG_PRESS_MS = 450;
 const HOVER_DELAY_MS = 500;
@@ -50,7 +51,7 @@ export function HoverLabels() {
       if (!text || target.getAttribute("aria-expanded") === "true") return hide();
       clearTimeout(linger);
       current = target;
-      setTip({ target, text, keys: target.dataset.keys, y: target.dataset.follow === undefined ? undefined : y });
+      setTip({ target, text, keys: target.dataset.keys && formatKeys(target.dataset.keys), y: target.dataset.follow === undefined ? undefined : y });
     };
 
     const over = (e: PointerEvent) => {
