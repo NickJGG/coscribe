@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { getSchema } from "@tiptap/core";
 import { chapterExtensions } from "@coscribe/editor";
-import { groupNotes, markerGroups, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
+import { groupNotes, isWhole, markerGroups, NOTE_QUOTE_MAX, noteQuote, stackCards, type Note } from "./notes";
 
-function note(id: string, created_at: string, resolved_at: string | null = null): Note {
+function note(id: string, created_at: string, resolved_at: string | null = null, quote: string | null = "quote"): Note {
   return {
     id,
     chapter_id: "c1",
     entry_id: null,
     author_id: "u1",
-    quote: "quote",
+    quote,
     body: "body",
     edited_at: null,
     resolved_at,
@@ -58,6 +58,26 @@ describe("groupNotes", () => {
       ["b", { from: 5 }],
     ]);
     expect(groupNotes(notes, ranges).open.map((n) => n.id)).toEqual(["a", "b"]);
+  });
+
+  it("puts open whole-document Notes first, oldest first, and never detaches them", () => {
+    const notes = [
+      note("passage", "2026-10-07T08:00:00Z"),
+      note("whole-late", "2026-10-07T11:00:00Z", null, null),
+      note("whole-early", "2026-10-07T10:00:00Z", null, null),
+      note("whole-resolved", "2026-10-07T09:00:00Z", "2026-10-07T12:00:00Z", null),
+    ];
+    const groups = groupNotes(notes, new Map([["passage", { from: 1 }]]));
+    expect(groups.open.map((n) => n.id)).toEqual(["whole-early", "whole-late", "passage"]);
+    expect(groups.resolved.map((n) => n.id)).toEqual(["whole-resolved"]);
+    expect(groups.detached).toEqual([]);
+  });
+});
+
+describe("isWhole", () => {
+  it("is true only for a Note without a quote", () => {
+    expect(isWhole(note("a", "2026-10-07T10:00:00Z", null, null))).toBe(true);
+    expect(isWhole(note("b", "2026-10-07T10:00:00Z"))).toBe(false);
   });
 });
 

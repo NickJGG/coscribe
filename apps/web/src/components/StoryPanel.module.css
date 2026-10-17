@@ -50,6 +50,12 @@
   overflow-wrap: anywhere;
 }
 
+.headActions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
 .close {
   display: inline-grid;
   place-items: center;

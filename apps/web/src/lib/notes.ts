@@ -2,7 +2,8 @@ import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { noteRanges } from "@coscribe/editor";
 import type { Database } from "@/lib/supabase/database.types";
 
-// Notes: threads pinned to a passage of a Chapter or Entry by a `note` mark (supabase/migrations/0018_notes.sql).
+// Notes: threads pinned to a passage of a Chapter or Entry by a `note` mark (supabase/migrations/0018_notes.sql),
+// or on a whole Chapter or Entry, with no quote (0054).
 
 type Tables = Database["public"]["Tables"];
 
@@ -22,22 +23,29 @@ export function noteQuote(text: string): string {
   return chars.length <= NOTE_QUOTE_MAX ? quote : chars.slice(0, NOTE_QUOTE_MAX - 1).join("").trimEnd() + "…";
 }
 
+/** A Note on its whole Chapter or Entry rather than a passage of it. */
+export function isWhole(note: Pick<Note, "quote">): boolean {
+  return note.quote === null;
+}
+
 const time = (iso: string) => Date.parse(iso);
 
 export type NoteGroups = { open: Note[]; resolved: Note[]; detached: Note[] };
 
 /**
- * Open Notes whose passage is in the doc, in document order; Resolved ones, latest first; and open ones
- * whose passage is gone. `ranges` is `noteRanges` of the live doc.
+ * Open Notes on the whole document, oldest first, then those whose passage is in the doc, in document
+ * order; Resolved ones, latest first; and open ones whose passage is gone. `ranges` is `noteRanges` of the
+ * live doc.
  */
 export function groupNotes(notes: readonly Note[], ranges: ReadonlyMap<string, { from: number }>): NoteGroups {
   const groups: NoteGroups = { open: [], resolved: [], detached: [] };
   for (const note of notes) {
     if (note.resolved_at) groups.resolved.push(note);
-    else if (ranges.has(note.id)) groups.open.push(note);
+    else if (isWhole(note) || ranges.has(note.id)) groups.open.push(note);
     else groups.detached.push(note);
   }
-  groups.open.sort((a, b) => ranges.get(a.id)!.from - ranges.get(b.id)!.from || time(a.created_at) - time(b.created_at));
+  const at = (note: Note) => (isWhole(note) ? -1 : ranges.get(note.id)!.from);
+  groups.open.sort((a, b) => at(a) - at(b) || time(a.created_at) - time(b.created_at));
   groups.resolved.sort((a, b) => time(b.resolved_at!) - time(a.resolved_at!));
   groups.detached.sort((a, b) => time(a.created_at) - time(b.created_at));
   return groups;

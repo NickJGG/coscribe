@@ -7,7 +7,7 @@ import { noteRanges } from "@coscribe/editor";
 import { hasOpenLayer } from "@/lib/layers";
 import { relativeTime } from "@/lib/relative-time";
 import { useMeasure } from "@/lib/use-measure";
-import { markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
+import { isWhole, markerGroups, NOTE_BODY_MAX, noteQuote, stackCards, type Note, type NoteReply } from "@/lib/notes";
 import type { ActionResult } from "@/lib/action-result";
 import { toEditableText, toStoredBody } from "@/lib/writer-mentions";
 import { Avatar } from "../Avatar";
@@ -18,6 +18,7 @@ import { usePeople, useStoryMembers } from "../StoryMembers";
 import { WriterMentionPicker, useWriterMentionPicker } from "../WriterMentionPicker";
 import { WriterMentionText } from "../WriterMentionText";
 import { noteClass, noteDraft } from "./NoteHighlights";
+import { useNoteThread } from "./NoteThreads";
 import { useNotes } from "./NotesProvider";
 import styles from "./notes.module.css";
 
@@ -34,8 +35,9 @@ const NO_IDS: string[] = [];
 
 /**
  * Laid over the Authorship box: with Show notes on, the margin of cards beside the text, one per open Note
- * whose passage is in the document, plus the one being written. Collapsed, the active Note (or the one being
- * written) opens in a popover instead. The "+ Note" button lives in SelectionActions.
+ * on the whole document (level with its title) or whose passage is in it, plus the one being written.
+ * Collapsed, the active Note (or the one being written) opens in a popover instead, and Notes on the whole
+ * document are in the Notes panel only. The "+ Note" button lives in SelectionActions.
  */
 export function NoteLayer({ editor }: { editor: Editor }) {
   const notes = useNotes()!;
@@ -69,15 +71,24 @@ function NoteMargin({ editor }: { editor: Editor }) {
     },
   });
 
+  const wholes = useMemo(
+    () => notes.filter((n) => !n.resolved_at && isWhole(n)).map((n) => ({ id: n.id, quote: null })),
+    [notes]
+  );
+  const cardsShown = useMemo(() => [...wholes, ...passages], [wholes, passages]);
   const activeKey = passages.some((p) => p.id === DRAFT) ? DRAFT : active;
-  const keys = passages.map((p) => p.id).join(" ");
+  const keys = cardsShown.map((p) => p.id).join(" ");
+  const wholeCount = wholes.length;
 
   const measure = useCallback(() => {
     const origin = column.current!.getBoundingClientRect().top;
     const ranges = noteRanges(editor.state.doc);
     const draft = noteDraft(editor.state);
+    const title = column.current!.closest("[data-desk-inert]")?.querySelector("h1");
+    const titleTop = title ? title.getBoundingClientRect().top - origin : 0;
     const order = keys ? keys.split(" ") : [];
-    const wants = order.map((key) => {
+    const wants = order.map((key, i) => {
+      if (i < wholeCount) return titleTop;
       const range = key === DRAFT ? draft : ranges.get(key);
       return range ? editor.view.coordsAtPos(range.from).top - origin - LIFT : 0;
     });
@@ -87,7 +98,7 @@ function NoteMargin({ editor }: { editor: Editor }) {
       tops: Object.fromEntries(order.map((key, i) => [key, Math.round(tops[i]!)])),
       bottom: Math.max(0, ...tops.map((t, i) => t + heights[i]!)),
     };
-  }, [editor, keys, activeKey]);
+  }, [editor, keys, wholeCount, activeKey]);
   const placement = useMeasure(roots, measure, NOT_PLACED);
 
   const ref = (key: string) => (el: HTMLElement | null) => {
@@ -101,7 +112,7 @@ function NoteMargin({ editor }: { editor: Editor }) {
 
   return (
     <div ref={column} className={styles.margin} style={{ minHeight: placement.bottom }} data-note-margin>
-      {passages.map(({ id, quote }) => {
+      {cardsShown.map(({ id, quote }) => {
         if (id === DRAFT) return <DraftCard key={DRAFT} ref={ref(DRAFT)} style={place(DRAFT)} quote={quote} />;
         const note = notes.find((n) => n.id === id);
         if (!note) return null;
@@ -240,7 +251,8 @@ function NotePopover({ editor, layer }: { editor: Editor; layer: React.RefObject
   );
 }
 
-function DraftCard({
+/** A Note being written: on a passage, or on the whole document with a null quote. */
+export function DraftCard({
   ref,
   style,
   quote,
@@ -248,23 +260,25 @@ function DraftCard({
 }: {
   ref?: React.Ref<HTMLDivElement>;
   style?: React.CSSProperties;
-  quote: string;
+  quote: string | null;
   onPosted?: () => void;
 }) {
-  const { addNote, cancelDraft } = useNotes()!;
+  const { addNote, cancelDraft, addWhole, setWholeDraft } = useNotes()!;
+  const { wholeLabel } = useNoteThread();
+  const whole = quote === null;
 
   return (
     <div ref={ref} className={styles.card} data-active style={style}>
-      <blockquote className={styles.quote}>{quote}</blockquote>
+      {whole ? <span className={`smallcaps ${styles.whole}`}>{wholeLabel}</span> : <blockquote className={styles.quote}>{quote}</blockquote>}
       <Compose
         placeholder="Add a Note…"
         submit="Note"
         onSubmit={async (body) => {
-          const result = await addNote(body);
+          const result = await (whole ? addWhole(body) : addNote(body));
           if (!result) onPosted?.();
           return result;
         }}
-        onCancel={cancelDraft}
+        onCancel={whole ? () => setWholeDraft(false) : cancelDraft}
         autoFocus
       />
     </div>
@@ -274,6 +288,7 @@ function DraftCard({
 /**
  * A Note's thread. Active, it can be replied to and Resolved; a Resolved one can only be Reopened. A
  * `detached` Note's passage is gone from its document, so it shows the quote it was written on, struck out.
+ * A null `quote` is a Note on the whole document, labelled as such instead.
  */
 export function NoteCard({
   ref,
@@ -289,14 +304,14 @@ export function NoteCard({
   ref?: React.Ref<HTMLDivElement>;
   style?: React.CSSProperties;
   note: Note;
-  quote: string;
+  quote: string | null;
   replies: NoteReply[];
   active: boolean;
   detached?: boolean;
   onActivate: () => void;
   onDeactivate: () => void;
 }) {
-  const { readOnly, reply, setResolved, person } = useNotes()!;
+  const { readOnly, reply, setResolved, person, wholeLabel } = useNoteThread();
   const [error, setError] = useState<string | null>(null);
   const resolved = !!note.resolved_at;
 
@@ -322,9 +337,13 @@ export function NoteCard({
       }}
     >
       {detached && <span className={styles.detached}>Passage removed</span>}
-      <blockquote className={styles.quote} data-detached={detached || undefined}>
-        {quote}
-      </blockquote>
+      {quote === null ? (
+        <span className={`smallcaps ${styles.whole}`}>{wholeLabel}</span>
+      ) : (
+        <blockquote className={styles.quote} data-detached={detached || undefined}>
+          {quote}
+        </blockquote>
+      )}
       <Message kind="note" message={note} active={active && !resolved} />
       {replies.length > 0 && (
         <ol className={styles.replies}>
@@ -379,7 +398,7 @@ function Message({
   message: Note | NoteReply;
   active: boolean;
 }) {
-  const { person, isMine, canDelete, readOnly, edit, remove } = useNotes()!;
+  const { person, isMine, canDelete, readOnly, edit, remove } = useNoteThread();
   const lookup = usePeople(NO_IDS);
   const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);

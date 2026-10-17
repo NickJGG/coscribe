@@ -315,14 +315,14 @@ isOneToOne: false
                   ]
                 },"notes": {
                   Row: {
-                    "author_id": string | null,"body": string,"chapter_id": string | null,"created_at": string,"edited_at": string | null,"entry_id": string | null,"id": string,"quote": string,"resolved_at": string | null,"resolved_by": string | null,"story_id": string
+                    "author_id": string | null,"body": string,"chapter_id": string | null,"created_at": string,"edited_at": string | null,"entry_id": string | null,"id": string,"quote": string | null,"resolved_at": string | null,"resolved_by": string | null,"story_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "author_id"?: string | null,"body": string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id": string,"quote": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id": string
+                    "author_id"?: string | null,"body": string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id": string,"quote"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id": string
                   }
                   Update: {
-                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id"?: string,"quote"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id"?: string
+                    "author_id"?: string | null,"body"?: string,"chapter_id"?: string | null,"created_at"?: string,"edited_at"?: string | null,"entry_id"?: string | null,"id"?: string,"quote"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"story_id"?: string
                   }
                   Relationships: [
                     {
@@ -625,6 +625,9 @@ isOneToOne: true
                            },
 "add_note":
 { Args: { "p_body": string,"p_chapter": string,"p_id": string,"p_quote": string }; Returns: undefined
+                           },
+"add_story_note":
+{ Args: { "p_body": string,"p_id": string,"p_story": string }; Returns: undefined
                            },
 "are_friends":
 { Args: { "a": string,"b": string }; Returns: boolean

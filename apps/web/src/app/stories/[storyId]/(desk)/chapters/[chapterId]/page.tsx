@@ -114,6 +114,7 @@ export default async function ChapterPage(props: PageProps<"/stories/[storyId]/c
         myRole={myRole}
         authors={authors}
         finished={story.status === "finished"}
+        locked={chapter.locked}
       >
         {live}
         <NotesPanel />

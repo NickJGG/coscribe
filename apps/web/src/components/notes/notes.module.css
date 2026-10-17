@@ -234,6 +234,11 @@
   text-transform: uppercase;
 }
 
+.whole {
+  display: block;
+  margin-bottom: 8px;
+}
+
 .quote[data-detached] {
   border-left-color: var(--rule);
   text-decoration: line-through;

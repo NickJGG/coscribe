@@ -78,10 +78,13 @@ export function PanelSlot() {
 export function Panel({
   name,
   title,
+  actions,
   children,
 }: {
   name: PanelName;
   title: string;
+  /** Buttons in the header, before Close. */
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const close = useStoryPanel()?.close;
@@ -106,6 +109,7 @@ export function Panel({
           <h2 id={headingId} className={styles.heading}>
             {title}
           </h2>
+          {actions && <div className={styles.headActions}>{actions}</div>}
           <button type="button" className={styles.close} onClick={() => close?.(name)} aria-label={`Close ${title}`}>
             <CloseIcon className={styles.closeIcon} />
           </button>

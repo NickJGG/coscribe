@@ -4,24 +4,26 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useSearchParams } from "next/navigation";
 import type { Editor } from "@tiptap/core";
 import { noteRanges } from "@coscribe/editor";
-import { createClient } from "@/lib/supabase/client";
-import { errorText, type ActionResult } from "@/lib/action-result";
+import type { ActionResult } from "@/lib/action-result";
 import { useLocalSetting } from "@/lib/local-setting";
-import { canDeleteNote, type MemberRole } from "@/lib/story-roles";
-import { NOTE_COLUMNS, noteQuote, REPLY_COLUMNS, type Note, type NoteReply } from "@/lib/notes";
+import type { MemberRole } from "@/lib/story-roles";
+import { isWhole, noteQuote, type Note, type NoteReply } from "@/lib/notes";
 import { useNarrowDesk } from "../DeskScroll";
 import type { LiveKind, StoryAuthor } from "../LiveDocument";
 import { useStoryPanel } from "../StoryPanel";
 import { canAddNote, noteClass, noteDraft, noteHighlightKey, type NoteHighlightMeta } from "./NoteHighlights";
-
-type Person = { name: string; color: string };
+import { NoteThreadContext, useNoteThreads } from "./NoteThreads";
 
 type NotesValue = {
+  kind: LiveKind;
   notes: Note[];
   replies: NoteReply[];
   /** The Note whose card (and highlight) is active. */
   active: string | null;
   setActive: (id: string | null) => void;
+  /** The Note whose card is open in the Notes panel, if it isn't one that jumps to its passage. */
+  expanded: string | null;
+  setExpanded: (id: string | null) => void;
   show: boolean;
   setShow: (show: boolean) => void;
   /** The Desk is too narrow for the margin beside the text. */
@@ -32,19 +34,18 @@ type NotesValue = {
   reveal: (id: string) => void;
   /** On a Finished story, Notes can be read but nothing else. */
   readOnly: boolean;
+  /** A Note on the whole document can be started: not read-only, nor a locked Chapter. */
+  canAddWhole: boolean;
   editor: Editor | null;
   setEditor: (editor: Editor | null) => void;
-  person: (id: string | null) => Person;
-  isMine: (authorId: string | null) => boolean;
-  canDelete: (authorId: string | null) => boolean;
   /** Starts a Note on the selected text, as a draft card. */
   startDraft: () => void;
   cancelDraft: () => void;
   addNote: (body: string) => Promise<ActionResult>;
-  reply: (noteId: string, body: string) => Promise<ActionResult>;
-  edit: (kind: "note" | "reply", id: string, body: string) => Promise<ActionResult>;
-  remove: (kind: "note" | "reply", id: string) => Promise<ActionResult>;
-  setResolved: (noteId: string, resolved: boolean) => Promise<ActionResult>;
+  /** A Note on the whole document is being written in the Notes panel. */
+  wholeDraft: boolean;
+  setWholeDraft: (drafting: boolean) => void;
+  addWhole: (body: string) => Promise<ActionResult>;
 };
 
 const NotesContext = createContext<NotesValue | null>(null);
@@ -55,23 +56,13 @@ export function useNotes() {
 }
 
 const SHOW_KEY = "coscribe:show-notes";
-const FORMER_WRITER: Person = { name: "A former Writer", color: "#9a9389" };
 const REVEAL_TRIES = 10;
 
-function documentIds(kind: LiveKind, id: string) {
-  return kind === "chapter" ? { chapter_id: id, entry_id: null } : { chapter_id: null, entry_id: id };
-}
-
-function merge<T extends { id: string; created_at: string }>(current: T[], incoming: T[]): T[] {
-  const byId = new Map(current.map((x) => [x.id, x]));
-  for (const x of incoming) byId.set(x.id, x);
-  return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
-}
-
 /**
- * A Chapter's or Entry's Notes for its members, live from `notes` and `note_replies`, plus the actions on
- * them. The document's LiveDocument hands over its editor, which carries the `note` marks and the
- * highlights; a `?note=<id>` link activates that Note and scrolls to it once both have loaded.
+ * A Chapter's or Entry's Notes for its members (useNoteThreads), with the editor's side of them. The
+ * document's LiveDocument hands over its editor, which carries the `note` marks and the highlights; a
+ * `?note=<id>` link activates that Note and scrolls to it once both have loaded, or opens the Notes panel
+ * on it for a Note on the whole document.
  */
 export function NotesProvider({
   doc: { kind, id: docId },
@@ -79,6 +70,7 @@ export function NotesProvider({
   myRole,
   authors,
   finished,
+  locked = false,
   children,
 }: {
   doc: { kind: LiveKind; id: string };
@@ -86,77 +78,23 @@ export function NotesProvider({
   myRole: MemberRole;
   authors: StoryAuthor[];
   finished: boolean;
+  locked?: boolean;
   children: React.ReactNode;
 }) {
-  const supabase = useMemo(() => createClient(), []);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [replies, setReplies] = useState<NoteReply[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const scope = useMemo(() => ({ kind, id: docId }), [kind, docId]);
+  const { notes, replies, loaded, post, thread } = useNoteThreads({ scope, me, myRole, authors, finished });
   const [active, setActive] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [wholeDraft, setWholeDraft] = useState(false);
   const [show, setShow] = useLocalSetting(SHOW_KEY, true);
   const [editor, setEditorState] = useState<Editor | null>(null);
   const editorRef = useRef<Editor | null>(null);
-  const known = useRef({ notes: new Set<string>(), replies: new Set<string>() });
   const linked = useSearchParams().get("note");
   const revealed = useRef<string | null>(null);
   const narrow = !!useNarrowDesk();
-  const panelOpen = !!useStoryPanel()?.open;
-  const collapsed = narrow || panelOpen;
-  const column = kind === "chapter" ? "chapter_id" : "entry_id";
-
-  useEffect(() => {
-    known.current = { notes: new Set(notes.map((n) => n.id)), replies: new Set(replies.map((r) => r.id)) };
-  }, [notes, replies]);
-
-  // Subscribe first and load once subscribed, so nothing that changes in between is missed.
-  useEffect(() => {
-    let live = true;
-    const load = async () => {
-      const [n, r] = await Promise.all([
-        supabase.from("notes").select(NOTE_COLUMNS).eq(column, docId),
-        supabase.from("note_replies").select(REPLY_COLUMNS).eq(column, docId),
-      ]);
-      if (!live) return;
-      if (n.data) setNotes((current) => merge(current, n.data));
-      if (r.data) setReplies((current) => merge(current, r.data));
-      setLoaded(true);
-    };
-    const filter = `${column}=eq.${docId}`;
-    const channel = supabase
-      .channel(`notes:${docId}`)
-      .on<Note>("postgres_changes", { event: "INSERT", schema: "public", table: "notes", filter }, ({ new: note }) =>
-        setNotes((current) => merge(current, [note]))
-      )
-      .on<Note>("postgres_changes", { event: "UPDATE", schema: "public", table: "notes", filter }, ({ new: note }) =>
-        setNotes((current) => merge(current, [note]))
-      )
-      .on<NoteReply>(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "note_replies", filter },
-        ({ new: reply }) => setReplies((current) => merge(current, [reply]))
-      )
-      .on<NoteReply>(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "note_replies", filter },
-        ({ new: reply }) => setReplies((current) => merge(current, [reply]))
-      )
-      // Realtime can't filter deletes, so each brings only an id: drop it only if it's one of ours.
-      .on<{ id: string }>("postgres_changes", { event: "DELETE", schema: "public", table: "notes" }, ({ old }) => {
-        if (!old.id || !known.current.notes.has(old.id)) return;
-        setNotes((current) => current.filter((n) => n.id !== old.id));
-        setReplies((current) => current.filter((r) => r.note_id !== old.id));
-      })
-      .on<{ id: string }>("postgres_changes", { event: "DELETE", schema: "public", table: "note_replies" }, ({ old }) => {
-        if (old.id && known.current.replies.has(old.id)) setReplies((current) => current.filter((r) => r.id !== old.id));
-      })
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") void load();
-      });
-    return () => {
-      live = false;
-      void supabase.removeChannel(channel);
-    };
-  }, [supabase, column, docId]);
+  const panel = useStoryPanel();
+  const showPanel = panel?.show;
+  const collapsed = narrow || !!panel?.open;
 
   const openIds = useMemo(() => new Set(notes.filter((n) => !n.resolved_at).map((n) => n.id)), [notes]);
   const shownActive = active && openIds.has(active) ? active : null;
@@ -185,17 +123,21 @@ export function NotesProvider({
   }, [setShow]);
 
   useEffect(() => {
-    if (!linked || !editor || !loaded || revealed.current === linked) return;
-    if (!openIds.has(linked) || !noteRanges(editor.state.doc).has(linked)) return;
+    if (!linked || !loaded || revealed.current === linked) return;
+    const note = notes.find((n) => n.id === linked);
+    const whole = !!note && isWhole(note);
+    if (!whole && (!editor || !openIds.has(linked) || !noteRanges(editor.state.doc).has(linked))) return;
     const frame = requestAnimationFrame(() => {
       revealed.current = linked;
-      reveal(linked);
+      if (whole) {
+        showPanel?.("notes");
+        setExpanded(linked);
+      } else {
+        reveal(linked);
+      }
     });
     return () => cancelAnimationFrame(frame);
-  }, [linked, editor, loaded, openIds, reveal]);
-
-  const byId = useMemo(() => new Map(authors.map((a) => [a.id, a])), [authors]);
-  const person = useCallback((id: string | null) => (id && byId.get(id)) || FORMER_WRITER, [byId]);
+  }, [linked, editor, loaded, notes, openIds, reveal, showPanel]);
 
   const startDraft = useCallback(() => {
     const ed = editorRef.current;
@@ -221,167 +163,110 @@ export function NotesProvider({
       if (!ed || !draft) return "Select the passage again.";
       const quote = noteQuote(ed.state.doc.textBetween(draft.from, draft.to, " ", " "));
       if (!quote) return "Select some text to note.";
-      const id = crypto.randomUUID();
-      const { error } =
-        kind === "chapter"
-          ? await supabase.rpc("add_note", { p_id: id, p_chapter: docId, p_quote: quote, p_body: body })
-          : await supabase.rpc("add_entry_note", { p_id: id, p_entry: docId, p_quote: quote, p_body: body });
-      if (error) return errorText(error);
+      const result = await post(quote, body);
+      if (!result.id) return result.error;
 
       // Others may have edited while the insert ran; the draft range has moved with their edits.
       const meta: NoteHighlightMeta = { draft: null };
       if (!ed.isDestroyed) {
         const range = noteDraft(ed.state);
         const tr = ed.state.tr.setMeta(noteHighlightKey, meta);
-        if (range && ed.isEditable) tr.addMark(range.from, range.to, ed.schema.marks.note!.create({ id }));
+        if (range && ed.isEditable) tr.addMark(range.from, range.to, ed.schema.marks.note!.create({ id: result.id }));
         ed.view.dispatch(tr);
       }
-      const now = new Date().toISOString();
-      setNotes((current) =>
-        merge(current, [
-          {
-            id,
-            ...documentIds(kind, docId),
-            author_id: me,
-            quote,
-            body: body.trim(),
-            edited_at: null,
-            resolved_at: null,
-            resolved_by: null,
-            created_at: now,
-          },
-        ])
-      );
-      setActive(id);
+      setActive(result.id);
       return null;
     },
-    [supabase, kind, docId, me]
+    [post]
   );
 
-  const reply = useCallback(
-    async (noteId: string, body: string): Promise<ActionResult> => {
-      const { data, error } = await supabase.rpc("reply_note", { p_note: noteId, p_body: body });
-      if (error) return errorText(error);
-      const now = new Date().toISOString();
-      const mine = { id: data, note_id: noteId, ...documentIds(kind, docId), author_id: me, body: body.trim() };
-      setReplies((current) => merge(current, [{ ...mine, edited_at: null, created_at: now }]));
+  const addWhole = useCallback(
+    async (body: string): Promise<ActionResult> => {
+      const result = await post(null, body);
+      if (!result.id) return result.error;
+      setWholeDraft(false);
       return null;
     },
-    [supabase, kind, docId, me]
+    [post]
   );
 
-  const edit = useCallback(
-    async (kind: "note" | "reply", id: string, body: string): Promise<ActionResult> => {
-      const trimmed = body.trim();
-      if (kind === "note") {
-        const { data, error } = await supabase.from("notes").update({ body: trimmed }).eq("id", id).select(NOTE_COLUMNS);
-        if (error) return errorText(error);
-        if (!data.length) return errorText({ message: "not_allowed" });
-        setNotes((current) => merge(current, data));
-      } else {
-        const { data, error } = await supabase
-          .from("note_replies")
-          .update({ body: trimmed })
-          .eq("id", id)
-          .select(REPLY_COLUMNS);
-        if (error) return errorText(error);
-        if (!data.length) return errorText({ message: "not_allowed" });
-        setReplies((current) => merge(current, data));
-      }
-      return null;
-    },
-    [supabase]
-  );
+  const { remove: removeThread, setResolved: setThreadResolved } = thread;
 
   const remove = useCallback(
     async (kind: "note" | "reply", id: string): Promise<ActionResult> => {
-      const { data, error } = await supabase
-        .from(kind === "note" ? "notes" : "note_replies")
-        .delete()
-        .eq("id", id)
-        .select("id");
-      if (error) return errorText(error);
-      if (!data.length) return errorText({ message: "not_allowed" });
-      if (kind === "reply") {
-        setReplies((current) => current.filter((r) => r.id !== id));
-        return null;
-      }
-      setNotes((current) => current.filter((n) => n.id !== id));
-      setReplies((current) => current.filter((r) => r.note_id !== id));
+      const result = await removeThread(kind, id);
+      if (result || kind === "reply") return result;
       // A leftover mark would be inert, so this is best effort: a read-only editor can't write it anyway.
       const ed = editorRef.current;
       const range = ed && !ed.isDestroyed && ed.isEditable ? noteRanges(ed.state.doc).get(id) : undefined;
       if (ed && range) ed.view.dispatch(ed.state.tr.removeMark(range.from, range.to, ed.schema.marks.note!.create({ id })));
       return null;
     },
-    [supabase]
+    [removeThread]
   );
 
   const setResolved = useCallback(
     async (noteId: string, resolved: boolean): Promise<ActionResult> => {
-      const { error } = await supabase.rpc("set_note_resolved", { p_note: noteId, p_resolved: resolved });
-      if (error) return errorText(error);
-      const now = new Date().toISOString();
-      setNotes((current) =>
-        current.map((n) =>
-          n.id === noteId ? { ...n, resolved_at: resolved ? now : null, resolved_by: resolved ? me : null } : n
-        )
-      );
-      if (resolved) setActive((current) => (current === noteId ? null : current));
-      return null;
+      const result = await setThreadResolved(noteId, resolved);
+      if (!result && resolved) setActive((current) => (current === noteId ? null : current));
+      return result;
     },
-    [supabase, me]
+    [setThreadResolved]
   );
+
+  const threadValue = useMemo(() => ({ ...thread, remove, setResolved }), [thread, remove, setResolved]);
 
   const value = useMemo<NotesValue>(
     () => ({
+      kind,
       notes,
       replies,
       active: shownActive,
       setActive,
+      expanded,
+      setExpanded,
       show,
       setShow,
       narrow,
       collapsed,
       reveal,
       readOnly: finished,
+      canAddWhole: !finished && !locked,
       editor,
       setEditor,
-      person,
-      isMine: (authorId) => authorId === me,
-      canDelete: (authorId) => !finished && canDeleteNote(myRole, authorId === me),
       startDraft,
       cancelDraft,
       addNote,
-      reply,
-      edit,
-      remove,
-      setResolved,
+      wholeDraft,
+      setWholeDraft,
+      addWhole,
     }),
     [
+      kind,
       notes,
       replies,
       shownActive,
+      expanded,
       show,
       setShow,
       narrow,
       collapsed,
       reveal,
       finished,
+      locked,
       editor,
       setEditor,
-      person,
-      me,
-      myRole,
       startDraft,
       cancelDraft,
       addNote,
-      reply,
-      edit,
-      remove,
-      setResolved,
+      wholeDraft,
+      addWhole,
     ]
   );
 
-  return <NotesContext value={value}>{children}</NotesContext>;
+  return (
+    <NotesContext value={value}>
+      <NoteThreadContext value={threadValue}>{children}</NoteThreadContext>
+    </NotesContext>
+  );
 }
