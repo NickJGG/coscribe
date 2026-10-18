@@ -10,12 +10,15 @@ import {
   entrySchema,
   foldRows,
   listNumbers,
+  nonPlain,
+  SCRIPT_ELEMENT_LABELS,
   type DocumentDiff,
   type DiffBlock,
   type DiffRow,
   type DiffSegment,
   type Fold,
   type FoldItem,
+  type StructureChange,
 } from "@coscribe/editor";
 import { nameSnapshot, previewSnapshot, restoreSnapshot, type SnapshotPreview } from "@/lib/actions/snapshots";
 import { formatKeys } from "@/lib/keys";
@@ -386,6 +389,7 @@ function Comparison({
                   side={side}
                   json={(column ? rightJson : leftJson)!}
                   blocks={column ? diff.right : diff.left}
+                  older={diff.left}
                   numbers={numbers![column]!}
                   rows={diff.rows}
                   items={same ? [] : items}
@@ -529,27 +533,88 @@ function Segments({ segments }: { segments: DiffSegment[] }) {
   });
 }
 
+/** What of a changed row's structure isn't plain on `block`, one of its sides: the part that side tints. */
+function tinted(row: DiffRow, block: DiffBlock): StructureChange[] | undefined {
+  if (row.kind !== "changed" || !row.structure) return undefined;
+  const tint = row.structure.filter((change) => nonPlain(block, change));
+  return tint.length ? tint : undefined;
+}
+
+const ALIGNED = { center: "centered", right: "right-aligned" } as const;
+
+/** What changed in a row's structure, from the left side's block to `newer`, read aloud in place of the tints. */
+function describeStructure(row: DiffRow, lefts: DiffBlock[], newer: DiffBlock): string | undefined {
+  if (row.kind !== "changed" || !row.structure) return undefined;
+  const older = lefts[row.left]!;
+  const element = (block: DiffBlock) => SCRIPT_ELEMENT_LABELS[block.element ?? "action"];
+  return row.structure
+    .flatMap((change) => {
+      switch (change) {
+        case "quote":
+          return newer.quoted ? "Now quoted." : "No longer quoted.";
+        case "align":
+          return newer.align ? `Now ${ALIGNED[newer.align]}.` : "Now left-aligned.";
+        case "list": {
+          if (!newer.list) return "No longer a list item.";
+          const { kind, depth } = newer.list;
+          return `Now a ${kind === "bullet" ? "bulleted" : "numbered"} list item${depth ? `, nested ${depth} deep` : ""}.`;
+        }
+        case "script":
+          return newer.element ? "Now in a Script." : "No longer in a Script.";
+        case "element":
+          if (!newer.element) return [];
+          if (!older.element) return `Now a ${element(newer)} line.`;
+          return `Now a ${element(newer)} line, was ${element(older)}.`;
+      }
+    })
+    .join(" ");
+}
+
 /**
- * A block as its side draws it. A list item's marker hangs in its indent, `number` for an ordered one, and is
- * marked inserted when `newMarker`. `docPosition` doesn't count the marker (`data-list-marker`) as text.
+ * A block as its side draws it. A list item's marker hangs in its indent, `number` for an ordered one. `tint`
+ * is the structure this side gained (newer) or lost (older): its marker is marked inserted or deleted and CSS
+ * tints the space the rest adds. `note` is read aloud in place of the tints. `docPosition` doesn't count the
+ * marker (`data-list-marker`) or the note (`data-compare-note`) as text.
  */
 function BlockContent({
   block,
   segments,
   number,
-  newMarker,
+  tint,
+  side,
+  note,
 }: {
   block: DiffBlock;
   segments?: DiffSegment[];
   number?: number;
-  newMarker?: boolean;
+  tint?: StructureChange[];
+  side: "older" | "newer";
+  note?: string;
 }) {
   if (block.type === "sceneBreak") return <hr data-scene-break="" />;
+  const space = tint && {
+    "data-space": side === "newer" ? "ins" : "del",
+    ...Object.fromEntries(tint.map((change) => [`data-tint-${change}`, ""])),
+  };
+  const content = (
+    <>
+      <Segments segments={segments ?? block.segments} />
+      {note && (
+        <span className="sr-only" data-compare-note="">
+          {" "}
+          {note}
+        </span>
+      )}
+    </>
+  );
+  // A segment backing of paper leaves only an aligned paragraph's margins tinted.
+  const aligned = tint && (tint.includes("align") || (tint.includes("element") && block.element === "transition"));
+  const text = aligned ? <span className={styles.line}>{content}</span> : content;
   if (block.element) {
     return (
       <div data-script="">
-        <p data-element={block.element}>
-          <Segments segments={segments ?? block.segments} />
+        <p data-element={block.element} {...space}>
+          {text}
         </p>
       </div>
     );
@@ -557,17 +622,19 @@ function BlockContent({
   const { list } = block;
   const marker = list && !list.continued && (list.kind === "bullet" ? "•" : `${number}.`);
   const className = [block.quoted && styles.quoted, list && styles.listed].filter(Boolean).join(" ") || undefined;
+  const Changed = side === "newer" ? "ins" : "del";
   return (
     <p
       className={className}
       style={{ textAlign: block.align, ...(list && ({ "--depth": list.depth } as React.CSSProperties)) }}
+      {...space}
     >
       {marker && (
         <span className={styles.marker} data-list-marker="" aria-hidden>
-          {newMarker ? <ins>{marker}</ins> : marker}
+          {tint?.includes("list") ? <Changed>{marker}</Changed> : marker}
         </span>
       )}
-      <Segments segments={segments ?? block.segments} />
+      {text}
     </p>
   );
 }
@@ -599,7 +666,9 @@ function InlineRow({
         block={block}
         segments={row.kind === "changed" ? row.merged : undefined}
         number={number}
-        newMarker={row.kind === "changed" && row.markerChanged}
+        side="newer"
+        tint={tinted(row, block)}
+        note={describeStructure(row, diff.left, block)}
       />
     </div>
   );
@@ -615,6 +684,7 @@ function Column({
   side,
   json,
   blocks,
+  older,
   numbers,
   rows,
   items,
@@ -626,6 +696,8 @@ function Column({
   side: Side;
   json: JSONContent;
   blocks: DiffBlock[];
+  /** The left column's blocks, which the right column's notes compare against. */
+  older: DiffBlock[];
   numbers: (number | undefined)[];
   rows: DiffRow[];
   /** The rows on show; a Fold's place is left for the full-width row the grid puts there. */
@@ -675,7 +747,9 @@ function Column({
             <BlockContent
               block={blocks[index]!}
               number={numbers[index]}
-              newMarker={column === 1 && row.kind === "changed" && row.markerChanged}
+              side={column ? "newer" : "older"}
+              tint={tinted(row, blocks[index]!)}
+              note={column ? describeStructure(row, older, blocks[index]!) : undefined}
             />
           </div>
         );
@@ -909,6 +983,6 @@ function docPosition(doc: PMNode, column: HTMLElement, node: globalThis.Node, of
   before.setEnd(node, offset);
   const contents = before.cloneContents();
   const breaks = contents.querySelectorAll("[data-line-break]").length;
-  for (const marker of contents.querySelectorAll("[data-list-marker]")) marker.remove();
+  for (const marker of contents.querySelectorAll("[data-list-marker], [data-compare-note]")) marker.remove();
   return start + 1 + Math.min((contents.textContent ?? "").length + breaks, block.content.size);
 }

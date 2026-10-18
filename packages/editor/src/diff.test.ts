@@ -1,6 +1,6 @@
 import type { JSONContent } from "@tiptap/core"
 import { describe, expect, it } from "vitest"
-import { diffDocuments, foldRows, listNumbers, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
+import { diffDocuments, foldRows, listNumbers, nonPlain, type DiffBlock, type DiffRow, type DiffSegment } from "./diff"
 
 type Text = string | { text: string; marks: JSONContent["marks"] }
 
@@ -171,17 +171,51 @@ describe("diffDocuments", () => {
     ])
   })
 
-  it("doesn't count quoting, alignment or strikethrough alone as a difference", () => {
+  it("counts quoting and alignment alone as changes, but not strikethrough", () => {
     const diff = diffDocuments(
       doc(p("Dear Ann,"), p("The End"), p("Struck.")),
       doc(quote(p("Dear Ann,")), aligned("center", p("The End")), p({ text: "Struck.", marks: [strike] }))
     )
-    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same", "same"])
-    expect(diff.additions + diff.removals).toBe(0)
+    expect(diff.rows).toMatchObject([
+      { kind: "changed", structure: ["quote"] },
+      { kind: "changed", structure: ["align"] },
+      { kind: "same" },
+    ])
+    expect(diff.additions).toBe(2)
+    expect(diff.removals).toBe(0)
     expect(diff.left[0]!.quoted).toBeUndefined()
     expect(diff.right[0]!.quoted).toBe(true)
     expect(diff.right[1]!.align).toBe("center")
     expect(diff.right[2]!.segments).toEqual([{ text: "Struck.", marks: [strike], op: "same" }])
+  })
+
+  it("counts a lost quote as a removal", () => {
+    const diff = diffDocuments(doc(quote(p("Dear Ann,"))), doc(p("Dear Ann,")))
+    expect(diff.rows).toEqual([{ kind: "changed", left: 0, right: 0, merged: expect.any(Array), structure: ["quote"] }])
+    expect(diff.additions).toBe(0)
+    expect(diff.removals).toBe(1)
+  })
+
+  it("counts center to right as both an addition and a removal", () => {
+    const diff = diffDocuments(doc(aligned("center", p("The End"))), doc(aligned("right", p("The End"))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["align"] }])
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(1)
+  })
+
+  it("counts quoting and centering at once as one addition", () => {
+    const diff = diffDocuments(doc(p("Dear Ann,")), doc(quote(aligned("center", p("Dear Ann,")))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["quote", "align"] }])
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(0)
+  })
+
+  it("diffs a quoted paragraph's text along with its quote", () => {
+    const diff = diffDocuments(doc(p("Come home.")), doc(quote(p("Come home soon."))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["quote"] }])
+    expect(show(diff.right[0]!)).toBe("Come home{+ soon+}.")
+    expect(diff.additions).toBe(2)
+    expect(diff.removals).toBe(0)
   })
 
   it("keeps each side's look on a changed row", () => {
@@ -208,15 +242,40 @@ describe("diffDocuments", () => {
     ])
   })
 
-  it("doesn't count a Script element change alone as a difference, but shows each side's element", () => {
+  it("counts moving into a Script and a Script element change, and shows each side's element", () => {
     const diff = diffDocuments(
       doc(p("The door opens."), script(["action", "Ann"])),
       doc(script(["action", "The door opens."], ["character", "Ann"]))
     )
-    expect(diff.rows.map((r) => r.kind)).toEqual(["same", "same"])
-    expect(diff.additions + diff.removals).toBe(0)
+    expect(diff.rows).toMatchObject([
+      { kind: "changed", structure: ["script"] },
+      { kind: "changed", structure: ["element"] },
+    ])
+    expect(diff.additions).toBe(2)
+    expect(diff.removals).toBe(0)
     expect(diff.left.map((block) => block.element)).toEqual([undefined, "action"])
     expect(diff.right.map((block) => block.element)).toEqual(["action", "character"])
+  })
+
+  it("counts prose becoming a Character line as one addition", () => {
+    const diff = diffDocuments(doc(p("Ann")), doc(script(["character", "Ann"])))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["script", "element"] }])
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(0)
+  })
+
+  it("counts leaving a Script as a removal", () => {
+    const diff = diffDocuments(doc(script(["action", "The door opens."])), doc(p("The door opens.")))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["script"] }])
+    expect(diff.additions).toBe(0)
+    expect(diff.removals).toBe(1)
+  })
+
+  it("counts Action to Scene Heading as an addition", () => {
+    const diff = diffDocuments(doc(script(["action", "INT. LIGHTHOUSE"])), doc(script(["sceneHeading", "INT. LIGHTHOUSE"])))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["element"] }])
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(0)
   })
 
   it("diffs text inside a Script line, keeping its element", () => {
@@ -281,7 +340,7 @@ describe("diffDocuments with lists", () => {
   it("diffs an item's text", () => {
     const diff = diffDocuments(doc(ul(li("A"), li("Keeps a red lantern."))), doc(ul(li("A"), li("Keeps a green lantern."))))
     expect(diff.rows).toMatchObject([{ kind: "same" }, { kind: "changed", left: 1, right: 1 }])
-    expect(diff.rows[1]).not.toHaveProperty("markerChanged")
+    expect(diff.rows[1]).not.toHaveProperty("structure")
     expect(show(diff.right[1]!)).toBe("Keeps a {+green+} lantern.")
     expect(diff.right[1]!.list).toEqual(bullet)
     expect(diff.additions).toBe(1)
@@ -299,9 +358,9 @@ describe("diffDocuments with lists", () => {
     expect(diff.right[2]).toMatchObject({ list: bullet })
   })
 
-  it("counts a paragraph becoming a bullet as a marker change, with no text changed", () => {
+  it("counts a paragraph becoming a bullet as a list change, with no text changed", () => {
     const diff = diffDocuments(doc(p("Lives by the harbour.")), doc(ul(li("Lives by the harbour."))))
-    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0, markerChanged: true }])
+    expect(diff.rows).toMatchObject([{ kind: "changed", left: 0, right: 0, structure: ["list"] }])
     const row = diff.rows[0]!
     expect(row.kind === "changed" && row.merged.every((s) => s.op === "same")).toBe(true)
     expect(diff.left[0]!.list).toBeUndefined()
@@ -310,17 +369,28 @@ describe("diffDocuments with lists", () => {
     expect(diff.removals).toBe(0)
   })
 
-  it("counts bullet to numbered as a marker change", () => {
-    const diff = diffDocuments(doc(ul(li("Light the lamp."))), doc(ol(li("Light the lamp."))))
-    expect(diff.rows).toMatchObject([{ kind: "changed", markerChanged: true }])
-    expect(diff.left[0]!.list).toEqual(bullet)
-    expect(diff.right[0]!.list).toEqual(ordered)
+  it("counts a bullet becoming a paragraph as a removal", () => {
+    const diff = diffDocuments(doc(ul(li("Lives by the harbour."))), doc(p("Lives by the harbour.")))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["list"] }])
+    expect(diff.additions).toBe(0)
+    expect(diff.removals).toBe(1)
   })
 
-  it("counts a depth change as a marker change", () => {
+  it("counts bullet to numbered as a list change, both added and removed", () => {
+    const diff = diffDocuments(doc(ul(li("Light the lamp."))), doc(ol(li("Light the lamp."))))
+    expect(diff.rows).toMatchObject([{ kind: "changed", structure: ["list"] }])
+    expect(diff.left[0]!.list).toEqual(bullet)
+    expect(diff.right[0]!.list).toEqual(ordered)
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(1)
+  })
+
+  it("counts a depth change as a list change, both added and removed", () => {
     const diff = diffDocuments(doc(ul(li("Ships"), li("The Gull"))), doc(ul(li("Ships", ul(li("The Gull"))))))
-    expect(diff.rows).toMatchObject([{ kind: "same" }, { kind: "changed", left: 1, right: 1, markerChanged: true }])
+    expect(diff.rows).toMatchObject([{ kind: "same" }, { kind: "changed", left: 1, right: 1, structure: ["list"] }])
     expect(diff.right[1]!.list).toEqual({ kind: "bullet", depth: 1 })
+    expect(diff.additions).toBe(1)
+    expect(diff.removals).toBe(1)
   })
 
   it("leaves later numbered items unchanged when one is inserted, since numbers aren't compared", () => {
@@ -339,7 +409,7 @@ describe("diffDocuments with lists", () => {
     expect(diff.right.map((block) => block.list)).toEqual([ordered, { ...ordered, continued: true }, ordered])
 
     const split = diffDocuments(entry, doc(ol(li("Row out."), li("Mind the rocks."), li("Wait."))))
-    expect(split.rows).toMatchObject([{ kind: "same" }, { kind: "changed", markerChanged: true }, { kind: "same" }])
+    expect(split.rows).toMatchObject([{ kind: "same" }, { kind: "changed", structure: ["list"] }, { kind: "same" }])
   })
 
   it("keeps a quote holding a list both quoted and listed", () => {
@@ -350,7 +420,30 @@ describe("diffDocuments with lists", () => {
       ["Never whistle.", true, bullet],
     ])
     const unquoted = diffDocuments(entry, doc(p("Her rules:"), ul(li("Never whistle."))))
-    expect(unquoted.rows.map((r) => r.kind)).toEqual(["same", "same"])
+    expect(unquoted.rows).toMatchObject([
+      { kind: "changed", structure: ["quote"] },
+      { kind: "changed", structure: ["quote"] },
+    ])
+    expect(unquoted.removals).toBe(2)
+  })
+})
+
+describe("nonPlain", () => {
+  it("is false for each attribute's plain state", () => {
+    const plain: DiffBlock = { type: "paragraph", segments: [] }
+    const changes = ["quote", "align", "list", "script", "element"] as const
+    expect(changes.map((c) => nonPlain(plain, c))).toEqual([false, false, false, false, false])
+    expect(nonPlain({ ...plain, element: "action" }, "element")).toBe(false)
+  })
+
+  it("is true for each attribute's other states", () => {
+    const plain: DiffBlock = { type: "paragraph", segments: [] }
+    expect(nonPlain({ ...plain, quoted: true }, "quote")).toBe(true)
+    expect(nonPlain({ ...plain, align: "center" }, "align")).toBe(true)
+    expect(nonPlain({ ...plain, align: "right" }, "align")).toBe(true)
+    expect(nonPlain({ ...plain, list: { kind: "bullet", depth: 0 } }, "list")).toBe(true)
+    expect(nonPlain({ ...plain, element: "action" }, "script")).toBe(true)
+    expect(nonPlain({ ...plain, element: "character" }, "element")).toBe(true)
   })
 })
 

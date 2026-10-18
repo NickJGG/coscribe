@@ -31,6 +31,8 @@ export {
   diffDocuments,
   foldRows,
   listNumbers,
+  nonPlain,
+  structureChanges,
   type DocumentDiff,
   type DiffBlock,
   type DiffOp,
@@ -38,6 +40,7 @@ export {
   type DiffSegment,
   type Fold,
   type FoldItem,
+  type StructureChange,
 } from "./diff"
 export { findFolded, findText, foldQuery, foldText, MIN_QUERY, type FindMatch, type FoldedText } from "./find"
 export {

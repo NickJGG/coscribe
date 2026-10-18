@@ -250,6 +250,40 @@
   user-select: none;
 }
 
+/* Structure a side gained (ins) or lost (del): only the space it adds is tinted, like added or removed text. */
+.body p[data-space] {
+  --space: color-mix(in srgb, var(--ink-muted) 18%, transparent);
+  border-radius: 2px;
+}
+
+.body p[data-space="del"] {
+  --space: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* Just the quote's indent, not a list's after it. */
+.body p[data-tint-quote] {
+  background: linear-gradient(to right, var(--space) var(--quote), transparent var(--quote));
+}
+
+/* A Script element's indents: its padding, under a paper layer for the text. */
+.body p[data-tint-element] {
+  background:
+    linear-gradient(var(--paper), var(--paper)) content-box,
+    linear-gradient(var(--space), var(--space)) padding-box;
+}
+
+.body p:is([data-tint-align], [data-tint-element][data-element="transition"]) {
+  background: var(--space);
+}
+
+/* Backs an aligned paragraph's lines in paper, so only its margins show the tint. The padding meets across lines. */
+.line {
+  padding: 0.32em 0;
+  background: var(--paper);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
 .gap {
   border-radius: 4px;
   background: repeating-linear-gradient(

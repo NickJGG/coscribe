@@ -27,14 +27,17 @@ export type DiffBlock = {
   list?: DiffList
 }
 
+/** A part of a paragraph's structure that counts as a change: its quote, alignment, list, Script, or element. */
+export type StructureChange = "quote" | "align" | "list" | "script" | "element"
+
 /**
  * One aligned row: a block index on each side it has a block on. A changed row also has `merged`, both
  * sides' segments interleaved in reading order (the right side's for unchanged text), for one inline column,
- * and `markerChanged` when the two sides' list structure differs.
+ * and `structure`, what of the two sides' structure differs, when any does.
  */
 export type DiffRow =
   | { kind: "same"; left: number; right: number }
-  | { kind: "changed"; left: number; right: number; merged: DiffSegment[]; markerChanged?: true }
+  | { kind: "changed"; left: number; right: number; merged: DiffSegment[]; structure?: StructureChange[] }
   | { kind: "removed"; left: number; right?: never }
   | { kind: "added"; right: number; left?: never }
 
@@ -51,13 +54,14 @@ const PAIR_SIMILARITY = 0.5
 const SCENE_BREAK_KEY = "\u0000sceneBreak"
 
 type Run = { text: string; marks?: JSONContent["marks"] }
-type Block = Pick<DiffBlock, "type" | "quoted" | "align" | "element" | "list"> & { runs: Run[]; text: string; key: string }
+type Look = Pick<DiffBlock, "quoted" | "align" | "element" | "list">
+type Block = Pick<DiffBlock, "type"> & Look & { runs: Run[]; text: string }
 type Range = { length: number; op: DiffOp }
 
 /** `depth` is the depth a list met here would have. */
 function blocksOf(doc: JSONContent, depth = 0): Block[] {
   return (doc.content ?? []).flatMap((node): Block[] => {
-    if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "", key: SCENE_BREAK_KEY }]
+    if (node.type === "sceneBreak") return [{ type: "sceneBreak", runs: [], text: "" }]
     if (node.type === "blockquote") return blocksOf(node, depth).map((block) => ({ ...block, quoted: true }))
     if (node.type === "script") return blocksOf(node)
     if (node.type === "bulletList" || node.type === "orderedList") {
@@ -67,7 +71,7 @@ function blocksOf(doc: JSONContent, depth = 0): Block[] {
           // A nested list's paragraphs already have their own.
           if (block.list || block.type !== "paragraph") return block
           const list: DiffList = { kind, depth, ...(n > 0 && { continued: true }) }
-          return { ...block, list, key: listKey(list, block.text) }
+          return { ...block, list }
         })
       )
     }
@@ -82,7 +86,6 @@ function blocksOf(doc: JSONContent, depth = 0): Block[] {
         type: "paragraph",
         runs,
         text,
-        key: text,
         ...((align === "center" || align === "right") && { align }),
         ...(node.type === "scriptElement" && { element: node.attrs?.element ?? "action" }),
       },
@@ -90,16 +93,51 @@ function blocksOf(doc: JSONContent, depth = 0): Block[] {
   })
 }
 
-/** Text plus list structure, so a paragraph that changes structure no longer anchors as unchanged. */
-function listKey(list: DiffList, text: string): string {
-  return `\u0000${list.kind}${list.depth}${list.continued ? "+" : ""}\u0000${text}`
+/**
+ * Text plus structure, so a paragraph that changes structure no longer anchors as unchanged. A plain
+ * paragraph's key is its bare text.
+ */
+function structureKey(block: Block): string {
+  if (block.type === "sceneBreak") return SCENE_BREAK_KEY
+  const { quoted, align, list, element } = block
+  if (!quoted && !align && !list && !element) return block.text
+  const listed = list ? `${list.kind}${list.depth}${list.continued ? "+" : ""}` : ""
+  return `\u0000${quoted ? "q" : ""}\u0000${align ?? ""}\u0000${listed}\u0000${element ?? ""}\u0000${block.text}`
 }
 
-function sameList(a?: DiffList, b?: DiffList): boolean {
-  return a?.kind === b?.kind && a?.depth === b?.depth && a?.continued === b?.continued
+/** What of `a`'s and `b`'s structure differs. A block is in a Script when it has an `element`. */
+export function structureChanges(a: Look, b: Look): StructureChange[] {
+  const changes: StructureChange[] = []
+  if (!a.quoted !== !b.quoted) changes.push("quote")
+  if (a.align !== b.align) changes.push("align")
+  if (a.list?.kind !== b.list?.kind || a.list?.depth !== b.list?.depth || a.list?.continued !== b.list?.continued) {
+    changes.push("list")
+  }
+  if (!a.element !== !b.element) changes.push("script")
+  if ((a.element ?? "action") !== (b.element ?? "action")) changes.push("element")
+  return changes
 }
 
-function look(block: Block): Pick<DiffBlock, "quoted" | "align" | "element" | "list"> {
+/**
+ * Whether `block` has `change`'s part of its structure rather than its plain state: unquoted, left-aligned,
+ * not a list item, prose outside a Script, or Action inside one.
+ */
+export function nonPlain(block: Look, change: StructureChange): boolean {
+  switch (change) {
+    case "quote":
+      return !!block.quoted
+    case "align":
+      return !!block.align
+    case "list":
+      return !!block.list
+    case "script":
+      return !!block.element
+    case "element":
+      return (block.element ?? "action") !== "action"
+  }
+}
+
+function look(block: Block): Look {
   return {
     ...(block.quoted && { quoted: true }),
     ...(block.align && { align: block.align }),
@@ -154,11 +192,12 @@ function changeRuns(ranges: Range[], op: DiffOp): number {
 
 /**
  * What changed from `left` to `right`, two Chapters' or two Entries' ProseMirror JSON. Blocks are aligned
- * first (equal text and list structure anchor, then leftover paragraphs pair by word similarity), then
- * words are diffed inside each pair. Only text and list structure count: a new list marker (a paragraph
- * becoming a list item or the reverse, bullet ↔ numbered, a depth change) is one addition, while
- * renumbering, formatting, quoting, alignment, Script elements, `author` and `note` changes are not
- * differences. Each side's blocks and segments keep that side's own look and marks.
+ * first (equal text and structure anchor, then leftover paragraphs pair by word similarity), then
+ * words are diffed inside each pair. Only text and structure (quote, alignment, list, Script and element)
+ * count: a changed row's changed structure is one addition if it isn't plain on the right (see `nonPlain`)
+ * and one removal if it isn't plain on the left, so quoting is an addition, un-quoting a removal, and
+ * bullet → numbered both. Renumbering, formatting, `author` and `note` changes are not differences. Each
+ * side's blocks and segments keep that side's own look and marks.
  */
 export function diffDocuments(left: JSONContent, right: JSONContent): DocumentDiff {
   const a = blocksOf(left)
@@ -203,12 +242,12 @@ export function diffDocuments(left: JSONContent, right: JSONContent): DocumentDi
       if (!part.added) l++
       merged.push(...rights[r++]!)
     }
-    const markerChanged = !sameList(a[i]!.list, b[j]!.list)
-    diff.rows.push({ kind: "changed", left: i, right: j, merged, ...(markerChanged && { markerChanged }) })
+    const structure = structureChanges(a[i]!, b[j]!)
+    diff.rows.push({ kind: "changed", left: i, right: j, merged, ...(structure.length > 0 && { structure }) })
     diff.left[i] = { type: "paragraph", segments: lefts.flat(), ...look(a[i]!) }
     diff.right[j] = { type: "paragraph", segments: rights.flat(), ...look(b[j]!) }
-    diff.removals += changeRuns(leftRanges, "del")
-    diff.additions += changeRuns(rightRanges, "ins") + (markerChanged ? 1 : 0)
+    diff.removals += changeRuns(leftRanges, "del") + (structure.some((c) => nonPlain(a[i]!, c)) ? 1 : 0)
+    diff.additions += changeRuns(rightRanges, "ins") + (structure.some((c) => nonPlain(b[j]!, c)) ? 1 : 0)
   }
 
   /** Pairs an unmatched stretch in order; whatever is left is removed before added at each spot. */
@@ -236,8 +275,8 @@ export function diffDocuments(left: JSONContent, right: JSONContent): DocumentDi
   let lefts: number[] = []
   let rights: number[] = []
   for (const part of diffArrays(
-    a.map((block) => block.key),
-    b.map((block) => block.key)
+    a.map(structureKey),
+    b.map(structureKey)
   )) {
     if (part.removed) {
       for (let n = 0; n < part.count; n++) lefts.push(i++)
